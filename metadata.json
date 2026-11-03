@@ -1,0 +1,6 @@
+{
+  "name": "CareQ - Ontario Child Care Portal",
+  "description": "Streamlined child-care applications and queue management for Ontario parents and licensed centres.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
