@@ -335,6 +335,233 @@ Return only the message text without quotes.`;
     }
   });
 
+  // API 4: Message tone check before sending
+  app.post('/api/check-tone', async (req: Request, res: Response) => {
+    const { text, role = 'parent' } = req.body;
+
+    if (!text || typeof text !== 'string' || !text.trim()) {
+      return res.status(400).json({ error: 'Message text is required.' });
+    }
+
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: `You are a professional child-care communication mediator for Ontario families and licensed centres.
+Analyze the tone of the following message being sent by a ${role === 'parent' ? 'parent to a child care centre' : 'child care centre to a parent'}:
+
+"""
+${text}
+"""
+
+Evaluate whether the message is rude, threatening, aggressive, hostile, or overly confrontational.
+If it IS rude, threatening, or aggressive:
+- set "isHarsh": true
+- provide "suggestedCalmerVersion": a polite, calm, constructive revision that conveys the sender's underlying inquiry or message without hostility, anger, or rudeness.
+- provide "reason": a brief 1-sentence note explaining what makes it sound harsh.
+
+If it is respectful, calm, neutral, professional, or standard:
+- set "isHarsh": false
+- set "suggestedCalmerVersion": ""
+- set "reason": ""`,
+        config: {
+          systemInstruction:
+            'You are an expert communication mediator. Detect rude, threatening, or aggressive tones accurately. Provide constructive, calm revisions.',
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              isHarsh: {
+                type: Type.BOOLEAN,
+                description: 'Whether the message tone is rude, threatening, or aggressive.',
+              },
+              suggestedCalmerVersion: {
+                type: Type.STRING,
+                description: 'A calmer, polite alternative version of the message.',
+              },
+              reason: {
+                type: Type.STRING,
+                description: 'Brief explanation of why the message may come across as harsh.',
+              },
+            },
+            required: ['isHarsh', 'suggestedCalmerVersion'],
+          },
+        },
+      });
+
+      const parsed = JSON.parse(response.text || '{}');
+      return res.json({
+        success: true,
+        isHarsh: Boolean(parsed.isHarsh),
+        suggestedCalmerVersion: parsed.suggestedCalmerVersion || '',
+        reason: parsed.reason || '',
+      });
+    } catch (err: unknown) {
+      console.warn('Gemini check-tone error or missing key; using fallback tone check:', err);
+
+      const lower = text.toLowerCase();
+      const aggressivePatterns = [
+        'threat',
+        'lawyer',
+        'sue you',
+        'sue',
+        'fire you',
+        'incompetent',
+        'useless',
+        'idiot',
+        'liar',
+        'terrible',
+        'shut up',
+        'unacceptable',
+        'demand',
+        'or else',
+        'worst daycare',
+        'worst centre',
+      ];
+
+      const isHarsh = aggressivePatterns.some((p) => lower.includes(p));
+
+      let suggested = '';
+      if (isHarsh) {
+        if (role === 'parent') {
+          suggested = `Hello, I am following up on our child's application. We are quite concerned about the delay and would appreciate an update on our status as soon as possible. Thank you for your time.`;
+        } else {
+          suggested = `Hello, we would like to address your questions regarding the enrolment process. Please let us know a convenient time to discuss your child's application respectfully.`;
+        }
+      }
+
+      return res.json({
+        success: true,
+        isHarsh,
+        suggestedCalmerVersion: suggested,
+        reason: isHarsh ? 'Contains confrontational phrasing.' : '',
+      });
+    }
+  });
+
+  // API 5: Ask CareQ Assistant
+  app.post('/api/ask-careq', async (req: Request, res: Response) => {
+    const { question, centres } = req.body;
+
+    if (!question || typeof question !== 'string' || !question.trim()) {
+      return res.status(400).json({ error: 'Question is required.' });
+    }
+
+    const fallbackExact = "I don't have that information; please contact the centre or use Help.";
+
+    try {
+      const centresContext = Array.isArray(centres)
+        ? centres
+            .map(
+              (c: any) =>
+                `Centre Name: ${c.name}\nNeighbourhood: ${c.neighbourhood}\nAge Groups: ${(c.ageGroups || []).join(', ')}\nHours: ${c.hours || 'N/A'}\nConfirmed Requirements: ${(c.requirements || []).join('; ')}\nFee Note: ${c.feeNote || 'N/A'}`
+            )
+            .join('\n\n')
+        : '';
+
+      const prompt = `You are the "Ask CareQ" official assistant for CareQ, an Ontario child care intake coordination platform prototype.
+
+CRITICAL INSTRUCTIONS & BOUNDARIES:
+1. You may ONLY answer using the provided KNOWLEDGE BASE below.
+2. If the user's question cannot be answered strictly and directly from the provided KNOWLEDGE BASE, you MUST reply with this EXACT phrase and nothing else:
+"${fallbackExact}"
+3. NEVER give legal advice under any circumstances.
+4. NEVER guess or estimate space availability, open spots, wait times, or waitlist positions.
+5. NEVER make decisions or recommendations for the user.
+6. When answering from the KNOWLEDGE BASE, provide a concise, factual answer, and end your answer with a short source attribution line on a new line in this format:
+Source: <Name of Source>
+(For example: "Source: Help FAQ" or "Source: Maple Grove's requirements" or "Source: Trust and transparency page")
+
+KNOWLEDGE BASE:
+
+--- SOURCE 1: HELP FAQ ---
+Q: How do applications work in CareQ?
+A: CareQ simplifies child care intake across Ontario licensed centres. Parents explore licensed centres, add centres to their intake list, upload required documents (such as immunization records and proof of residency), and review their application before submitting. Participating centres receive the verified file directly and update application progress.
+(Source: Help FAQ)
+
+Q: How are waitlist positions set?
+A: Waitlist positions are set independently by each centre under its own published admission policy (such as sibling priority, catchment area, or intake application date). CareQ is a communication and intake coordination tool—CareQ ranks no one and does not decide placement order.
+(Source: Help FAQ)
+
+Q: What does "simulated data" mean?
+A: CareQ is currently operating as an interactive prototype demonstration. Simulated data indicates sample demonstration records—such as mock waitlist position histories, demo parent profiles, and sample notifications—created to demonstrate realistic coordination without exposing real confidential personal information.
+(Source: Help FAQ)
+
+Q: How is AI used in CareQ?
+A: AI in CareQ assists with administrative productivity: it reads published centre intake policies to extract required document checklists, prepares draft messages, and suggests calmer phrasing for messages. Human beings approve everything—the AI never decides who gets a child care space, never ranks families, and never takes automated actions.
+(Source: Help FAQ)
+
+Q: Who can see my documents?
+A: Documents are shared with a centre only after the parent explicitly reviews and approves submission. CareQ does not share your uploaded files publicly, does not sell data, and competing centres cannot see files submitted to other centres.
+(Source: Help FAQ)
+
+Q: How do I contact support or report an issue?
+A: You can submit a Contact Us inquiry or Technical Support ticket directly in the Help tab. Every submission receives a tracking reference number (e.g., CQ-1042). If you experience a communication, fairness, or privacy concern with another party, you can use the "Raise a concern" form.
+(Source: Help FAQ)
+
+Q: Can I decline an offer or withdraw an application?
+A: Yes. When an offer is extended by a centre, you can choose to accept the offer (and optionally withdraw pending applications from other centres) or decline/withdraw directly from your Track Status dashboard.
+(Source: Help FAQ)
+
+--- SOURCE 2: TRUST AND TRANSPARENCY PAGE ---
+1. Prototype terms of use: CareQ is an interactive demonstration for Ontario licensed child care intake. Marked: "Prototype terms, not legal advice". Does not create a binding legal placement contract.
+2. How we use your information: Basic contact details and child profile are collected solely to coordinate intake applications. Documents are shared with a centre only after the parent approves. CareQ never sells data or displays public profiles.
+3. How the AI is used: AI reads published policies to extract checklists, prepares draft messages, and checks tone. People approve everything. It never decides who gets a space. Simulated data is labelled.
+4. Fairness: Centres decide admissions under their own published rules (such as sibling priority, catchment, application date). CareQ ranks no one.
+5. Policies and regulations: Governed by Ontario's licensed child care guidelines (Child Care and Early Years Act, 2014, and municipal operating guidelines). Links provided without summaries of the law.
+(Source: Trust and transparency page)
+
+--- SOURCE 3: CONFIRMED REQUIREMENTS OF CENTRES ---
+${centresContext}
+
+USER'S QUESTION:
+"""
+${question}
+"""`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: prompt,
+        config: {
+          temperature: 0.1,
+        },
+      });
+
+      let text = response.text ? response.text.trim() : fallbackExact;
+
+      // Double-check fallback adherence if Gemini generated a hallucinated apology
+      if (!text || text.toLowerCase().includes("as an ai") || text.toLowerCase().includes("i am unable")) {
+        text = fallbackExact;
+      }
+
+      return res.json({
+        success: true,
+        answer: text,
+      });
+    } catch (err) {
+      console.error('Ask CareQ API error:', err);
+      // Deterministic rule-based fallback based on keywords
+      const q = question.toLowerCase();
+      let answer = fallbackExact;
+
+      if (q.includes('waitlist') || q.includes('position') || q.includes('rank')) {
+        answer = 'Waitlist positions are set independently by each centre under its own published admission policy. CareQ ranks no one.\n\nSource: Help FAQ';
+      } else if (q.includes('document') || q.includes('see') || q.includes('privacy') || q.includes('upload')) {
+        answer = 'Documents are shared with a centre only after the parent approves. They are never shared publicly or sold.\n\nSource: Trust and transparency page';
+      } else if (q.includes('ai') || q.includes('artificial')) {
+        answer = "CareQ's AI reads published policies to prepare checklists, drafts messages, and checks tone. People approve everything and the AI never decides who gets a space.\n\nSource: Help FAQ";
+      } else if (q.includes('simulated')) {
+        answer = 'Simulated data refers to labelled sample records used in this prototype demonstration to test coordination safely.\n\nSource: Help FAQ';
+      } else if (q.includes('support') || q.includes('contact') || q.includes('help')) {
+        answer = 'You can reach support by submitting a Contact Us or Technical Support request directly in the Help tab.\n\nSource: Help FAQ';
+      }
+
+      return res.json({
+        success: true,
+        answer,
+      });
+    }
+  });
+
   // In development, hook up Vite middleware
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

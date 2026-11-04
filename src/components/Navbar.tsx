@@ -1,64 +1,29 @@
-import React from 'react';
-import { User, Building2 } from 'lucide-react';
-import { ParentProfile, Centre } from '../data/mockData';
+import { User, Building2, LogOut } from 'lucide-react';
+import { ParentProfile, Centre, InAppNotification } from '../data/mockData';
 import { LogoFull, LogoMark } from './Logo';
+import { NotificationBell } from './NotificationBell';
 
 interface NavbarProps {
   currentRole: 'parent' | 'centre';
-  onRoleChange: (role: 'parent' | 'centre') => void;
   parentProfile: ParentProfile;
   singleCentre: Centre;
+  notifications: InAppNotification[];
+  onMarkAsRead: (id: string) => void;
+  onMarkAllAsRead: (role: 'parent' | 'centre') => void;
+  onLogout: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentRole,
-  onRoleChange,
   parentProfile,
   singleCentre,
+  notifications,
+  onMarkAsRead,
+  onMarkAllAsRead,
+  onLogout,
 }) => {
   return (
     <header className="bg-white border-b border-stone-200 sticky top-0 z-40 shadow-xs">
-      {/* Top Demo Mode Notice Strip (The ONLY place allowed to change role for demo presentation) */}
-      <div className="bg-stone-900 text-stone-200 px-4 py-1.5 text-xs flex flex-wrap items-center justify-between gap-2 border-b border-stone-800">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-          <span className="text-stone-400 text-[11px] font-semibold uppercase tracking-wider">
-            Demo Persona Switcher:
-          </span>
-          <span className="text-[11px] text-stone-300 hidden sm:inline">
-            (The portal is locked to a single role in production; switch here for demo testing)
-          </span>
-        </div>
-
-        {/* Demo role switch pills */}
-        <div className="flex items-center gap-1 bg-stone-800 p-0.5 rounded-lg border border-stone-700">
-          <button
-            type="button"
-            onClick={() => onRoleChange('parent')}
-            className={`px-3 py-1 rounded text-xs font-medium transition-all flex items-center gap-1.5 ${
-              currentRole === 'parent'
-                ? 'bg-[#0B4A52] text-white font-bold shadow-xs'
-                : 'text-stone-400 hover:text-white'
-            }`}
-          >
-            <User className="w-3 h-3" />
-            <span>Parent (Priya)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onRoleChange('centre')}
-            className={`px-3 py-1 rounded text-xs font-medium transition-all flex items-center gap-1.5 ${
-              currentRole === 'centre'
-                ? 'bg-[#0B4A52] text-white font-bold shadow-xs'
-                : 'text-stone-400 hover:text-white'
-            }`}
-          >
-            <Building2 className="w-3 h-3" />
-            <span>Single Centre ({singleCentre.name.split(' ')[0]})</span>
-          </button>
-        </div>
-      </div>
 
       {/* Main Navbar Bar */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -83,8 +48,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Active Persona Badge */}
+          {/* Notification Bell & Active Persona Badge */}
           <div className="flex items-center gap-3">
+            <NotificationBell
+              notifications={notifications}
+              currentRole={currentRole}
+              onMarkAsRead={onMarkAsRead}
+              onMarkAllAsRead={onMarkAllAsRead}
+            />
+
             {currentRole === 'parent' ? (
               <div className="flex items-center gap-2 bg-white border border-stone-200 px-3 py-1.5 rounded-xl shadow-2xs">
                 <div className="w-7 h-7 rounded-full bg-[#45B5A5]/20 text-[#0B4A52] flex items-center justify-center font-bold text-xs">
@@ -114,6 +86,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               </div>
             )}
+
+            {/* Log Out Button */}
+            <button
+              type="button"
+              onClick={onLogout}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 border border-stone-200 transition-colors cursor-pointer"
+              title="Log out of session"
+            >
+              <LogOut className="w-3.5 h-3.5 text-stone-500" />
+              <span className="hidden sm:inline">Log out</span>
+            </button>
           </div>
         </div>
       </div>

@@ -37,6 +37,13 @@ export const TrackTab: React.FC<TrackTabProps> = ({
   // Offer acceptance confirmation dialog state
   const [selectedOfferAppId, setSelectedOfferAppId] = useState<string | null>(null);
 
+  // Waitlist position history popup modal state
+  const [historyModalAppId, setHistoryModalAppId] = useState<string | null>(null);
+  const historyModalApp = applications.find((a) => a.id === historyModalAppId);
+  const historyModalCentre = historyModalApp
+    ? centres.find((c) => c.id === historyModalApp.centreId)
+    : null;
+
   const selectedOfferApp = applications.find((a) => a.id === selectedOfferAppId);
   const selectedOfferCentre = selectedOfferApp
     ? centres.find((c) => c.id === selectedOfferApp.centreId)
@@ -177,23 +184,43 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                         />
 
                         {/* Centre-reported waitlist queue position and wait details */}
-                        {app.status === 'Waitlisted' && typeof app.waitlistPosition === 'number' && app.waitlistPosition > 0 && (
-                          <div className="mt-2 space-y-0.5 text-xs">
-                            {/* Line 1: Position and reporting centre */}
-                            <div className="font-semibold text-stone-800">
-                              Position {app.waitlistPosition} · reported by {app.waitlistReportedBy || centre?.name || 'the centre'} on {app.waitlistReportedDate || 'recently'}
-                            </div>
+                        {app.status === 'Waitlisted' && (
+                          <div className="mt-2 space-y-1 text-xs">
+                            {/* 1. Current position & History button */}
+                            {typeof app.waitlistPosition === 'number' && app.waitlistPosition > 0 && (
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-stone-900">
+                                    Waitlist position: {app.waitlistPosition}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setHistoryModalAppId(app.id)}
+                                    className="px-2 py-0.5 text-[11px] font-semibold text-[#0B4A52] bg-teal-50 hover:bg-teal-100 border border-teal-200/80 rounded transition-colors"
+                                  >
+                                    History
+                                  </button>
+                                </div>
+                                <div className="text-[11px] text-stone-500 mt-0.5">
+                                  Reported by {app.waitlistReportedBy || centre?.name || 'the centre'} · updated {app.waitlistReportedDate || (app.positionHistory && app.positionHistory[app.positionHistory.length - 1]?.date) || 'recently'}
+                                </div>
+                              </div>
+                            )}
 
-                            {/* Line 2: Centre's estimate or no estimate notice */}
-                            <div className="text-stone-600">
+                            {/* 3. Below position, show centre's wait estimate */}
+                            <div className="text-xs text-stone-700">
                               {app.waitlistEstimate ? (
-                                <span>Centre's estimate: {app.waitlistEstimate}</span>
+                                <span>
+                                  Wait estimate: {app.waitlistEstimate} (provided by {app.waitlistReportedBy || centre?.name || 'the centre'}, not a guarantee)
+                                </span>
                               ) : (
-                                <span>No wait estimate provided by the centre.</span>
+                                <span className="text-stone-500">
+                                  Wait estimate: not provided by the centre.
+                                </span>
                               )}
                             </div>
 
-                            {/* Line 3: Small grey note if update is more than 30 days old */}
+                            {/* Small grey note if update is more than 30 days old */}
                             {app.waitlistReportedTimestamp &&
                               Date.now() - app.waitlistReportedTimestamp > 30 * 24 * 60 * 60 * 1000 && (
                                 <div className="text-[11px] text-stone-400 font-normal">
@@ -386,6 +413,91 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                 {otherActiveApps.length > 0
                   ? 'Accept & Withdraw Others'
                   : 'Confirm & Accept Offer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Waitlist Position History Modal */}
+      {historyModalApp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-stone-200 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-base font-bold text-stone-900">
+                  Waitlist Position History
+                </h3>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  {historyModalCentre?.name || historyModalApp.waitlistReportedBy || 'Child Care Centre'} • {historyModalApp.childName}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHistoryModalAppId(null)}
+                className="text-stone-400 hover:text-stone-600 p-1 rounded-lg transition-colors text-sm font-semibold"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-stone-50 border border-stone-200 rounded-xl p-4">
+              {(() => {
+                const history =
+                  historyModalApp.positionHistory && historyModalApp.positionHistory.length > 0
+                    ? [...historyModalApp.positionHistory]
+                    : typeof historyModalApp.waitlistPosition === 'number' && historyModalApp.waitlistPosition > 0
+                    ? [
+                        {
+                          position: historyModalApp.waitlistPosition,
+                          date: historyModalApp.waitlistReportedDate || 'Initial',
+                        },
+                      ]
+                    : [];
+
+                if (history.length <= 1) {
+                  return (
+                    <div className="space-y-2 py-1">
+                      {history.length === 1 && (
+                        <div className="text-sm text-stone-800">
+                          - {history[0].date} — Position {history[0].position} (joined the waitlist)
+                        </div>
+                      )}
+                      <p className="text-sm text-stone-500 italic">No changes yet.</p>
+                    </div>
+                  );
+                }
+
+                // Newest first
+                const newestFirst = [...history].reverse();
+
+                return (
+                  <ul className="space-y-2.5 text-sm text-stone-800">
+                    {newestFirst.map((item, idx) => {
+                      const isOldest = idx === newestFirst.length - 1;
+                      return (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="text-stone-400 select-none">-</span>
+                          <span>
+                            {item.date} — Position {item.position}
+                            {isOldest ? ' (joined the waitlist)' : ''}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                );
+              })()}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setHistoryModalAppId(null)}
+                className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-lg transition-colors"
+              >
+                Close
               </button>
             </div>
           </div>

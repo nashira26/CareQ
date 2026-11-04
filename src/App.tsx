@@ -8,13 +8,16 @@ import {
   INITIAL_CENTRES,
   INITIAL_APPLICATIONS,
   INITIAL_CONVERSATIONS,
+  INITIAL_NOTIFICATIONS,
   PARENT_PROFILE,
+  ParentProfile,
   Centre,
   Application,
   ApplicationStatus,
   UploadedDocument,
   ChatMessage,
   ConversationsMap,
+  InAppNotification,
 } from './data/mockData';
 import { Navbar } from './components/Navbar';
 import { FindTab } from './components/ParentView/FindTab';
@@ -22,14 +25,43 @@ import { ApplyTab } from './components/ParentView/ApplyTab';
 import { TrackTab } from './components/ParentView/TrackTab';
 import { CentreDashboard } from './components/CentreView/CentreDashboard';
 import { ConversationModal } from './components/ConversationModal';
-import { Search, FileEdit, ListFilter } from 'lucide-react';
+import { TrustTransparencyPage } from './components/TrustTransparencyPage';
+import { AuthPage, MockAccount } from './components/AuthPage';
+import { HelpTab } from './components/HelpTab';
+import { AskCareQAssistant } from './components/AskCareQAssistant';
+import { SupportRequest, INITIAL_SUPPORT_REQUESTS, ConcernStep } from './data/helpData';
+import { LogoFull } from './components/Logo';
+import { Search, FileEdit, ListFilter, HelpCircle } from 'lucide-react';
+
+const INITIAL_MOCK_ACCOUNTS: MockAccount[] = [
+  {
+    id: 'parent-priya',
+    role: 'parent',
+    email: 'priya@example.ca',
+    name: 'Priya Patel',
+    password: 'password',
+    childName: 'Anya',
+    childAgeMonths: 22,
+  },
+  {
+    id: 'centre-riverdale',
+    role: 'centre',
+    email: 'centre@riverdale.ca',
+    name: 'Sarah Jenkins',
+    password: 'password',
+    centreName: 'Riverdale Early Learning Centre',
+  },
+];
 
 export default function App() {
-  // Top-level Role: 'parent' | 'centre' (strictly single role, switched ONLY via the demo tab at top)
-  const [currentRole, setCurrentRole] = useState<'parent' | 'centre'>('parent');
+  // Mock accounts stored in app state
+  const [mockAccounts, setMockAccounts] = useState<MockAccount[]>(INITIAL_MOCK_ACCOUNTS);
 
-  // Parent View Tab Switcher: 'find' | 'apply' | 'track'
-  const [parentTab, setParentTab] = useState<'find' | 'apply' | 'track'>('track');
+  // Authenticated account in session (null = shows login/sign-up page)
+  const [currentAccount, setCurrentAccount] = useState<MockAccount | null>(null);
+
+  // Parent View Tab Switcher: 'find' | 'apply' | 'track' | 'help'
+  const [parentTab, setParentTab] = useState<'find' | 'apply' | 'track' | 'help'>('track');
 
   // In-memory centres state (Riverdale Early Learning Centre is the single centre managed in Centre role)
   const [centres, setCentres] = useState<Centre[]>(INITIAL_CENTRES);
@@ -40,6 +72,137 @@ export default function App() {
 
   // In-memory conversations map between centres and parents
   const [conversations, setConversations] = useState<ConversationsMap>(INITIAL_CONVERSATIONS);
+
+  // In-memory in-app notifications state
+  const [notifications, setNotifications] = useState<InAppNotification[]>(INITIAL_NOTIFICATIONS);
+
+  // Trust and transparency page navigation state
+  const [isTrustPageOpen, setIsTrustPageOpen] = useState<boolean>(false);
+
+  // Mark single notification as read
+  const handleMarkNotificationAsRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
+  };
+
+  // Mark all notifications for a role as read
+  const handleMarkAllNotificationsAsRead = (role: 'parent' | 'centre') => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.recipientRole === role ? { ...n, read: true } : n))
+    );
+  };
+
+  // Login handler
+  const handleLogin = (account: MockAccount) => {
+    setMockAccounts((prev) => {
+      if (prev.some((a) => a.email.toLowerCase() === account.email.toLowerCase())) {
+        return prev;
+      }
+      return [...prev, account];
+    });
+
+    if (account.role === 'centre' && account.centreName) {
+      const exists = centres.some((c) => c.name.toLowerCase() === account.centreName!.toLowerCase());
+      if (!exists) {
+        const newCentre: Centre = {
+          id: `c-custom-${Date.now()}`,
+          name: account.centreName,
+          neighbourhood: 'Toronto & GTA',
+          ageGroups: ['Toddler', 'Preschool'],
+          hours: '7:30 AM - 6:00 PM',
+          requirements: [...singleCentre.requirements],
+          address: 'Ontario Licensed Child Care Facility',
+        };
+        setCentres((prev) => [newCentre, ...prev]);
+      }
+    }
+
+    setCurrentAccount(account);
+    setIsTrustPageOpen(false);
+  };
+
+  // Logout handler
+  const handleLogout = () => {
+    setCurrentAccount(null);
+    setIsTrustPageOpen(false);
+  };
+
+  const currentRole = currentAccount ? currentAccount.role : 'parent';
+
+  const activeParentProfile: ParentProfile =
+    currentAccount && currentAccount.role === 'parent'
+      ? {
+          name: currentAccount.name || PARENT_PROFILE.name,
+          childName: currentAccount.childName || PARENT_PROFILE.childName,
+          childAgeMonths: currentAccount.childAgeMonths || PARENT_PROFILE.childAgeMonths,
+          careType: PARENT_PROFILE.careType,
+          preferredStartDate: PARENT_PROFILE.preferredStartDate,
+        }
+      : PARENT_PROFILE;
+
+  const activeSingleCentre: Centre =
+    currentAccount && currentAccount.role === 'centre'
+      ? centres.find((c) => c.name.toLowerCase() === (currentAccount.centreName || '').toLowerCase()) || singleCentre
+      : singleCentre;
+
+  // Support & concern requests state (for Help tab)
+  const [supportRequests, setSupportRequests] = useState<SupportRequest[]>(INITIAL_SUPPORT_REQUESTS);
+
+  const handleCreateSupportRequest = (
+    newReq: Omit<SupportRequest, 'id' | 'referenceNumber' | 'submittedAt'>
+  ) => {
+    const today = new Date().toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    const refNum = `CQ-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const created: SupportRequest = {
+      ...newReq,
+      id: `req-${Date.now()}`,
+      referenceNumber: refNum,
+      submittedAt: today,
+    };
+
+    setSupportRequests((prev) => [created, ...prev]);
+  };
+
+  const handleAdvanceConcernStep = (requestId: string) => {
+    const steps: ConcernStep[] = [
+      'Submitted',
+      'Under review by CareQ support',
+      'Shared with the other party (if needed)',
+      'Resolved',
+    ];
+    const today = new Date().toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+
+    setSupportRequests((prev) =>
+      prev.map((req) => {
+        if (req.id !== requestId || req.type !== 'concern') return req;
+
+        const currentIdx = steps.indexOf(req.concernStep || 'Submitted');
+        const nextIdx = Math.min(steps.length - 1, currentIdx + 1);
+        const nextStep = steps[nextIdx];
+        const existingHistory = req.concernStepsHistory || [];
+        const updatedHistory = existingHistory.some((h) => h.step === nextStep)
+          ? existingHistory
+          : [...existingHistory, { step: nextStep, date: today }];
+
+        return {
+          ...req,
+          concernStep: nextStep,
+          concernStepsHistory: updatedHistory,
+          status: nextStep === 'Resolved' ? 'Resolved' : 'In progress',
+        };
+      })
+    );
+  };
 
   // Active chat modal state
   const [activeChatModal, setActiveChatModal] = useState<{
@@ -152,6 +315,14 @@ export default function App() {
       day: 'numeric',
       year: 'numeric',
     });
+    const notifDate = new Date().toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+
+    const targetApp = applications.find((a) => a.id === applicationId);
+    const childName = targetApp ? targetApp.childName : PARENT_PROFILE.childName;
+    const parentName = targetApp ? targetApp.parentName : PARENT_PROFILE.name;
 
     setApplications((prev) =>
       prev.map((app) => {
@@ -163,12 +334,34 @@ export default function App() {
         };
       })
     );
+
+    // Notify centre of new application submission
+    const notif: InAppNotification = {
+      id: `notif-centre-sub-${Date.now()}`,
+      recipientRole: 'centre',
+      message: `${parentName} submitted an application for ${childName} on ${notifDate}`,
+      timestamp: notifDate,
+      createdAt: Date.now(),
+      read: false,
+      type: 'application',
+    };
+    setNotifications((prev) => [notif, ...prev]);
+
     // Switch to track tab to see newly submitted application in the queue table
     setParentTab('track');
   };
 
   // Accept offer and optionally withdraw other applications
   const handleAcceptOffer = (applicationId: string, withdrawOthers: boolean) => {
+    const notifDate = new Date().toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+
+    const targetApp = applications.find((a) => a.id === applicationId);
+    const childName = targetApp ? targetApp.childName : PARENT_PROFILE.childName;
+    const parentName = targetApp ? targetApp.parentName : PARENT_PROFILE.name;
+
     setApplications((prev) =>
       prev.map((app) => {
         if (app.id === applicationId) {
@@ -185,10 +378,31 @@ export default function App() {
         return app;
       })
     );
+
+    // Notify centre that offer was accepted
+    const notif: InAppNotification = {
+      id: `notif-centre-acc-${Date.now()}`,
+      recipientRole: 'centre',
+      message: `${parentName} accepted the offer for ${childName} on ${notifDate}`,
+      timestamp: notifDate,
+      createdAt: Date.now(),
+      read: false,
+      type: 'offer',
+    };
+    setNotifications((prev) => [notif, ...prev]);
   };
 
   // Withdraw single application
   const handleWithdrawApplication = (applicationId: string) => {
+    const notifDate = new Date().toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+
+    const targetApp = applications.find((a) => a.id === applicationId);
+    const childName = targetApp ? targetApp.childName : PARENT_PROFILE.childName;
+    const parentName = targetApp ? targetApp.parentName : PARENT_PROFILE.name;
+
     setApplications((prev) =>
       prev.map((app) => {
         if (app.id === applicationId) {
@@ -197,6 +411,18 @@ export default function App() {
         return app;
       })
     );
+
+    // Notify centre that application was withdrawn
+    const notif: InAppNotification = {
+      id: `notif-centre-wd-${Date.now()}`,
+      recipientRole: 'centre',
+      message: `${parentName} withdrew the application for ${childName} on ${notifDate}`,
+      timestamp: notifDate,
+      createdAt: Date.now(),
+      read: false,
+      type: 'status',
+    };
+    setNotifications((prev) => [notif, ...prev]);
   };
 
   // Centre view updates: Under review, Waitlisted with position & wait estimate, Make offer
@@ -211,10 +437,29 @@ export default function App() {
       day: 'numeric',
     });
 
+    const targetApp = applications.find((a) => a.id === applicationId);
+    const childName = targetApp ? targetApp.childName : 'your child';
+    const parentName = targetApp ? targetApp.parentName : PARENT_PROFILE.name;
+
     setApplications((prev) =>
       prev.map((app) => {
         if (app.id !== applicationId) return app;
         const isWaitlisted = newStatus === 'Waitlisted';
+
+        let newHistory = app.positionHistory ? [...app.positionHistory] : [];
+        if (isWaitlisted && typeof waitlistPosition === 'number' && waitlistPosition > 0) {
+          if (newHistory.length === 0 && app.waitlistPosition && app.waitlistReportedDate) {
+            newHistory.push({
+              position: app.waitlistPosition,
+              date: app.waitlistReportedDate,
+            });
+          }
+          newHistory.push({
+            position: waitlistPosition,
+            date: formattedDate,
+          });
+        }
+
         return {
           ...app,
           status: newStatus,
@@ -225,9 +470,52 @@ export default function App() {
           waitlistEstimate: isWaitlisted
             ? (waitlistEstimate && waitlistEstimate.trim() ? waitlistEstimate.trim() : undefined)
             : app.waitlistEstimate,
+          positionHistory: isWaitlisted && newHistory.length > 0 ? newHistory : app.positionHistory,
         };
       })
     );
+
+    // Create notifications for parent and centre
+    let parentMessage = '';
+    let centreMessage = '';
+    let notifType: 'status' | 'position' | 'offer' = 'status';
+
+    if (newStatus === 'Waitlisted' && typeof waitlistPosition === 'number' && waitlistPosition > 0) {
+      parentMessage = `${singleCentre.name} updated your position to ${waitlistPosition} on ${formattedDate}`;
+      centreMessage = `Updated ${childName}'s position to ${waitlistPosition} on ${formattedDate}`;
+      notifType = 'position';
+    } else if (newStatus === 'Offer') {
+      parentMessage = `${singleCentre.name} made an offer for ${childName} on ${formattedDate}`;
+      centreMessage = `Made an offer to ${parentName} for ${childName} on ${formattedDate}`;
+      notifType = 'offer';
+    } else {
+      parentMessage = `${singleCentre.name} updated your application status to ${newStatus} on ${formattedDate}`;
+      centreMessage = `Updated ${childName}'s status to ${newStatus} on ${formattedDate}`;
+      notifType = 'status';
+    }
+
+    const newNotifs: InAppNotification[] = [
+      {
+        id: `notif-parent-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        recipientRole: 'parent',
+        message: parentMessage,
+        timestamp: formattedDate,
+        createdAt: Date.now(),
+        read: false,
+        type: notifType,
+      },
+      {
+        id: `notif-centre-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        recipientRole: 'centre',
+        message: centreMessage,
+        timestamp: formattedDate,
+        createdAt: Date.now() + 1,
+        read: false,
+        type: notifType,
+      },
+    ];
+
+    setNotifications((prev) => [...newNotifs, ...prev]);
   };
 
   // Centre view policy requirement update (from Gemini extractor)
@@ -345,19 +633,71 @@ export default function App() {
   const draftCount = priyaApplications.filter((a) => a.status === 'Draft').length;
   const offerCount = priyaApplications.filter((a) => a.status === 'Offer').length;
 
+  // If not logged in, render separate Parent / Centre Login & Sign-up Portal
+  if (!currentAccount) {
+    if (isTrustPageOpen) {
+      return (
+        <div className="min-h-screen bg-[#F7F8F7] text-stone-900 font-sans flex flex-col antialiased">
+          <header className="bg-white border-b border-stone-200 py-3.5 px-4 sm:px-8 shadow-2xs">
+            <div className="max-w-6xl mx-auto flex items-center justify-between">
+              <LogoFull size={38} />
+              <button
+                type="button"
+                onClick={() => setIsTrustPageOpen(false)}
+                className="text-xs font-semibold text-[#0B4A52] hover:text-[#45B5A5] underline cursor-pointer"
+              >
+                Back to Sign-in
+              </button>
+            </div>
+          </header>
+          <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+            <TrustTransparencyPage
+              onBack={() => setIsTrustPageOpen(false)}
+              centres={centres}
+            />
+          </main>
+          <footer className="border-t border-stone-200 bg-white py-4 px-4 text-center text-xs text-stone-500">
+            <p>CareQ • Simplified Ontario Child Care Intake & Central Waitlist Management</p>
+          </footer>
+          <AskCareQAssistant centres={centres} />
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <AuthPage
+          onLogin={handleLogin}
+          mockAccounts={mockAccounts}
+          onOpenTrustPage={() => setIsTrustPageOpen(true)}
+        />
+        <AskCareQAssistant centres={centres} />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F7F8F7] text-stone-900 font-sans flex flex-col antialiased">
-      {/* Top Navbar with demo role switcher strictly at the top */}
+      {/* Top Navbar: Role is fixed to the logged-in account (parents see only parent view; centres see only centre view) */}
       <Navbar
         currentRole={currentRole}
-        onRoleChange={(r) => setCurrentRole(r)}
-        parentProfile={PARENT_PROFILE}
-        singleCentre={singleCentre}
+        parentProfile={activeParentProfile}
+        singleCentre={activeSingleCentre}
+        notifications={notifications}
+        onMarkAsRead={handleMarkNotificationAsRead}
+        onMarkAllAsRead={handleMarkAllNotificationsAsRead}
+        onLogout={handleLogout}
       />
 
-      {/* Main Container: Strictly one role view visible */}
+      {/* Main Container: Strictly one role view visible or Trust & Transparency page */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {currentRole === 'parent' ? (
+        {isTrustPageOpen ? (
+          <TrustTransparencyPage
+            onBack={() => setIsTrustPageOpen(false)}
+            centres={centres}
+          />
+        ) : currentRole === 'parent' ? (
+          /* Parents see ONLY the parent screens */
           <div className="space-y-6">
             {/* Parent View Tab Bar (3 tabs: Find, Apply, Track) */}
             <nav className="flex border-b border-stone-200 gap-2 sm:gap-6 text-sm font-medium">
@@ -409,6 +749,19 @@ export default function App() {
                   </span>
                 )}
               </button>
+
+              <button
+                type="button"
+                onClick={() => setParentTab('help')}
+                className={`pb-3 px-2 flex items-center gap-2 border-b-2 transition-all relative ${
+                  parentTab === 'help'
+                    ? 'border-[#45B5A5] text-[#0B4A52] font-bold'
+                    : 'border-transparent text-stone-500 hover:text-stone-800'
+                }`}
+              >
+                <HelpCircle className="w-4 h-4" />
+                <span>4. Help & Support</span>
+              </button>
             </nav>
 
             {/* Parent Tabs Content */}
@@ -416,7 +769,7 @@ export default function App() {
               <FindTab
                 centres={centres}
                 applications={priyaApplications}
-                parentProfile={PARENT_PROFILE}
+                parentProfile={activeParentProfile}
                 onSelectCentre={handleSelectCentre}
                 onNavigateToApply={() => setParentTab('apply')}
                 onOpenConversation={handleParentOpenConversation}
@@ -427,7 +780,7 @@ export default function App() {
               <ApplyTab
                 centres={centres}
                 applications={priyaApplications}
-                parentProfile={PARENT_PROFILE}
+                parentProfile={activeParentProfile}
                 onToggleRequirement={handleToggleRequirement}
                 onUploadDocument={handleUploadDocument}
                 onRemoveDocument={handleRemoveDocument}
@@ -441,7 +794,7 @@ export default function App() {
               <TrackTab
                 centres={centres}
                 applications={priyaApplications}
-                parentProfile={PARENT_PROFILE}
+                parentProfile={activeParentProfile}
                 onAcceptOffer={handleAcceptOffer}
                 onWithdrawApplication={handleWithdrawApplication}
                 onNavigateToApply={() => setParentTab('apply')}
@@ -449,15 +802,28 @@ export default function App() {
                 onOpenConversation={handleParentOpenConversation}
               />
             )}
+
+            {parentTab === 'help' && (
+              <HelpTab
+                role="parent"
+                userName={activeParentProfile.name}
+                requests={supportRequests}
+                onSubmitRequest={handleCreateSupportRequest}
+                onAdvanceConcernStep={handleAdvanceConcernStep}
+              />
+            )}
           </div>
         ) : (
-          /* Single Centre View (Strictly single centre: Riverdale Early Learning Centre) */
+          /* Centres see ONLY the centre screens */
           <CentreDashboard
-            singleCentre={singleCentre}
+            singleCentre={activeSingleCentre}
             applications={applications}
             onUpdateStatus={handleUpdateStatus}
             onUpdateCentreRequirements={handleUpdateCentreRequirements}
             onOpenConversation={handleCentreOpenConversation}
+            requests={supportRequests}
+            onSubmitRequest={handleCreateSupportRequest}
+            onAdvanceConcernStep={handleAdvanceConcernStep}
           />
         )}
       </main>
@@ -475,10 +841,33 @@ export default function App() {
         />
       )}
 
-      {/* Footer */}
-      <footer className="border-t border-stone-200 bg-white py-4 mt-12 text-center text-xs text-stone-500">
-        <p>CareQ • Simplified Ontario Child Care Intake & Central Waitlist Management</p>
+      {/* Footer linked for both parents and centres */}
+      <footer className="border-t border-stone-200 bg-white py-6 mt-12 text-center text-xs text-stone-500">
+        <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p>CareQ • Simplified Ontario Child Care Intake & Central Waitlist Management</p>
+          <div className="flex items-center gap-4 text-xs">
+            <button
+              type="button"
+              onClick={() => setIsTrustPageOpen(true)}
+              className="text-[#0B4A52] hover:text-[#45B5A5] font-semibold underline transition-colors cursor-pointer"
+            >
+              Trust and transparency
+            </button>
+            <span className="text-stone-300">|</span>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="text-stone-500 hover:text-stone-800 transition-colors cursor-pointer"
+              title="Log out of session"
+            >
+              Log out
+            </button>
+          </div>
+        </div>
       </footer>
+
+      {/* Ask CareQ Assistant Floating on every screen */}
+      <AskCareQAssistant centres={centres} />
     </div>
   );
 }

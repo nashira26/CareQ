@@ -38,6 +38,11 @@ export interface ParentProfile {
   preferredStartDate: string;
 }
 
+export interface PositionUpdate {
+  position: number;
+  date: string;
+}
+
 export interface Application {
   id: string;
   centreId: string;
@@ -52,10 +57,21 @@ export interface Application {
   waitlistReportedDate?: string;
   waitlistReportedTimestamp?: number;
   waitlistEstimate?: string;
+  positionHistory?: PositionUpdate[];
   submittedAt?: string;
   completedRequirements: string[];
   uploadedDocuments?: Record<string, UploadedDocument>;
   parentNotes?: string;
+}
+
+export interface InAppNotification {
+  id: string;
+  recipientRole: 'parent' | 'centre';
+  message: string;
+  timestamp: string;
+  createdAt: number;
+  read: boolean;
+  type?: 'status' | 'position' | 'offer' | 'application';
 }
 
 export const PARENT_PROFILE: ParentProfile = {
@@ -284,6 +300,12 @@ export const INITIAL_APPLICATIONS: Application[] = [
     preferredStartDate: 'April 2027',
     status: 'Waitlisted',
     waitlistPosition: 3,
+    waitlistReportedBy: 'Riverdale Early Learning Centre',
+    waitlistReportedDate: 'Sep 24',
+    positionHistory: [
+      { position: 6, date: 'Sep 10' },
+      { position: 3, date: 'Sep 24' },
+    ],
     submittedAt: 'Sep 22, 2026',
     completedRequirements: [
       "Child's Birth Certificate",
@@ -310,6 +332,11 @@ export const INITIAL_APPLICATIONS: Application[] = [
     preferredStartDate: 'May 2027',
     status: 'Waitlisted',
     waitlistPosition: 8,
+    waitlistReportedBy: 'Riverdale Early Learning Centre',
+    waitlistReportedDate: 'Sep 05',
+    positionHistory: [
+      { position: 8, date: 'Sep 05' },
+    ],
     submittedAt: 'Sep 05, 2026',
     completedRequirements: [
       "Child's Birth Certificate",
@@ -400,6 +427,11 @@ export const INITIAL_APPLICATIONS: Application[] = [
     waitlistReportedDate: 'Nov 3',
     waitlistReportedTimestamp: new Date('2026-11-03T09:00:00Z').getTime(),
     waitlistEstimate: '8–12 months',
+    positionHistory: [
+      { position: 22, date: 'Oct 1' },
+      { position: 17, date: 'Oct 20' },
+      { position: 14, date: 'Nov 3' },
+    ],
     submittedAt: 'Oct 20, 2026',
     completedRequirements: [
       "Child's Birth Certificate",
@@ -420,6 +452,10 @@ export const INITIAL_APPLICATIONS: Application[] = [
     waitlistReportedBy: 'High Park Forest Care',
     waitlistReportedDate: 'Sep 18',
     waitlistReportedTimestamp: new Date('2026-09-18T10:00:00Z').getTime(),
+    positionHistory: [
+      { position: 11, date: 'Aug 15' },
+      { position: 7, date: 'Sep 18' },
+    ],
     // No waitlistEstimate -> shows "No wait estimate provided by the centre."
     // Reported Sep 18 (over 30 days ago from Nov 2) -> shows "Last update over a month ago."
     submittedAt: 'Sep 18, 2026',
@@ -546,3 +582,42 @@ export const INITIAL_CONVERSATIONS: ConversationsMap = {
     },
   ],
 };
+
+export const INITIAL_NOTIFICATIONS: InAppNotification[] = [
+  {
+    id: 'notif-1',
+    recipientRole: 'parent',
+    message: 'Maple Grove updated your position to 14 on Nov 3',
+    timestamp: 'Nov 3',
+    createdAt: Date.now() - 86400000,
+    read: false,
+    type: 'position',
+  },
+  {
+    id: 'notif-2',
+    recipientRole: 'parent',
+    message: 'Riverdale Early Learning Centre updated your application status to Under review on Oct 28',
+    timestamp: 'Oct 28',
+    createdAt: Date.now() - 86400000 * 7,
+    read: false,
+    type: 'status',
+  },
+  {
+    id: 'notif-3',
+    recipientRole: 'centre',
+    message: 'Priya submitted an application for Anya on Oct 25',
+    timestamp: 'Oct 25',
+    createdAt: Date.now() - 86400000 * 10,
+    read: false,
+    type: 'application',
+  },
+  {
+    id: 'notif-4',
+    recipientRole: 'centre',
+    message: 'Marcus Chen submitted an application for Lucas on Oct 18',
+    timestamp: 'Oct 18',
+    createdAt: Date.now() - 86400000 * 17,
+    read: true,
+    type: 'application',
+  },
+];

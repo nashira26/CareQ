@@ -90,5 +90,3 @@ AI Studio is linked to this repository with two-way sync (Settings → GitHub ta
 5. AI-drafted messages, confirmed by the sender
 6. Real Toronto centres from the Ontario dataset
 7. *Optional, if time:* estimated wait from simulated past records
-
-**If we run short of time, cut:** the estimated wait, then the map, then translated messages. **Never cut:** the approval step, applications prepared to each centre's requirements, or the offer-and-close step.

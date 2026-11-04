@@ -6,6 +6,8 @@ import {
 } from '../../data/mockData';
 import { StatusBadge } from '../StatusBadge';
 import { ApplicationDetailsModal } from '../ApplicationDetailsModal';
+import { HelpTab } from '../HelpTab';
+import { SupportRequest } from '../../data/helpData';
 import {
   Building2,
   FileText,
@@ -25,6 +27,7 @@ import {
   MessageSquare,
   FileCheck2,
   Eye,
+  HelpCircle,
 } from 'lucide-react';
 
 interface ExtractedRequirement {
@@ -43,6 +46,9 @@ interface CentreDashboardProps {
   ) => void;
   onUpdateCentreRequirements: (centreId: string, newRequirements: string[]) => void;
   onOpenConversation: (application: Application) => void;
+  requests: SupportRequest[];
+  onSubmitRequest: (newReq: Omit<SupportRequest, 'id' | 'referenceNumber' | 'submittedAt'>) => void;
+  onAdvanceConcernStep: (requestId: string) => void;
 }
 
 export const CentreDashboard: React.FC<CentreDashboardProps> = ({
@@ -51,9 +57,12 @@ export const CentreDashboard: React.FC<CentreDashboardProps> = ({
   onUpdateStatus,
   onUpdateCentreRequirements,
   onOpenConversation,
+  requests,
+  onSubmitRequest,
+  onAdvanceConcernStep,
 }) => {
-  // Centre View internal tabs: 'applications' | 'policy'
-  const [centreTab, setCentreTab] = useState<'applications' | 'policy'>('applications');
+  // Centre View internal tabs: 'applications' | 'policy' | 'help'
+  const [centreTab, setCentreTab] = useState<'applications' | 'policy' | 'help'>('applications');
 
   // Application sub-filter tab
   const [appSubFilter, setAppSubFilter] = useState<'all' | 'review' | 'waitlist' | 'offers'>('all');
@@ -253,6 +262,19 @@ A signed Photography & Media Consent Form is required for classroom developmenta
           >
             <FileText className="w-4 h-4" />
             <span>Policy & Requirements Management (AI Extractor)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setCentreTab('help')}
+            className={`pb-2.5 px-1 border-b-2 flex items-center gap-2 transition-all ${
+              centreTab === 'help'
+                ? 'border-[#45B5A5] text-[#0B4A52]'
+                : 'border-transparent text-stone-500 hover:text-stone-800'
+            }`}
+          >
+            <HelpCircle className="w-4 h-4" />
+            <span>Help & Support</span>
           </button>
         </div>
       </div>
@@ -755,6 +777,17 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
             </div>
           )}
         </div>
+      )}
+
+      {/* TAB 3: HELP & SUPPORT */}
+      {centreTab === 'help' && (
+        <HelpTab
+          role="centre"
+          userName={singleCentre.name}
+          requests={requests}
+          onSubmitRequest={onSubmitRequest}
+          onAdvanceConcernStep={onAdvanceConcernStep}
+        />
       )}
 
       {/* Modal for setting Waitlist position */}

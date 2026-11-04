@@ -13,6 +13,7 @@ import {
   Baby,
   RefreshCw,
   MessageSquare,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface ConversationModalProps {
@@ -38,6 +39,14 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
   const [isGeneratingAiDraft, setIsGeneratingAiDraft] = useState<boolean>(false);
   const [aiDraft, setAiDraft] = useState<string | null>(null);
   const [selectedIntent, setSelectedIntent] = useState<string>('');
+
+  // Tone check states
+  const [isCheckingTone, setIsCheckingTone] = useState<boolean>(false);
+  const [toneWarning, setToneWarning] = useState<{
+    originalText: string;
+    suggestedVersion: string;
+    isAiAssisted: boolean;
+  } | null>(null);
 
   if (!isOpen) return null;
 
@@ -124,20 +133,58 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
     }
   };
 
-  // Send approved AI draft
-  const handleApproveAndSendAiDraft = () => {
-    if (!aiDraft?.trim()) return;
-    onSendMessage(aiDraft.trim(), true);
+  // Check tone using Gemini before sending any message
+  const executeSendMessage = async (textToSend: string, aiAssisted: boolean) => {
+    if (!textToSend.trim()) return;
+
+    setIsCheckingTone(true);
+    setToneWarning(null);
+
+    try {
+      const res = await fetch('/api/check-tone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: textToSend.trim(),
+          role,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.isHarsh && data.suggestedCalmerVersion) {
+        // Rude, threatening or aggressive tone detected! Show warning panel
+        setToneWarning({
+          originalText: textToSend.trim(),
+          suggestedVersion: data.suggestedCalmerVersion,
+          isAiAssisted: aiAssisted,
+        });
+        setIsCheckingTone(false);
+        return;
+      }
+    } catch (err) {
+      console.warn('Tone check error; proceeding to send:', err);
+    } finally {
+      setIsCheckingTone(false);
+    }
+
+    // Normal/polite message: send immediately
+    onSendMessage(textToSend.trim(), aiAssisted);
+    setManualText('');
     setAiDraft(null);
     setSelectedIntent('');
+  };
+
+  // Send approved AI draft
+  const handleApproveAndSendAiDraft = () => {
+    if (!aiDraft?.trim() || isCheckingTone) return;
+    executeSendMessage(aiDraft.trim(), true);
   };
 
   // Send manual message
   const handleSendManual = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!manualText.trim()) return;
-    onSendMessage(manualText.trim(), false);
-    setManualText('');
+    if (!manualText.trim() || isCheckingTone) return;
+    executeSendMessage(manualText.trim(), false);
   };
 
   return (
@@ -267,10 +314,103 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
             </div>
           )}
 
+          {/* Tone Checking in progress state */}
+          {isCheckingTone && (
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-2 text-xs text-amber-900 animate-fade-in">
+              <Loader2 className="w-4 h-4 animate-spin text-amber-700" />
+              <span>Checking message tone with Gemini...</span>
+            </div>
+          )}
+
+          {/* Tone Warning Panel: If message is rude, threatening or aggressive */}
+          {toneWarning && (
+            <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 shadow-sm space-y-3 animate-fade-in">
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="text-sm font-bold text-amber-950">
+                    This message may come across as harsh
+                  </h4>
+                  <p className="text-xs text-amber-800 mt-0.5">
+                    CareQ checked the tone of your message. You can edit your message or use the calmer suggestion below. The sender always makes the final choice.
+                  </p>
+                </div>
+              </div>
+
+              {/* Calmer Suggested Version */}
+              <div className="bg-white border border-amber-200 rounded-lg p-3 text-xs sm:text-sm text-stone-800 space-y-1">
+                <span className="text-[10px] font-bold text-[#0B4A52] uppercase tracking-wider block">
+                  Calmer suggested version:
+                </span>
+                <p className="text-stone-700 italic">"{toneWarning.suggestedVersion}"</p>
+              </div>
+
+              {/* Actions: Use suggestion, edit, or send original */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-amber-200">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Use suggestion: load into input for sender to review/edit
+                      setManualText(toneWarning.suggestedVersion);
+                      setAiDraft(null);
+                      setToneWarning(null);
+                    }}
+                    className="px-3 py-1.5 text-xs font-semibold bg-[#0B4A52] hover:bg-[#08383e] text-white rounded-lg transition-colors shadow-2xs"
+                  >
+                    Use Suggestion
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Send suggestion directly
+                      onSendMessage(toneWarning.suggestedVersion, true);
+                      setToneWarning(null);
+                      setManualText('');
+                      setAiDraft(null);
+                    }}
+                    className="px-3 py-1.5 text-xs font-medium text-teal-800 bg-teal-100/80 hover:bg-teal-200/80 rounded-lg transition-colors"
+                  >
+                    Send Suggestion
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Edit original message
+                      setManualText(toneWarning.originalText);
+                      setToneWarning(null);
+                    }}
+                    className="px-2.5 py-1 text-xs font-medium text-stone-700 hover:bg-amber-100 rounded transition-colors"
+                  >
+                    Edit Message
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // The sender always makes the final choice: send as is
+                      onSendMessage(toneWarning.originalText, toneWarning.isAiAssisted);
+                      setToneWarning(null);
+                      setManualText('');
+                      setAiDraft(null);
+                    }}
+                    className="px-2.5 py-1 text-xs font-medium text-stone-500 hover:text-stone-900 underline transition-colors"
+                  >
+                    Send Anyway
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Prompt requirement:
               "ideally AI would make necesary messages and ask your approval to send it"
               Show AI Draft with Edit / Approve & Send controls */}
-          {aiDraft && (
+          {aiDraft && !toneWarning && (
             <div className="p-3.5 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50/50 border border-amber-300 shadow-xs space-y-2 animate-fade-in">
               <div className="flex items-center justify-between text-xs font-bold text-amber-950">
                 <span className="flex items-center gap-1.5">
@@ -303,11 +443,21 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
 
                 <button
                   type="button"
+                  disabled={isCheckingTone}
                   onClick={handleApproveAndSendAiDraft}
-                  className="px-4 py-1.5 text-xs sm:text-sm font-semibold bg-[#0B4A52] hover:bg-[#08383e] text-white rounded-lg transition-colors shadow-xs flex items-center gap-1.5"
+                  className="px-4 py-1.5 text-xs sm:text-sm font-semibold bg-[#0B4A52] hover:bg-[#08383e] text-white rounded-lg transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-50"
                 >
-                  <Check className="w-4 h-4" />
-                  <span>Approve & Send Message</span>
+                  {isCheckingTone ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Checking tone...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Approve & Send Message</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -328,11 +478,20 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
             />
             <button
               type="submit"
-              disabled={!manualText.trim()}
+              disabled={!manualText.trim() || isCheckingTone}
               className="px-4 py-2 bg-[#0B4A52] hover:bg-[#08383e] text-white rounded-xl text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
             >
-              <span>Send</span>
-              <Send className="w-3.5 h-3.5" />
+              {isCheckingTone ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Checking...</span>
+                </>
+              ) : (
+                <>
+                  <span>Send</span>
+                  <Send className="w-3.5 h-3.5" />
+                </>
+              )}
             </button>
           </form>
         </div>
