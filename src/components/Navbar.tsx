@@ -31,7 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Logo & Portal Identity */}
           <div className="flex items-center gap-3">
             {/* Header: <LogoFull /> (~36px tall) on desktop, <LogoMark /> (~32px tall) on small screens */}
-            <div className="flex items-center">
+            <div className="flex items-center lg:hidden">
               <LogoFull size={36} className="hidden sm:inline-flex" />
               <LogoMark size={32} className="inline-flex sm:hidden" />
             </div>

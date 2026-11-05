@@ -20,6 +20,8 @@ import {
   InAppNotification,
 } from './data/mockData';
 import { Navbar } from './components/Navbar';
+import { AppSidebar, SidebarItem } from './components/AppSidebar';
+import { ParentHome } from './components/ParentView/ParentHome';
 import { FindTab } from './components/ParentView/FindTab';
 import { ApplyTab } from './components/ParentView/ApplyTab';
 import { TrackTab } from './components/ParentView/TrackTab';
@@ -31,7 +33,7 @@ import { HelpTab } from './components/HelpTab';
 import { AskCareQAssistant } from './components/AskCareQAssistant';
 import { SupportRequest, INITIAL_SUPPORT_REQUESTS, ConcernStep } from './data/helpData';
 import { LogoFull } from './components/Logo';
-import { Search, FileEdit, ListFilter, HelpCircle } from 'lucide-react';
+import { Search, FileEdit, ListFilter, HelpCircle, Home, Building2 } from 'lucide-react';
 
 const INITIAL_MOCK_ACCOUNTS: MockAccount[] = [
   {
@@ -60,8 +62,8 @@ export default function App() {
   // Authenticated account in session (null = shows login/sign-up page)
   const [currentAccount, setCurrentAccount] = useState<MockAccount | null>(null);
 
-  // Parent View Tab Switcher: 'find' | 'apply' | 'track' | 'help'
-  const [parentTab, setParentTab] = useState<'find' | 'apply' | 'track' | 'help'>('track');
+  // Parent View Tab Switcher: 'home' | 'find' | 'apply' | 'track' | 'help'
+  const [parentTab, setParentTab] = useState<'home' | 'find' | 'apply' | 'track' | 'help'>('home');
 
   // In-memory centres state (Riverdale Early Learning Centre is the single centre managed in Centre role)
   const [centres, setCentres] = useState<Centre[]>(INITIAL_CENTRES);
@@ -633,6 +635,29 @@ export default function App() {
   const draftCount = priyaApplications.filter((a) => a.status === 'Draft').length;
   const offerCount = priyaApplications.filter((a) => a.status === 'Offer').length;
 
+  // Parent sidebar items in this order: Overview (Home icon, id 'home'), Find Centres (Search, 'find'), Apply (FileEdit, 'apply', badge "{draftCount} in progress" if > 0), Track Status (ListFilter, 'track', badge "Offer" if offerCount > 0), Help & Support (HelpCircle, 'help')
+  const parentSidebarItems: SidebarItem[] = [
+    { id: 'home', label: 'Overview', icon: Home },
+    { id: 'find', label: 'Find Centres', icon: Search },
+    {
+      id: 'apply',
+      label: 'Apply',
+      icon: FileEdit,
+      badge: draftCount > 0 ? `${draftCount} in progress` : undefined,
+    },
+    {
+      id: 'track',
+      label: 'Track Status',
+      icon: ListFilter,
+      badge: offerCount > 0 ? 'Offer' : undefined,
+    },
+    { id: 'help', label: 'Help & Support', icon: HelpCircle },
+  ];
+
+  const centreSidebarItems: SidebarItem[] = [
+    { id: 'dashboard', label: 'Centre Dashboard', icon: Building2 },
+  ];
+
   // If not logged in, render separate Parent / Centre Login & Sign-up Portal
   if (!currentAccount) {
     if (isTrustPageOpen) {
@@ -677,20 +702,32 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F8F7] text-stone-900 font-sans flex flex-col antialiased">
-      {/* Top Navbar: Role is fixed to the logged-in account (parents see only parent view; centres see only centre view) */}
-      <Navbar
-        currentRole={currentRole}
-        parentProfile={activeParentProfile}
-        singleCentre={activeSingleCentre}
-        notifications={notifications}
-        onMarkAsRead={handleMarkNotificationAsRead}
-        onMarkAllAsRead={handleMarkAllNotificationsAsRead}
-        onLogout={handleLogout}
+    <div className="flex min-h-screen bg-[#F7F8F7] text-stone-900 font-sans antialiased">
+      <AppSidebar
+        role={currentRole}
+        items={currentRole === 'parent' ? parentSidebarItems : centreSidebarItems}
+        activeId={currentRole === 'parent' ? parentTab : 'dashboard'}
+        onSelect={(id) => {
+          if (currentRole === 'parent') {
+            setParentTab(id as 'home' | 'find' | 'apply' | 'track' | 'help');
+          }
+        }}
       />
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Top Navbar: Role is fixed to the logged-in account (parents see only parent view; centres see only centre view) */}
+        <Navbar
+          currentRole={currentRole}
+          parentProfile={activeParentProfile}
+          singleCentre={activeSingleCentre}
+          notifications={notifications}
+          onMarkAsRead={handleMarkNotificationAsRead}
+          onMarkAllAsRead={handleMarkAllNotificationsAsRead}
+          onLogout={handleLogout}
+        />
 
-      {/* Main Container: Strictly one role view visible or Trust & Transparency page */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {/* Main Container: Strictly one role view visible or Trust & Transparency page */}
+        <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          <div id="app-sidebar-mobile-mount" />
         {isTrustPageOpen ? (
           <TrustTransparencyPage
             onBack={() => setIsTrustPageOpen(false)}
@@ -699,72 +736,19 @@ export default function App() {
         ) : currentRole === 'parent' ? (
           /* Parents see ONLY the parent screens */
           <div className="space-y-6">
-            {/* Parent View Tab Bar (3 tabs: Find, Apply, Track) */}
-            <nav className="flex border-b border-stone-200 gap-2 sm:gap-6 text-sm font-medium">
-              <button
-                type="button"
-                onClick={() => setParentTab('find')}
-                className={`pb-3 px-2 flex items-center gap-2 border-b-2 transition-all ${
-                  parentTab === 'find'
-                    ? 'border-[#45B5A5] text-[#0B4A52] font-bold'
-                    : 'border-transparent text-stone-500 hover:text-stone-800'
-                }`}
-              >
-                <Search className="w-4 h-4" />
-                <span>1. Find Centres</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setParentTab('apply')}
-                className={`pb-3 px-2 flex items-center gap-2 border-b-2 transition-all relative ${
-                  parentTab === 'apply'
-                    ? 'border-[#45B5A5] text-[#0B4A52] font-bold'
-                    : 'border-transparent text-stone-500 hover:text-stone-800'
-                }`}
-              >
-                <FileEdit className="w-4 h-4" />
-                <span>2. Apply</span>
-                {draftCount > 0 && (
-                  <span className="ml-1 text-[11px] font-semibold bg-stone-100 text-[#0B4A52] px-1.5 py-0.2 rounded-full border border-stone-200">
-                    {draftCount} in progress
-                  </span>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setParentTab('track')}
-                className={`pb-3 px-2 flex items-center gap-2 border-b-2 transition-all relative ${
-                  parentTab === 'track'
-                    ? 'border-[#45B5A5] text-[#0B4A52] font-bold'
-                    : 'border-transparent text-stone-500 hover:text-stone-800'
-                }`}
-              >
-                <ListFilter className="w-4 h-4" />
-                <span>3. Track Status</span>
-                {offerCount > 0 && (
-                  <span className="ml-1 text-[11px] font-bold bg-[#F9BE2F] text-[#451A03] px-2 py-0.5 rounded-full border border-[#E0A31A] animate-bounce shadow-2xs">
-                    Offer Available!
-                  </span>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setParentTab('help')}
-                className={`pb-3 px-2 flex items-center gap-2 border-b-2 transition-all relative ${
-                  parentTab === 'help'
-                    ? 'border-[#45B5A5] text-[#0B4A52] font-bold'
-                    : 'border-transparent text-stone-500 hover:text-stone-800'
-                }`}
-              >
-                <HelpCircle className="w-4 h-4" />
-                <span>4. Help & Support</span>
-              </button>
-            </nav>
-
             {/* Parent Tabs Content */}
+            {parentTab === 'home' && (
+              <ParentHome
+                parentProfile={activeParentProfile}
+                applications={priyaApplications}
+                centres={centres}
+                notifications={notifications.filter((n) => n.recipientRole === 'parent')}
+                onMarkAsRead={handleMarkNotificationAsRead}
+                onMarkAllAsRead={() => handleMarkAllNotificationsAsRead('parent')}
+                onNavigate={setParentTab}
+              />
+            )}
+
             {parentTab === 'find' && (
               <FindTab
                 centres={centres}
@@ -865,9 +849,10 @@ export default function App() {
           </div>
         </div>
       </footer>
-
-      {/* Ask CareQ Assistant Floating on every screen */}
-      <AskCareQAssistant centres={centres} />
     </div>
-  );
+
+    {/* Ask CareQ Assistant Floating on every screen */}
+    <AskCareQAssistant centres={centres} />
+  </div>
+);
 }

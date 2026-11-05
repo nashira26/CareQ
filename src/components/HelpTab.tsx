@@ -187,7 +187,7 @@ export const HelpTab: React.FC<HelpTabProps> = ({
           }`}
         >
           <FileQuestion className="w-4 h-4" />
-          <span>Help FAQ (7 questions)</span>
+          <span>Help FAQ</span>
         </button>
 
         <button
