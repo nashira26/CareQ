@@ -28,6 +28,7 @@ import { ApplyTab } from './components/ParentView/ApplyTab';
 import { TrackTab } from './components/ParentView/TrackTab';
 import { CentreDashboard } from './components/CentreView/CentreDashboard';
 import { CentreOverview } from './components/CentreView/CentreOverview';
+import { CentreMessages } from './components/CentreView/CentreMessages';
 import { ConversationModal } from './components/ConversationModal';
 import { TrustTransparencyPage } from './components/TrustTransparencyPage';
 import { AuthPage, MockAccount } from './components/AuthPage';
@@ -866,7 +867,14 @@ export default function App() {
               />
             )}
 
-            {centreTab === 'messages' && null}
+            {centreTab === 'messages' && (
+              <CentreMessages
+                singleCentre={activeSingleCentre}
+                applications={applications}
+                conversations={conversations}
+                onOpenConversation={handleCentreOpenConversation}
+              />
+            )}
 
             {(centreTab === 'applications' || centreTab === 'policy' || centreTab === 'help') && (
               <CentreDashboard

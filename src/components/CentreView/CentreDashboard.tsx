@@ -742,7 +742,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                       return (
                         <div
                           key={index}
-                          className="rounded-xl border border-[#E7E4DA] p-4 space-y-2 bg-[#FBFAF3]"
+                          className="rounded-xl border border-[#E7E4DA] p-4 space-y-2"
                         >
                           <div className="flex items-start justify-between gap-3">
                             {/* Requirement title */}
@@ -771,27 +771,27 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                             </div>
 
                             {/* Edit / Remove actions */}
-                            <div className="flex items-center gap-1 shrink-0">
+                            <div className="flex items-center gap-1.5 shrink-0">
                               {!isEditing && (
-                                <button
-                                  type="button"
+                                <GhostButton
                                   onClick={() =>
                                     handleStartEdit(index, item.requirement)
                                   }
-                                  className="p-1 text-[#7A8A84] hover:text-[#173F42] rounded hover:bg-white transition-colors cursor-pointer"
+                                  className="h-8 px-2.5 text-xs"
                                   title="Edit requirement title"
                                 >
                                   <Edit2 className="w-3.5 h-3.5" />
-                                </button>
+                                  <span>Edit</span>
+                                </GhostButton>
                               )}
-                              <button
-                                type="button"
+                              <GhostButton
                                 onClick={() => handleDeleteExtracted(index)}
-                                className="p-1 text-[#7A8A84] hover:text-rose-600 rounded hover:bg-white transition-colors cursor-pointer"
+                                className="h-8 px-2.5 text-xs hover:text-rose-600"
                                 title="Remove requirement"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                                <span>Remove</span>
+                              </GhostButton>
                             </div>
                           </div>
 
