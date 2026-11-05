@@ -11,7 +11,7 @@ CareQ helps parents **find** licensed centres, **apply** with applications prepa
 Requirements: Node.js 18 or later, Git.
 
 ```bash
-git clone <our-repo-url>
+git clone https://github.com/nashira26/CareQ.git
 cd careq
 npm install
 ```
