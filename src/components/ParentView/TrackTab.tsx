@@ -2,15 +2,20 @@ import React, { useState } from 'react';
 import { Centre, Application, ParentProfile } from '../../data/mockData';
 import { StatusBadge } from '../StatusBadge';
 import {
+  PageHeader,
+  Card,
+  PrimaryButton,
+  GhostButton,
+  DemoBanner,
+  IconTile,
+  SimNote,
+} from '../ui/CareUI';
+import {
   Sparkles,
-  Building2,
   AlertTriangle,
   Check,
-  Ban,
-  Clock,
-  ArrowRight,
-  UserCheck,
-  MessageSquare,
+  Heart,
+  X,
 } from 'lucide-react';
 
 interface TrackTabProps {
@@ -59,390 +64,499 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Intro info box */}
-      <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h2 className="text-base sm:text-lg font-semibold text-stone-900">
-            Application Queue Tracker
-          </h2>
-          <p className="text-sm text-stone-600 mt-0.5">
-            Monitor real-time application progression across licensed child care centres in Toronto.
-          </p>
-        </div>
-        <div className="text-xs text-stone-500 bg-white border border-stone-200 px-3 py-1.5 rounded-lg shrink-0">
-          Total Applications: <strong className="text-stone-900">{applications.length}</strong>
-        </div>
-      </div>
+      {/* Page Header */}
+      <PageHeader
+        eyebrow="Track status"
+        title="Every application, one calm place."
+        subtitle="Follow each status and respond to offers."
+        action={
+          <PrimaryButton onClick={onNavigateToFind}>
+            Find centres
+          </PrimaryButton>
+        }
+      />
 
-      {/* Offer Banner if any offer is active */}
+      {/* Demo Banner */}
+      <DemoBanner title="Demo workspace.">
+        Every application, queue position, offer and message here is simulated. No real centre is contacted.
+      </DemoBanner>
+
+      {/* Offer Received Spotlight Card (if any active offer) */}
       {applications.some((a) => a.status === 'Offer') && (
-        <div className="bg-gradient-to-r from-emerald-500/10 via-emerald-50 to-teal-50 border border-emerald-300 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+        <div className="rounded-2xl bg-[#E4ECE1] border border-[#CBD9C6] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-white text-[#4E7A5A] flex items-center justify-center shrink-0 shadow-2xs">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-bold text-emerald-950">
-                Placement Offer Received!
+              <h3 className="text-base font-bold text-[#173F42]">
+                Placement offer received!
               </h3>
-              <p className="text-xs sm:text-sm text-emerald-800 mt-0.5">
-                A licensed child care spot is now available for Anya. Review and accept below to secure enrolment.
+              <p className="text-xs text-[#5B6B66] mt-0.5">
+                A spot is available for {parentProfile.childName}. Review and accept below to secure enrolment.
               </p>
             </div>
           </div>
-          <button
-            type="button"
+          <PrimaryButton
+            noArrow
             onClick={() => {
               const offerApp = applications.find((a) => a.status === 'Offer');
               if (offerApp) setSelectedOfferAppId(offerApp.id);
             }}
-            className="px-4 py-2 bg-[#0B4A52] hover:bg-[#08383e] text-white font-medium text-xs sm:text-sm rounded-lg shadow-xs transition-colors shrink-0 self-start sm:self-auto"
+            className="h-10 text-xs shrink-0 self-start sm:self-auto"
           >
-            Review Offer
-          </button>
+            Review offer
+          </PrimaryButton>
         </div>
       )}
 
-      {/* Applications Table */}
+      {/* Section Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2">
+        <div className="flex items-center gap-2.5">
+          <h2 className="text-lg font-bold text-[#173F42]">Your applications</h2>
+          <span className="rounded-md bg-[#E4ECE1] text-[#4E7A5A] text-xs px-2 py-0.5 font-semibold">
+            {applications.length}
+          </span>
+        </div>
+        <div className="text-xs text-[#5B6B66]">
+          {parentProfile.name} &amp; {parentProfile.childName} · Demo family
+        </div>
+      </div>
+
+      {/* Applications Content: Desktop Table & Mobile Cards */}
       {applications.length > 0 ? (
-        <div className="bg-white rounded-xl border border-stone-200 overflow-hidden shadow-xs">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm text-stone-700">
-              <thead className="bg-stone-50 border-b border-stone-200 text-stone-600 font-semibold text-[11px] uppercase tracking-wider">
-                <tr>
-                  <th scope="col" className="py-3 px-4 sm:px-6">
-                    Child Care Centre
-                  </th>
-                  <th scope="col" className="py-3 px-3 sm:px-4 hidden md:table-cell">
-                    Program / Age
-                  </th>
-                  <th scope="col" className="py-3 px-3 sm:px-4 hidden sm:table-cell">
-                    Intake Date
-                  </th>
-                  <th scope="col" className="py-3 px-3 sm:px-4">
-                    Status
-                  </th>
-                  <th scope="col" className="py-3 px-4 sm:px-6 text-right">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
+        <>
+          {/* Desktop (md+): Table inside Card p-0 overflow-hidden */}
+          <div className="hidden md:block">
+            <Card className="p-0 overflow-hidden shadow-2xs">
+              {/* Table Header Row */}
+              <div className="grid grid-cols-12 gap-4 px-6 py-3.5 bg-[#FAF9F4] text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5B6B66] border-b border-[#E7E4DA]">
+                <div className="col-span-4">CHILD CARE CENTRE</div>
+                <div className="col-span-2">PROGRAM / START</div>
+                <div className="col-span-2">STATUS</div>
+                <div className="col-span-2">QUEUE</div>
+                <div className="col-span-2 text-right">ACTIONS</div>
+              </div>
+
+              {/* Rows */}
+              <div className="divide-y divide-[#E7E4DA]">
                 {applications.map((app) => {
                   const centre = centres.find((c) => c.id === app.centreId);
+                  const hasPosition =
+                    typeof app.waitlistPosition === 'number' && app.waitlistPosition > 0;
                   const isOffer = app.status === 'Offer';
                   const isAccepted = app.status === 'Accepted';
                   const isWithdrawn = app.status === 'Withdrawn';
                   const isDraft = app.status === 'Draft';
 
                   return (
-                    <tr
+                    <div
                       key={app.id}
-                      className={`transition-colors ${
+                      className={`grid grid-cols-12 gap-4 items-center py-6 px-6 transition-colors ${
                         isOffer
-                          ? 'bg-emerald-50/40 hover:bg-emerald-50/70'
-                          : isAccepted
-                          ? 'bg-teal-50/30'
+                          ? 'bg-[#E4ECE1]/25 hover:bg-[#E4ECE1]/40'
                           : isWithdrawn
-                          ? 'opacity-60 bg-stone-50/50'
-                          : 'hover:bg-stone-50/60'
+                          ? 'opacity-60 bg-[#FAF9F4]/40'
+                          : 'hover:bg-[#FAF9F4]/70'
                       }`}
                     >
-                      {/* Centre Name & Neighbourhood */}
-                      <td className="py-3.5 px-4 sm:px-6">
-                        <div className="font-semibold text-stone-900">
+                      {/* 1. Centre name & details */}
+                      <div className="col-span-4 min-w-0 pr-3">
+                        <div className="text-sm font-bold text-[#173F42] truncate">
                           {centre?.name || 'Child Care Centre'}
                         </div>
-                        <div className="text-xs text-stone-500 mt-0.5">
-                          {centre?.neighbourhood} {centre?.hours && `• ${centre.hours}`}
+                        <div className="text-[11px] text-[#7A8A84] mt-0.5 truncate">
+                          {centre?.neighbourhood || 'Toronto'} · {app.id}
                         </div>
                         {app.submittedAt && (
-                          <div className="text-[11px] text-stone-400 mt-0.5">
-                            Submitted on {app.submittedAt}
+                          <div className="text-[11px] text-[#7A8A84] mt-0.5">
+                            Submitted {app.submittedAt}
                           </div>
                         )}
-                      </td>
+                      </div>
 
-                      {/* Program / Age */}
-                      <td className="py-3.5 px-3 sm:px-4 hidden md:table-cell text-xs">
-                        <span className="font-medium text-stone-800">
-                          Toddler ({parentProfile.childAgeMonths} mos)
-                        </span>
-                        <div className="text-stone-500">{parentProfile.careType}</div>
-                      </td>
+                      {/* 2. Program / Start */}
+                      <div className="col-span-2">
+                        <div className="text-xs font-semibold text-[#173F42]">
+                          {app.careType || parentProfile.careType}
+                        </div>
+                        <div className="text-[11px] text-[#5B6B66] mt-0.5">
+                          Start {app.preferredStartDate || parentProfile.preferredStartDate}
+                        </div>
+                      </div>
 
-                      {/* Intake Date */}
-                      <td className="py-3.5 px-3 sm:px-4 hidden sm:table-cell text-xs text-stone-700">
-                        {parentProfile.preferredStartDate}
-                      </td>
+                      {/* 3. Status */}
+                      <div className="col-span-2">
+                        <StatusBadge status={app.status} size="sm" />
+                      </div>
 
-                      {/* Status & Centre-Reported Queue Information */}
-                      <td className="py-3.5 px-3 sm:px-4">
-                        <StatusBadge
-                          status={app.status}
-                          size="sm"
-                        />
-
-                        {/* Centre-reported waitlist queue position and wait details */}
-                        {app.status === 'Waitlisted' && (
-                          <div className="mt-2 space-y-1 text-xs">
-                            {/* 1. Current position & History button */}
-                            {typeof app.waitlistPosition === 'number' && app.waitlistPosition > 0 && (
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-stone-900">
-                                    Waitlist position: {app.waitlistPosition}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => setHistoryModalAppId(app.id)}
-                                    className="px-2 py-0.5 text-[11px] font-semibold text-[#0B4A52] bg-teal-50 hover:bg-teal-100 border border-teal-200/80 rounded transition-colors"
-                                  >
-                                    History
-                                  </button>
-                                </div>
-                                <div className="text-[11px] text-stone-500 mt-0.5">
-                                  Reported by {app.waitlistReportedBy || centre?.name || 'the centre'} · updated {app.waitlistReportedDate || (app.positionHistory && app.positionHistory[app.positionHistory.length - 1]?.date) || 'recently'}
-                                </div>
+                      {/* 4. Queue */}
+                      <div className="col-span-2">
+                        {hasPosition ? (
+                          <div>
+                            <div className="text-2xl font-bold text-[#4E7A5A] leading-tight">
+                              #{app.waitlistPosition}
+                            </div>
+                            <div className="text-[10px] text-[#7A8A84] mt-0.5 leading-tight">
+                              reported by {app.waitlistReportedBy || centre?.name || 'centre'} ·{' '}
+                              {app.waitlistReportedDate || 'recently'}
+                            </div>
+                            {app.waitlistEstimate && (
+                              <div className="text-[10px] text-[#7A8A84] mt-1 leading-tight">
+                                Centre's estimate: {app.waitlistEstimate}, not a guarantee
                               </div>
                             )}
-
-                            {/* 3. Below position, show centre's wait estimate */}
-                            <div className="text-xs text-stone-700">
-                              {app.waitlistEstimate ? (
-                                <span>
-                                  Wait estimate: {app.waitlistEstimate} (provided by {app.waitlistReportedBy || centre?.name || 'the centre'}, not a guarantee)
-                                </span>
-                              ) : (
-                                <span className="text-stone-500">
-                                  Wait estimate: not provided by the centre.
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Small grey note if update is more than 30 days old */}
-                            {app.waitlistReportedTimestamp &&
-                              Date.now() - app.waitlistReportedTimestamp > 30 * 24 * 60 * 60 * 1000 && (
-                                <div className="text-[11px] text-stone-400 font-normal">
-                                  Last update over a month ago.
-                                </div>
-                              )}
                           </div>
+                        ) : app.waitlistEstimate ? (
+                          <div className="text-[10px] text-[#7A8A84] leading-tight">
+                            Centre's estimate: {app.waitlistEstimate}, not a guarantee
+                          </div>
+                        ) : (
+                          <div className="text-xs text-[#7A8A84]">Not reported</div>
                         )}
-                      </td>
+                      </div>
 
-                      {/* Actions */}
-                      <td className="py-3.5 px-4 sm:px-6 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => onOpenConversation(app.centreId)}
-                            className="p-1.5 text-stone-600 hover:text-teal-800 hover:bg-stone-100 rounded-lg transition-colors flex items-center gap-1 text-xs border border-stone-200"
-                            title="Chat with centre administrator"
-                          >
-                            <MessageSquare className="w-3.5 h-3.5 text-teal-700" />
-                            <span className="hidden sm:inline">Message</span>
-                          </button>
+                      {/* 5. Actions */}
+                      <div className="col-span-2 flex flex-col items-end gap-1.5">
+                        <GhostButton
+                          onClick={() => onOpenConversation(app.centreId)}
+                          className="h-9 text-xs"
+                        >
+                          View &amp; message →
+                        </GhostButton>
 
-                          {isOffer && (
+                        <div className="flex items-center gap-2 flex-wrap justify-end">
+                          {hasPosition && (
                             <button
                               type="button"
-                              onClick={() => setSelectedOfferAppId(app.id)}
-                              className="bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs px-3 py-1.5 rounded-lg shadow-xs transition-colors inline-flex items-center gap-1.5"
+                              onClick={() => setHistoryModalAppId(app.id)}
+                              className="text-[11px] font-semibold text-[#0B4A52] hover:underline cursor-pointer"
                             >
-                              <Sparkles className="w-3.5 h-3.5" />
-                              <span>Accept Offer</span>
+                              History
                             </button>
+                          )}
+
+                          {isOffer && (
+                            <PrimaryButton
+                              noArrow
+                              onClick={() => setSelectedOfferAppId(app.id)}
+                              className="h-8 px-3 text-xs"
+                            >
+                              Accept offer
+                            </PrimaryButton>
                           )}
 
                           {isDraft && (
                             <button
                               type="button"
                               onClick={onNavigateToApply}
-                              className="text-teal-700 hover:text-teal-800 font-semibold text-xs inline-flex items-center gap-1 hover:underline"
+                              className="text-[11px] font-semibold text-[#0B4A52] hover:underline cursor-pointer"
                             >
-                              <span>Complete Apply</span>
-                              <ArrowRight className="w-3.5 h-3.5" />
+                              Complete apply →
                             </button>
-                          )}
-
-                          {isAccepted && (
-                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
-                              <Check className="w-4 h-4 text-emerald-600" />
-                              Confirmed
-                            </span>
                           )}
 
                           {!isOffer && !isDraft && !isAccepted && !isWithdrawn && (
                             <button
                               type="button"
                               onClick={() => onWithdrawApplication(app.id)}
-                              className="text-stone-400 hover:text-rose-600 font-medium text-xs transition-colors px-1"
-                              title="Withdraw application"
+                              className="text-[11px] font-medium text-[#7A8A84] hover:text-rose-600 cursor-pointer transition-colors"
                             >
                               Withdraw
                             </button>
                           )}
 
+                          {isAccepted && (
+                            <span className="text-[11px] font-bold text-[#4E7A5A]">
+                              ✓ Confirmed
+                            </span>
+                          )}
+
                           {isWithdrawn && (
-                            <span className="text-xs text-stone-400 italic">
+                            <span className="text-[11px] text-[#7A8A84] italic">
                               Withdrawn
                             </span>
                           )}
                         </div>
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
+              </div>
+            </Card>
+          </div>
+
+          {/* Mobile (md:hidden): Stacked Cards */}
+          <div className="md:hidden space-y-4">
+            {applications.map((app) => {
+              const centre = centres.find((c) => c.id === app.centreId);
+              const hasPosition =
+                typeof app.waitlistPosition === 'number' && app.waitlistPosition > 0;
+              const isOffer = app.status === 'Offer';
+              const isAccepted = app.status === 'Accepted';
+              const isWithdrawn = app.status === 'Withdrawn';
+              const isDraft = app.status === 'Draft';
+
+              return (
+                <Card
+                  key={app.id}
+                  className={`p-5 space-y-4 ${
+                    isOffer ? 'bg-[#E4ECE1]/20 border-[#CBD9C6]' : ''
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-bold text-[#173F42]">
+                        {centre?.name || 'Child Care Centre'}
+                      </div>
+                      <div className="text-[11px] text-[#7A8A84] mt-0.5">
+                        {centre?.neighbourhood || 'Toronto'} · {app.id}
+                      </div>
+                      {app.submittedAt && (
+                        <div className="text-[10px] text-[#7A8A84] mt-0.5">
+                          Submitted {app.submittedAt}
+                        </div>
+                      )}
+                    </div>
+                    <StatusBadge status={app.status} size="sm" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[#E7E4DA] text-xs">
+                    <div>
+                      <span className="text-[10px] uppercase font-semibold text-[#5B6B66] block">
+                        Program
+                      </span>
+                      <span className="text-[#173F42] font-semibold">
+                        {app.careType || parentProfile.careType}
+                      </span>
+                      <span className="block text-[11px] text-[#5B6B66]">
+                        Start {app.preferredStartDate || parentProfile.preferredStartDate}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] uppercase font-semibold text-[#5B6B66] block">
+                        Queue
+                      </span>
+                      {hasPosition ? (
+                        <div>
+                          <span className="text-xl font-bold text-[#4E7A5A]">
+                            #{app.waitlistPosition}
+                          </span>
+                          <span className="block text-[10px] text-[#7A8A84] mt-0.5">
+                            Reported {app.waitlistReportedDate || 'recently'}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-[#7A8A84]">Not reported</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {app.waitlistEstimate && (
+                    <div className="text-[11px] text-[#7A8A84] bg-[#FAF9F4] p-2.5 rounded-lg border border-[#E7E4DA]">
+                      Centre's estimate: {app.waitlistEstimate}, not a guarantee
+                    </div>
+                  )}
+
+                  <div className="pt-3 border-t border-[#E7E4DA] flex items-center justify-between gap-2">
+                    <GhostButton
+                      onClick={() => onOpenConversation(app.centreId)}
+                      className="h-9 text-xs"
+                    >
+                      View &amp; message →
+                    </GhostButton>
+
+                    <div className="flex items-center gap-2">
+                      {hasPosition && (
+                        <button
+                          type="button"
+                          onClick={() => setHistoryModalAppId(app.id)}
+                          className="text-xs font-semibold text-[#0B4A52] hover:underline"
+                        >
+                          History
+                        </button>
+                      )}
+
+                      {isOffer && (
+                        <PrimaryButton
+                          noArrow
+                          onClick={() => setSelectedOfferAppId(app.id)}
+                          className="h-8 px-3 text-xs"
+                        >
+                          Accept
+                        </PrimaryButton>
+                      )}
+
+                      {!isOffer && !isDraft && !isAccepted && !isWithdrawn && (
+                        <button
+                          type="button"
+                          onClick={() => onWithdrawApplication(app.id)}
+                          className="text-xs font-medium text-[#7A8A84] hover:text-rose-600"
+                        >
+                          Withdraw
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <Card className="p-8 text-center space-y-3">
+          <p className="text-sm text-[#5B6B66]">No applications recorded yet.</p>
+          <PrimaryButton onClick={onNavigateToFind}>
+            Find centres
+          </PrimaryButton>
+        </Card>
+      )}
+
+      {/* Footer Row */}
+      <div className="rounded-2xl border border-[#E7E4DA] bg-white p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6">
+        <div className="flex items-center gap-3">
+          <IconTile icon={Heart} tone="sand" />
+          <div>
+            <div className="text-sm font-semibold text-[#173F42]">
+              Queues are shown only when the centre records one.
+            </div>
+            <div className="text-[11px] text-[#7A8A84] mt-0.5">
+              Centres manage their own admissions policies and waitlist updates.
+            </div>
           </div>
         </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-stone-200 p-8 text-center space-y-3">
-          <p className="text-stone-600 text-sm">No applications recorded yet.</p>
-          <button
-            type="button"
-            onClick={onNavigateToFind}
-            className="px-4 py-2 bg-[#0B4A52] hover:bg-[#08383e] text-white text-xs sm:text-sm font-medium rounded-lg shadow-xs transition-colors"
-          >
-            Find Centres
-          </button>
-        </div>
-      )}
+        <SimNote>
+          CareQ never calculates or predicts a queue position.
+        </SimNote>
+      </div>
 
       {/* Offer Acceptance & Withdraw Other Applications Confirmation Dialog */}
       {selectedOfferApp && selectedOfferCentre && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-stone-200 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#173F42]/40 backdrop-blur-xs">
+          <Card className="max-w-lg w-full p-6 shadow-xl space-y-4">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
-                <Sparkles className="w-5 h-5" />
-              </div>
+              <IconTile icon={Sparkles} tone="sage" />
               <div>
-                <h3 className="text-lg font-bold text-stone-900">
-                  Accept Child Care Offer
+                <h3 className="text-lg font-bold text-[#173F42]">
+                  Accept child care offer
                 </h3>
-                <p className="text-xs text-stone-500">
+                <p className="text-xs text-[#5B6B66]">
                   {selectedOfferCentre.name} ({selectedOfferCentre.neighbourhood})
                 </p>
               </div>
             </div>
 
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 text-xs text-emerald-900 space-y-1">
-              <p className="font-semibold text-emerald-950">
-                Congratulations! A licensed spot has been offered for Anya.
+            <div className="bg-[#E4ECE1]/60 border border-[#CBD9C6] rounded-xl p-3.5 text-xs text-[#173F42] space-y-1">
+              <p className="font-semibold">
+                Congratulations! A licensed spot has been offered for {parentProfile.childName}.
               </p>
-              <p className="text-emerald-800">
-                Target Start Date: {parentProfile.preferredStartDate} • Toddler Room • {selectedOfferCentre.hours}
+              <p className="text-[#5B6B66]">
+                Target Start Date: {parentProfile.preferredStartDate} · Toddler Room · {selectedOfferCentre.hours}
               </p>
             </div>
 
-            {/* Prompt requirement:
-                "If an offer is accepted, show a dialog offering to withdraw the other applications, which requires confirmation." */}
             {otherActiveApps.length > 0 ? (
-              <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 space-y-3">
+              <div className="bg-[#FBFAF3] border border-[#E7E4DA] rounded-xl p-4 space-y-3">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-4 h-4 text-[#C46E4E] shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="text-xs font-semibold text-stone-800">
+                    <h4 className="text-xs font-semibold text-[#173F42]">
                       Withdraw other applications?
                     </h4>
-                    <p className="text-xs text-stone-600 mt-0.5">
-                      You currently hold {otherActiveApps.length} other pending or waitlisted application(s):
+                    <p className="text-xs text-[#5B6B66] mt-0.5">
+                      You hold {otherActiveApps.length} other pending or waitlisted application(s):
                     </p>
                   </div>
                 </div>
 
-                <div className="max-h-28 overflow-y-auto space-y-1 text-xs text-stone-600 pl-6 list-disc">
+                <div className="max-h-28 overflow-y-auto space-y-1 text-xs text-[#5B6B66] pl-6 list-disc">
                   {otherActiveApps.map((oa) => {
                     const c = centres.find((centre) => centre.id === oa.centreId);
                     return (
                       <div key={oa.id} className="flex justify-between items-center pr-2 py-0.5">
-                        <span className="font-medium text-stone-800 truncate">
+                        <span className="font-medium text-[#173F42] truncate">
                           • {c?.name}
                         </span>
-                        <StatusBadge status={oa.status} waitlistPosition={oa.waitlistPosition} size="sm" />
+                        <StatusBadge status={oa.status} size="sm" />
                       </div>
                     );
                   })}
                 </div>
 
-                <p className="text-[11px] text-stone-500 pt-1 border-t border-stone-200">
-                  Withdrawing your other applications frees up waitlist spots for other Ontario families waiting in queue.
+                <p className="text-[11px] text-[#7A8A84] pt-1 border-t border-[#E7E4DA]">
+                  Withdrawing other applications frees up waitlist spots for other Ontario families.
                 </p>
               </div>
             ) : (
-              <p className="text-xs text-stone-600">
+              <p className="text-xs text-[#5B6B66]">
                 You have no other active applications in the queue.
               </p>
             )}
 
-            {/* Dialog Actions with explicit confirmation */}
+            {/* Dialog Actions */}
             <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
-              <button
-                type="button"
+              <GhostButton
                 onClick={() => setSelectedOfferAppId(null)}
-                className="px-3.5 py-2 text-xs font-medium text-stone-700 hover:bg-stone-100 rounded-lg transition-colors order-3 sm:order-1"
+                className="order-3 sm:order-1 text-xs"
               >
                 Cancel
-              </button>
+              </GhostButton>
 
               {otherActiveApps.length > 0 && (
-                <button
-                  type="button"
+                <GhostButton
                   onClick={() => {
                     onAcceptOffer(selectedOfferApp.id, false);
                     setSelectedOfferAppId(null);
                   }}
-                  className="px-3.5 py-2 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors order-2"
+                  className="order-2 text-xs"
                 >
-                  Accept & Keep Others
-                </button>
+                  Accept &amp; Keep Others
+                </GhostButton>
               )}
 
-              <button
-                type="button"
+              <PrimaryButton
+                noArrow
                 onClick={() => {
                   onAcceptOffer(selectedOfferApp.id, true);
                   setSelectedOfferAppId(null);
                 }}
-                className="px-4 py-2 text-xs sm:text-sm font-semibold bg-[#0B4A52] hover:bg-[#08383e] text-white rounded-lg transition-colors shadow-xs flex items-center justify-center gap-1.5 order-1 sm:order-3"
+                className="order-1 sm:order-3 text-xs"
               >
-                <Check className="w-4 h-4" />
+                <Check className="w-4 h-4 mr-1.5" />
                 {otherActiveApps.length > 0
                   ? 'Accept & Withdraw Others'
                   : 'Confirm & Accept Offer'}
-              </button>
+              </PrimaryButton>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* Waitlist Position History Modal */}
       {historyModalApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-stone-200 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#173F42]/40 backdrop-blur-xs">
+          <Card className="max-w-md w-full p-6 shadow-xl space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h3 className="text-base font-bold text-stone-900">
-                  Waitlist Position History
+                <h3 className="text-base font-bold text-[#173F42]">
+                  Waitlist position history
                 </h3>
-                <p className="text-xs text-stone-500 mt-0.5">
-                  {historyModalCentre?.name || historyModalApp.waitlistReportedBy || 'Child Care Centre'} • {historyModalApp.childName}
+                <p className="text-xs text-[#5B6B66] mt-0.5">
+                  {historyModalCentre?.name || historyModalApp.waitlistReportedBy || 'Child Care Centre'} · {historyModalApp.childName}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setHistoryModalAppId(null)}
-                className="text-stone-400 hover:text-stone-600 p-1 rounded-lg transition-colors text-sm font-semibold"
+                className="text-[#7A8A84] hover:text-[#173F42] p-1 rounded-lg transition-colors cursor-pointer"
                 aria-label="Close"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="bg-stone-50 border border-stone-200 rounded-xl p-4">
+            <div className="bg-[#FAF9F4] border border-[#E7E4DA] rounded-xl p-4">
               {(() => {
                 const history =
                   historyModalApp.positionHistory && historyModalApp.positionHistory.length > 0
@@ -460,25 +574,24 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                   return (
                     <div className="space-y-2 py-1">
                       {history.length === 1 && (
-                        <div className="text-sm text-stone-800">
+                        <div className="text-sm text-[#173F42]">
                           - {history[0].date} — Position {history[0].position} (joined the waitlist)
                         </div>
                       )}
-                      <p className="text-sm text-stone-500 italic">No changes yet.</p>
+                      <p className="text-xs text-[#7A8A84] italic">No changes recorded yet.</p>
                     </div>
                   );
                 }
 
-                // Newest first
                 const newestFirst = [...history].reverse();
 
                 return (
-                  <ul className="space-y-2.5 text-sm text-stone-800">
+                  <ul className="space-y-2.5 text-xs text-[#173F42]">
                     {newestFirst.map((item, idx) => {
                       const isOldest = idx === newestFirst.length - 1;
                       return (
                         <li key={idx} className="flex items-start gap-2">
-                          <span className="text-stone-400 select-none">-</span>
+                          <span className="text-[#7A8A84] select-none">-</span>
                           <span>
                             {item.date} — Position {item.position}
                             {isOldest ? ' (joined the waitlist)' : ''}
@@ -492,15 +605,14 @@ export const TrackTab: React.FC<TrackTabProps> = ({
             </div>
 
             <div className="flex justify-end pt-2">
-              <button
-                type="button"
+              <GhostButton
                 onClick={() => setHistoryModalAppId(null)}
-                className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-lg transition-colors"
+                className="text-xs h-9"
               >
                 Close
-              </button>
+              </GhostButton>
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>

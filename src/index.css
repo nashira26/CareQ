@@ -6,17 +6,30 @@
     --secondary: #45B5A5;
     --accent: #F9BE2F;
     --surface-bg: #F7F8F7;
+    --cq-bg: #FAF9F4;
+    --cq-surface: #FFFFFF;
+    --cq-line: #E7E4DA;
+    --cq-ink: #173F42;
+    --cq-muted: #5B6B66;
+    --cq-soft: #7A8A84;
+    --cq-primary: #0B4A52;
+    --cq-sage: #E4ECE1;
+    --cq-sage-ink: #4E7A5A;
+    --cq-sand: #F3EEE3;
+    --cq-band: #F3EBDD;
+    --cq-input: #FBFAF3;
+    --cq-input-line: #E8E4D6;
   }
 
   body {
-    background-color: #F7F8F7;
-    color: #1a2a2c;
-    font-family: 'Quicksand', 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #FAF9F4;
+    color: #1E3F42;
+    font-family: 'Manrope', system-ui, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    color: #0B4A52;
-    font-family: 'Quicksand', 'Nunito', system-ui, sans-serif;
+    color: #173F42;
+    font-family: 'Manrope', system-ui, sans-serif;
   }
 }
 

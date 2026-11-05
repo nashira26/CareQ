@@ -1,6 +1,6 @@
 import React from 'react';
 import { ApplicationStatus } from '../data/mockData';
-import { Clock, CheckCircle2, AlertCircle, FileText, Check, Ban, Sparkles } from 'lucide-react';
+import { Clock, AlertCircle, FileText, Check, Ban, Sparkles } from 'lucide-react';
 
 interface StatusBadgeProps {
   status: ApplicationStatus;
@@ -11,72 +11,56 @@ interface StatusBadgeProps {
 export const StatusBadge: React.FC<StatusBadgeProps> = ({
   status,
   waitlistPosition,
-  size = 'md',
 }) => {
-  const isSmall = size === 'sm';
-  const padding = isSmall ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-xs sm:text-sm';
+  const base = 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold select-none';
 
   switch (status) {
     case 'Draft':
       return (
-        <span
-          className={`inline-flex items-center gap-1.5 font-medium rounded-full bg-slate-100 text-slate-700 border border-slate-200 ${padding}`}
-        >
-          <FileText className="w-3.5 h-3.5 text-slate-500" />
+        <span className={`${base} bg-[#F3F1EA] text-[#6E7C77] border-[#E7E4DA]`}>
+          <FileText className="w-3 h-3 text-[#6E7C77]" />
           Draft
         </span>
       );
     case 'Submitted':
       return (
-        <span
-          className={`inline-flex items-center gap-1.5 font-medium rounded-full bg-sky-50 text-sky-700 border border-sky-200 ${padding}`}
-        >
-          <Clock className="w-3.5 h-3.5 text-sky-600" />
+        <span className={`${base} bg-[#E8F1F4] text-[#3F6E7E] border-[#CFE0E6]`}>
+          <Clock className="w-3 h-3 text-[#3F6E7E]" />
           Submitted
         </span>
       );
     case 'Under review':
       return (
-        <span
-          className={`inline-flex items-center gap-1.5 font-medium rounded-full bg-amber-50 text-amber-800 border border-amber-200 ${padding}`}
-        >
-          <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+        <span className={`${base} bg-[#FDF3DD] text-[#8A6411] border-[#F2D9A0]`}>
+          <AlertCircle className="w-3 h-3 text-[#8A6411]" />
           Under review
         </span>
       );
     case 'Waitlisted':
       return (
-        <span
-          className={`inline-flex items-center gap-1.5 font-medium rounded-full bg-purple-50 text-purple-700 border border-purple-200 ${padding}`}
-        >
-          <Clock className="w-3.5 h-3.5 text-purple-600" />
+        <span className={`${base} bg-[#EFEAF7] text-[#6B5B95] border-[#D9D0EC]`}>
+          <Clock className="w-3 h-3 text-[#6B5B95]" />
           Waitlisted {waitlistPosition ? `(#${waitlistPosition})` : ''}
         </span>
       );
     case 'Offer':
       return (
-        <span
-          className={`inline-flex items-center gap-1.5 font-bold rounded-full bg-[#F9BE2F] text-[#451A03] border border-[#E0A31A] shadow-2xs ${padding}`}
-        >
-          <Sparkles className="w-3.5 h-3.5 text-[#6D4200]" />
+        <span className={`${base} bg-[#FFF4D6] text-[#7A5A00] border-[#F9BE2F]`}>
+          <Sparkles className="w-3 h-3 text-[#7A5A00]" />
           Offer Available
         </span>
       );
     case 'Accepted':
       return (
-        <span
-          className={`inline-flex items-center gap-1.5 font-semibold rounded-full bg-[#45B5A5]/20 text-[#0B4A52] border border-[#45B5A5]/40 ${padding}`}
-        >
-          <Check className="w-3.5 h-3.5 text-[#0B4A52]" />
+        <span className={`${base} bg-[#E4ECE1] text-[#2F5E45] border-[#C9DCC2]`}>
+          <Check className="w-3 h-3 text-[#2F5E45]" />
           Accepted
         </span>
       );
     case 'Withdrawn':
       return (
-        <span
-          className={`inline-flex items-center gap-1.5 font-medium rounded-full bg-zinc-100 text-zinc-500 line-through border border-zinc-200 ${padding}`}
-        >
-          <Ban className="w-3.5 h-3.5 text-zinc-400" />
+        <span className={`${base} bg-[#F3F1EA] text-[#9AA59F] border-[#E7E4DA] line-through`}>
+          <Ban className="w-3 h-3 text-[#9AA59F]" />
           Withdrawn
         </span>
       );

@@ -22,10 +22,12 @@ import {
 import { Navbar } from './components/Navbar';
 import { AppSidebar, SidebarItem } from './components/AppSidebar';
 import { ParentHome } from './components/ParentView/ParentHome';
+import { ParentOverview } from './components/ParentView/ParentOverview';
 import { FindTab } from './components/ParentView/FindTab';
 import { ApplyTab } from './components/ParentView/ApplyTab';
 import { TrackTab } from './components/ParentView/TrackTab';
 import { CentreDashboard } from './components/CentreView/CentreDashboard';
+import { CentreOverview } from './components/CentreView/CentreOverview';
 import { ConversationModal } from './components/ConversationModal';
 import { TrustTransparencyPage } from './components/TrustTransparencyPage';
 import { AuthPage, MockAccount } from './components/AuthPage';
@@ -33,7 +35,20 @@ import { HelpTab } from './components/HelpTab';
 import { AskCareQAssistant } from './components/AskCareQAssistant';
 import { SupportRequest, INITIAL_SUPPORT_REQUESTS, ConcernStep } from './data/helpData';
 import { LogoFull } from './components/Logo';
-import { Search, FileEdit, ListFilter, HelpCircle, Home, Building2 } from 'lucide-react';
+import {
+  Search,
+  FileEdit,
+  FileText,
+  ListFilter,
+  HelpCircle,
+  Home,
+  Building2,
+  Info,
+  Heart,
+  LayoutGrid,
+  ScrollText,
+  Users,
+} from 'lucide-react';
 
 const INITIAL_MOCK_ACCOUNTS: MockAccount[] = [
   {
@@ -62,8 +77,11 @@ export default function App() {
   // Authenticated account in session (null = shows login/sign-up page)
   const [currentAccount, setCurrentAccount] = useState<MockAccount | null>(null);
 
-  // Parent View Tab Switcher: 'home' | 'find' | 'apply' | 'track' | 'help'
-  const [parentTab, setParentTab] = useState<'home' | 'find' | 'apply' | 'track' | 'help'>('home');
+  // Parent View Tab Switcher: 'home' | 'find' | 'apply' | 'track' | 'companion' | 'help'
+  const [parentTab, setParentTab] = useState<'home' | 'find' | 'apply' | 'track' | 'companion' | 'help'>('home');
+
+  // Centre View Tab Switcher: 'home' | 'applications' | 'messages' | 'policy' | 'help'
+  const [centreTab, setCentreTab] = useState<'home' | 'applications' | 'messages' | 'policy' | 'help'>('home');
 
   // In-memory centres state (Riverdale Early Learning Centre is the single centre managed in Centre role)
   const [centres, setCentres] = useState<Centre[]>(INITIAL_CENTRES);
@@ -635,7 +653,7 @@ export default function App() {
   const draftCount = priyaApplications.filter((a) => a.status === 'Draft').length;
   const offerCount = priyaApplications.filter((a) => a.status === 'Offer').length;
 
-  // Parent sidebar items in this order: Overview (Home icon, id 'home'), Find Centres (Search, 'find'), Apply (FileEdit, 'apply', badge "{draftCount} in progress" if > 0), Track Status (ListFilter, 'track', badge "Offer" if offerCount > 0), Help & Support (HelpCircle, 'help')
+  // Parent sidebar items in this order: Overview (Home icon, id 'home'), Find Centres (Search, 'find'), Apply (FileEdit, 'apply', badge "{draftCount} in progress" if > 0), Track Status (ListFilter, 'track', badge "Offer" if offerCount > 0), Parent companion (Heart, 'companion'), Help & Support (HelpCircle, 'help')
   const parentSidebarItems: SidebarItem[] = [
     { id: 'home', label: 'Overview', icon: Home },
     { id: 'find', label: 'Find Centres', icon: Search },
@@ -651,11 +669,28 @@ export default function App() {
       icon: ListFilter,
       badge: offerCount > 0 ? 'Offer' : undefined,
     },
+    { id: 'companion', label: 'Parent companion', icon: Heart },
     { id: 'help', label: 'Help & Support', icon: HelpCircle },
   ];
 
+  const centreApplications = applications.filter(
+    (app) => app.centreId === activeSingleCentre.id
+  );
+  const centreSubmittedCount = centreApplications.filter(
+    (app) => app.status === 'Submitted'
+  ).length;
+
   const centreSidebarItems: SidebarItem[] = [
-    { id: 'dashboard', label: 'Centre Dashboard', icon: Building2 },
+    { id: 'home', label: 'Centre overview', icon: LayoutGrid },
+    {
+      id: 'applications',
+      label: 'Applications & queue',
+      icon: FileText,
+      badge: centreSubmittedCount > 0 ? String(centreSubmittedCount) : undefined,
+    },
+    { id: 'messages', label: 'Family messages', icon: Heart },
+    { id: 'policy', label: 'Policy & requirements', icon: ScrollText },
+    { id: 'help', label: 'Contact & support', icon: Users },
   ];
 
   // If not logged in, render separate Parent / Centre Login & Sign-up Portal
@@ -702,18 +737,30 @@ export default function App() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#F7F8F7] text-stone-900 font-sans antialiased">
+    <div className="flex min-h-screen bg-[#FAF9F4] text-[#1E3F42] font-sans antialiased">
       <AppSidebar
         role={currentRole}
         items={currentRole === 'parent' ? parentSidebarItems : centreSidebarItems}
-        activeId={currentRole === 'parent' ? parentTab : 'dashboard'}
+        activeId={currentRole === 'parent' ? parentTab : centreTab}
         onSelect={(id) => {
           if (currentRole === 'parent') {
-            setParentTab(id as 'home' | 'find' | 'apply' | 'track' | 'help');
+            setParentTab(id as 'home' | 'find' | 'apply' | 'track' | 'companion' | 'help');
+          } else {
+            setCentreTab(id as 'home' | 'applications' | 'messages' | 'policy' | 'help');
           }
         }}
+        onLogout={handleLogout}
       />
       <div className="flex-1 min-w-0 flex flex-col">
+        {/* Thin simulation prototype notice band above Navbar */}
+        <div className="h-8 bg-[#F3EBDD] text-[11px] text-[#5B4A2E] flex items-center justify-center gap-3 px-4 shrink-0 select-none">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#B9933E] shrink-0" />
+          <span className="font-bold tracking-[0.14em]">PROTOTYPE</span>
+          <span className="hidden sm:inline">Centres, families, waitlists and messages in this demo are simulated.</span>
+          <span className="sm:hidden">Simulated data prototype.</span>
+          <Info className="w-3.5 h-3.5 text-[#5B4A2E] shrink-0" />
+        </div>
+
         {/* Top Navbar: Role is fixed to the logged-in account (parents see only parent view; centres see only centre view) */}
         <Navbar
           currentRole={currentRole}
@@ -726,7 +773,7 @@ export default function App() {
         />
 
         {/* Main Container: Strictly one role view visible or Trust & Transparency page */}
-        <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <main className="flex-1 max-w-[1180px] w-full mx-auto px-6 lg:px-10 py-10">
           <div id="app-sidebar-mobile-mount" />
         {isTrustPageOpen ? (
           <TrustTransparencyPage
@@ -738,6 +785,16 @@ export default function App() {
           <div className="space-y-6">
             {/* Parent Tabs Content */}
             {parentTab === 'home' && (
+              <ParentOverview
+                parentProfile={activeParentProfile}
+                applications={priyaApplications}
+                centres={centres}
+                notifications={notifications.filter((n) => n.recipientRole === 'parent')}
+                onNavigate={setParentTab}
+              />
+            )}
+
+            {parentTab === 'companion' && (
               <ParentHome
                 parentProfile={activeParentProfile}
                 applications={priyaApplications}
@@ -799,16 +856,33 @@ export default function App() {
           </div>
         ) : (
           /* Centres see ONLY the centre screens */
-          <CentreDashboard
-            singleCentre={activeSingleCentre}
-            applications={applications}
-            onUpdateStatus={handleUpdateStatus}
-            onUpdateCentreRequirements={handleUpdateCentreRequirements}
-            onOpenConversation={handleCentreOpenConversation}
-            requests={supportRequests}
-            onSubmitRequest={handleCreateSupportRequest}
-            onAdvanceConcernStep={handleAdvanceConcernStep}
-          />
+          <div className="space-y-6">
+            {centreTab === 'home' && (
+              <CentreOverview
+                singleCentre={activeSingleCentre}
+                applications={centreApplications}
+                notifications={notifications.filter((n) => n.recipientRole === 'centre')}
+                onNavigate={setCentreTab}
+              />
+            )}
+
+            {centreTab === 'messages' && null}
+
+            {(centreTab === 'applications' || centreTab === 'policy' || centreTab === 'help') && (
+              <CentreDashboard
+                singleCentre={activeSingleCentre}
+                applications={applications}
+                onUpdateStatus={handleUpdateStatus}
+                onUpdateCentreRequirements={handleUpdateCentreRequirements}
+                onOpenConversation={handleCentreOpenConversation}
+                requests={supportRequests}
+                onSubmitRequest={handleCreateSupportRequest}
+                onAdvanceConcernStep={handleAdvanceConcernStep}
+                activeTab={centreTab}
+                onTabChange={setCentreTab}
+              />
+            )}
+          </div>
         )}
       </main>
 
@@ -826,14 +900,14 @@ export default function App() {
       )}
 
       {/* Footer linked for both parents and centres */}
-      <footer className="border-t border-stone-200 bg-white py-6 mt-12 text-center text-xs text-stone-500">
-        <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p>CareQ • Simplified Ontario Child Care Intake & Central Waitlist Management</p>
+      <footer className="border-t border-[#E7E4DA] bg-white/70 py-6 mt-12 text-center text-xs text-[#6E7C77]">
+        <div className="max-w-[1180px] w-full mx-auto px-6 lg:px-10 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p>CareQ • Simplified Ontario Child Care Intake &amp; Central Waitlist Management</p>
           <div className="flex items-center gap-4 text-xs">
             <button
               type="button"
               onClick={() => setIsTrustPageOpen(true)}
-              className="text-[#0B4A52] hover:text-[#45B5A5] font-semibold underline transition-colors cursor-pointer"
+              className="text-[#0B4A52] hover:text-[#4E7A5A] font-semibold underline transition-colors cursor-pointer"
             >
               Trust and transparency
             </button>
@@ -841,7 +915,7 @@ export default function App() {
             <button
               type="button"
               onClick={handleLogout}
-              className="text-stone-500 hover:text-stone-800 transition-colors cursor-pointer"
+              className="text-[#5B6B66] hover:text-[#173F42] transition-colors cursor-pointer"
               title="Log out of session"
             >
               Log out
