@@ -5,14 +5,13 @@ Team 38 – Coalesce · WAI Canada Hackathon 2026
 
 CareQ helps parents **find** licensed centres, **apply** with applications prepared to each centre's requirements, **track** status and queue positions reported by centres, manage **offers**, and **communicate** with centres. A lightweight centre view shows the other side of the process. People approve every application and message; the AI never decides who gets a space.
 
-
 ## Getting started (local)
 
 Requirements: Node.js 18 or later, Git.
 
 ```bash
 git clone https://github.com/nashira26/CareQ.git
-cd careq
+cd CareQ
 npm install
 ```
 
@@ -60,20 +59,20 @@ AI Studio is linked to this repository with two-way sync (Settings → GitHub ta
 
 ## Prompting rules (to save credits)
 
-- One feature per prompt, and end with: *"Do not change anything else. When done, list the files you changed and stop."*
+- One feature per prompt, and end with: _"Do not change anything else. When done, list the files you changed and stop."_
 - Never say "make it better" or "improve the design"; name the exact change.
 - Fix small text and colour changes by hand in the code, not by prompting.
-- For anything big, ask for a plan first: *"List the files you'd change and stop."*
+- For anything big, ask for a plan first: _"List the files you'd change and stop."_
 
 ---
 
 ## Data rules (important for judging)
 
-| Type | Examples | How to show it |
-| --- | --- | --- |
-| **Real, public** | Ontario licensed centres dataset; centres' published policies | Show the source link |
-| **From a centre** | Status, queue position, wait given by the centre | "Reported by [centre] on [date]" |
-| **Simulated** | Families, centre replies, waitlists, past placements | Always tagged **"Simulated data"** |
+| Type              | Examples                                                      | How to show it                     |
+| ----------------- | ------------------------------------------------------------- | ---------------------------------- |
+| **Real, public**  | Ontario licensed centres dataset; centres' published policies | Show the source link               |
+| **From a centre** | Status, queue position, wait given by the centre              | "Reported by [centre] on [date]"   |
+| **Simulated**     | Families, centre replies, waitlists, past placements          | Always tagged **"Simulated data"** |
 
 - Never show simulated information as real availability or real waitlist positions.
 - Never show a wait or position the centre didn't enter. If there's none: "No wait estimate provided by the centre."
@@ -83,10 +82,10 @@ AI Studio is linked to this repository with two-way sync (Settings → GitHub ta
 
 ## Build order
 
-1. App skeleton: parent and centre views with mock data *(done when the flow clicks through)*
+1. App skeleton: parent and centre views with mock data _(done when the flow clicks through)_
 2. Queue position and wait reported by centres
 3. AI reads a centre's policy and extracts requirements, with source sentences
 4. AI prepares application drafts and flags missing documents
 5. AI-drafted messages, confirmed by the sender
 6. Real Toronto centres from the Ontario dataset
-7. *Optional, if time:* estimated wait from simulated past records
+7. _Optional, if time:_ estimated wait from simulated past records
