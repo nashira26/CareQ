@@ -11,13 +11,16 @@ import {
   Heart,
 } from 'lucide-react';
 import { LogoFull } from './Logo';
+import { ResetDemo } from './ResetDemo';
+import { hashPassword } from '../lib/demoStorage';
 
 export interface MockAccount {
   id: string;
   role: 'parent' | 'centre';
   email: string;
   name: string;
-  password?: string;
+  password?: string; // only on the built-in demo accounts (in code); never saved to storage
+  passwordHash?: string; // SHA-256 for accounts created by sign-up
   childName?: string;
   childAgeMonths?: number;
   centreName?: string;
@@ -102,7 +105,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   };
 
   // Handle Sign-Up submission
-  const handleSignupSubmit = (e: React.FormEvent) => {
+  const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignupError(null);
 
@@ -121,7 +124,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       role: targetRole,
       email: signupEmail.trim(),
       name: signupName.trim(),
-      password: signupPassword,
+      // Never keep the plain-text password; the prototype doesn't check passwords at login
+      passwordHash: await hashPassword(signupPassword),
       childName: targetRole === 'parent' ? (signupChildName.trim() || 'Child') : undefined,
       childAgeMonths: targetRole === 'parent' ? Number(signupChildAgeMonths) || 24 : undefined,
       centreName: targetRole === 'centre' ? (signupCentreName.trim() || signupName.trim()) : undefined,
@@ -663,13 +667,16 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       <footer className="w-full">
         <div className="max-w-6xl mx-auto px-6 border-t border-[#E7E4DA] py-6 text-xs text-[#6E7C77] bg-transparent flex flex-col sm:flex-row items-center justify-between gap-2">
           <p>CareQ • Simplified Ontario Child Care Intake &amp; Central Waitlist Management</p>
-          <button
-            type="button"
-            onClick={onOpenTrustPage}
-            className="text-[#0B4A52] hover:text-[#45B5A5] font-semibold underline transition-colors cursor-pointer"
-          >
-            Trust and transparency
-          </button>
+          <div className="flex items-start gap-5">
+            <ResetDemo variant="link" />
+            <button
+              type="button"
+              onClick={onOpenTrustPage}
+              className="text-[#0B4A52] hover:text-[#45B5A5] font-semibold underline transition-colors cursor-pointer"
+            >
+              Trust and transparency
+            </button>
+          </div>
         </div>
       </footer>
     </div>

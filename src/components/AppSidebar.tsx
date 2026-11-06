@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { LogoFull } from './Logo';
 import { Sparkles, Clover, ArrowLeftRight } from 'lucide-react';
 
+import { ResetDemo } from './ResetDemo';
+
 export interface SidebarItem {
   id: string;
   label: string;
@@ -154,6 +156,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               <span>Log out</span>
             </button>
           )}
+          <ResetDemo className="mt-3" />
         </div>
       </aside>
 

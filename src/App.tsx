@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   INITIAL_CENTRES,
   INITIAL_APPLICATIONS,
@@ -36,6 +36,8 @@ import { HelpTab } from './components/HelpTab';
 import { AskCareQAssistant } from './components/AskCareQAssistant';
 import { SupportRequest, INITIAL_SUPPORT_REQUESTS, ConcernStep } from './data/helpData';
 import { PreparedDraft, NOT_PROVIDED } from './lib/prepareApplication';
+import { DemoState, loadDemoState, saveDemoState, mergeCentres, splitCentres } from './lib/demoStorage';
+import { ResetDemo } from './components/ResetDemo';
 import { LogoFull } from './components/Logo';
 import {
   Search,
@@ -74,10 +76,19 @@ const INITIAL_MOCK_ACCOUNTS: MockAccount[] = [
 
 export default function App() {
   // Mock accounts stored in app state
-  const [mockAccounts, setMockAccounts] = useState<MockAccount[]>(INITIAL_MOCK_ACCOUNTS);
+  // Demo state saved in this browser (null = start from the mock data). Read once on start.
+  const [saved] = useState(() => loadDemoState());
+
+  const [mockAccounts, setMockAccounts] = useState<MockAccount[]>(() =>
+    saved
+      ? [...INITIAL_MOCK_ACCOUNTS, ...saved.mockAccounts.filter((a) => !INITIAL_MOCK_ACCOUNTS.some((d) => d.id === a.id))]
+      : INITIAL_MOCK_ACCOUNTS
+  );
 
   // Authenticated account in session (null = shows login/sign-up page)
-  const [currentAccount, setCurrentAccount] = useState<MockAccount | null>(null);
+  const [currentAccount, setCurrentAccount] = useState<MockAccount | null>(() =>
+    saved?.sessionAccountId ? mockAccounts.find((a) => a.id === saved.sessionAccountId) ?? null : null
+  );
 
   // Parent View Tab Switcher: 'home' | 'find' | 'apply' | 'track' | 'companion' | 'help'
   const [parentTab, setParentTab] = useState<'home' | 'find' | 'apply' | 'track' | 'companion' | 'help'>('home');
@@ -86,22 +97,24 @@ export default function App() {
   const [centreTab, setCentreTab] = useState<'home' | 'applications' | 'messages' | 'policy' | 'help'>('home');
 
   // In-memory centres state (Riverdale Early Learning Centre is the single centre managed in Centre role)
-  const [centres, setCentres] = useState<Centre[]>(INITIAL_CENTRES);
+  const [centres, setCentres] = useState<Centre[]>(() =>
+    saved ? mergeCentres(INITIAL_CENTRES, saved.centreOverrides, saved.selfRegisteredCentres) : INITIAL_CENTRES
+  );
   const singleCentre = centres[0]; // Riverdale Early Learning Centre
 
   // In-memory application state
-  const [applications, setApplications] = useState<Application[]>(INITIAL_APPLICATIONS);
+  const [applications, setApplications] = useState<Application[]>(() => saved?.applications ?? INITIAL_APPLICATIONS);
 
   // AI-prepared drafts, kept apart from applications so nothing reaches a centre before the parent submits
-  const [preparedDrafts, setPreparedDrafts] = useState<Record<string, PreparedDraft>>({});
+  const [preparedDrafts, setPreparedDrafts] = useState<Record<string, PreparedDraft>>(() => saved?.preparedDrafts ?? {});
   const handleUpdatePreparedDraft = (applicationId: string, draft: PreparedDraft) =>
     setPreparedDrafts((prev) => ({ ...prev, [applicationId]: draft }));
 
   // In-memory conversations map between centres and parents
-  const [conversations, setConversations] = useState<ConversationsMap>(INITIAL_CONVERSATIONS);
+  const [conversations, setConversations] = useState<ConversationsMap>(() => saved?.conversations ?? INITIAL_CONVERSATIONS);
 
   // In-memory in-app notifications state
-  const [notifications, setNotifications] = useState<InAppNotification[]>(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<InAppNotification[]>(() => saved?.notifications ?? INITIAL_NOTIFICATIONS);
 
   // Trust and transparency page navigation state
   const [isTrustPageOpen, setIsTrustPageOpen] = useState<boolean>(false);
@@ -175,7 +188,32 @@ export default function App() {
       : singleCentre;
 
   // Support & concern requests state (for Help tab)
-  const [supportRequests, setSupportRequests] = useState<SupportRequest[]>(INITIAL_SUPPORT_REQUESTS);
+  const [supportRequests, setSupportRequests] = useState<SupportRequest[]>(
+    () => saved?.supportRequests ?? INITIAL_SUPPORT_REQUESTS
+  );
+
+  // Save the demo in this browser: debounced ~300 ms, and flushed when the page is hidden/closed.
+  const demoState: DemoState = {
+    mockAccounts: mockAccounts.filter((a) => !INITIAL_MOCK_ACCOUNTS.some((d) => d.id === a.id)),
+    sessionAccountId: currentAccount?.id ?? null,
+    applications,
+    conversations,
+    notifications,
+    supportRequests,
+    ...splitCentres(centres, INITIAL_CENTRES),
+    preparedDrafts,
+  };
+  const latestDemoState = useRef(demoState);
+  latestDemoState.current = demoState;
+  useEffect(() => {
+    const t = window.setTimeout(() => saveDemoState(latestDemoState.current), 300);
+    return () => window.clearTimeout(t);
+  }, [mockAccounts, currentAccount, applications, conversations, notifications, supportRequests, centres, preparedDrafts]);
+  useEffect(() => {
+    const flush = () => saveDemoState(latestDemoState.current);
+    window.addEventListener('pagehide', flush);
+    return () => window.removeEventListener('pagehide', flush);
+  }, []);
 
   const handleCreateSupportRequest = (
     newReq: Omit<SupportRequest, 'id' | 'referenceNumber' | 'submittedAt'>
@@ -967,6 +1005,9 @@ export default function App() {
             >
               Log out
             </button>
+            <span className="text-stone-300 lg:hidden">|</span>
+            {/* The sidebar (with Reset demo) is hidden below lg, so offer it here too */}
+            <ResetDemo variant="link" className="lg:hidden" />
           </div>
         </div>
       </footer>

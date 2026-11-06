@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MapPin, Heart, Database, Users, Navigation } from 'lucide-react';
 import { OntarioCentre, OntarioCentresFile, formatSourceDate } from '../../data/ontarioTypes';
 
-const SHORTLIST_KEY = 'careq.shortlist.v1';
+import { SHORTLIST_KEY } from '../../lib/demoStorage';
 
 const readShortlist = (): string[] => {
   try {
