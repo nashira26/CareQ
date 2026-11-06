@@ -22,6 +22,8 @@ export interface Centre {
   ageGroups: AgeGroup[];
   hours: string;
   requirements: string[];
+  /** Requirement title -> the policy sentence it came from (confirmed by the centre). Simulated for demo centres. */
+  requirementSources?: Record<string, string>;
   feeNote?: string;
   address?: string;
   policyNotes?: string;
@@ -66,6 +68,12 @@ export interface Application {
   completedRequirements: string[];
   uploadedDocuments?: Record<string, UploadedDocument>;
   parentNotes?: string;
+  /** Saved only when the parent approves and submits (see src/lib/prepareApplication.ts). */
+  preparedFields?: { label: string; value: string; source: 'family profile' | 'parent to provide' }[];
+  preparedChecklist?: import('../lib/prepareApplication').ChecklistItem[];
+  noteToCentre?: string;
+  preparedWithAi?: boolean;
+  aiMode?: 'gemini' | 'fallback';
 }
 
 export interface InAppNotification {
@@ -89,6 +97,17 @@ export const PARENT_PROFILE: ParentProfile = {
 export const INITIAL_CENTRES: Centre[] = [
   {
     id: 'c1',
+    // Taken from this centre's policyNotes below
+    requirementSources: {
+      "Child's Birth Certificate":
+        'Pursuant to the Child Care and Early Years Act (CCEYA), all applicants must provide an official Child’s Birth Certificate and an up-to-date Yellow Immunization Card (ISPA compliance).',
+      'Yellow Immunization Card (ISPA)':
+        'Pursuant to the Child Care and Early Years Act (CCEYA), all applicants must provide an official Child’s Birth Certificate and an up-to-date Yellow Immunization Card (ISPA compliance).',
+      'Proof of Toronto Residency':
+        'Families residing in Toronto must verify residency with a utility bill or lease agreement.',
+      'Emergency Contact & Medical Consent Form':
+        'An Emergency Contact & Medical Consent Form signed by both legal guardians is required before queue ranking.',
+    },
     programOptions: ['Full day', 'Before school', 'After school'],
     languages: ['English'],
     name: 'Riverdale Early Learning Centre',
@@ -111,6 +130,12 @@ export const INITIAL_CENTRES: Centre[] = [
   },
   {
     id: 'c2',
+    requirementSources: {
+      "Child's Birth Certificate": "Please provide a copy of your child's birth certificate with your application.",
+      'Immunization Record': "An up-to-date immunization record is required before your child's first day.",
+      'Health & Allergy Questionnaire': 'Parents complete a short health and allergy questionnaire as part of enrolment.',
+      'Proof of Ontario Address': 'We ask for one document showing your current Ontario address, such as a utility bill.',
+    },
     programOptions: ['Full day', 'Half day'],
     languages: ['English'],
     name: "Bloor West Children's Village",
@@ -131,6 +156,14 @@ export const INITIAL_CENTRES: Centre[] = [
   },
   {
     id: 'c3',
+    requirementSources: {
+      "Child's Birth Certificate or Passport": "A birth certificate or passport is needed to confirm your child's age.",
+      'Immunization Records': "Please include your child's current immunization records.",
+      'Parent Consent & Outdoors Agreement':
+        'Because our program spends part of each day outdoors, a parent consent and outdoors agreement must be signed.',
+      'Child Developmental History Summary':
+        "A brief summary of your child's developmental history helps our educators plan for their first weeks.",
+    },
     programOptions: ['Full day', 'Half day'],
     languages: ['English'],
     name: 'High Park Forest Care & Preschool',
@@ -151,6 +184,13 @@ export const INITIAL_CENTRES: Centre[] = [
   },
   {
     id: 'c4',
+    requirementSources: {
+      "Child's Birth Certificate": "A copy of the child's birth certificate is required at registration.",
+      'Immunization Yellow Card': "Please bring a copy of your child's yellow immunization card.",
+      "Physician's Health Assessment":
+        "A physician's health assessment completed in the last 12 months is required for infants and toddlers.",
+      'Proof of Ontario Address': 'Proof of an Ontario address, such as a lease or utility bill, is part of the application.',
+    },
     programOptions: ['Full day'],
     languages: ['English', 'Greek'],
     name: 'Danforth Sprouts Daycare',
@@ -171,6 +211,16 @@ export const INITIAL_CENTRES: Centre[] = [
   },
   {
     id: 'c5',
+    requirementSources: {
+      "Child's Birth Certificate": "Applications must include a copy of the child's birth certificate.",
+      'Immunization History': "Please attach your child's immunization history.",
+      'Emergency Contact Authorization':
+        'An emergency contact authorization listing two adults who can pick up your child is required.',
+      'Family Information & Schedule Sheet':
+        'Families fill in an information and schedule sheet describing the days and hours they need.',
+      'Residence in the Annex catchment area':
+        "Applicants must live within the centre's catchment area (postal codes M5R and M5S).",
+    },
     programOptions: ['Half day', 'Before school', 'After school'],
     languages: ['English', 'French'],
     name: 'Annex Community Child Care',
@@ -187,10 +237,17 @@ export const INITIAL_CENTRES: Centre[] = [
       'Immunization History',
       'Emergency Contact Authorization',
       'Family Information & Schedule Sheet',
+      'Residence in the Annex catchment area',
     ],
   },
   {
     id: 'c6',
+    requirementSources: {
+      "Proof of Child's Age / Birth Certificate": "We need proof of your child's age, such as a birth certificate.",
+      'Yellow Immunization Card': 'A current yellow immunization card is required.',
+      'Proof of Ontario Residency': 'Please provide proof that your family lives in Ontario.',
+      'Dietary & Medical Needs Form': 'A dietary and medical needs form must be completed so staff can plan meals and care.',
+    },
     programOptions: ['Full day', 'Extended hours'],
     languages: ['English'],
     name: 'Leslieville Little Stars Child Care',
@@ -211,6 +268,12 @@ export const INITIAL_CENTRES: Centre[] = [
   },
   {
     id: 'c7',
+    requirementSources: {
+      "Child's Birth Certificate": "A copy of the child's birth certificate is required.",
+      'Yellow Immunization Card (ISPA)': "Your child's yellow immunization card (ISPA) must be up to date.",
+      'Proof of Ontario Address': 'Include one document showing your Ontario address.',
+      'Parent Intake Questionnaire': 'Parents complete an intake questionnaire about routines, sleep and feeding.',
+    },
     programOptions: ['Full day', 'Before school', 'After school'],
     languages: ['English', 'French'],
     name: 'Maple Grove Children’s Centre',

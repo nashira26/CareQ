@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Centre, Application, ParentProfile } from '../../data/mockData';
 import { StatusBadge } from '../StatusBadge';
 import { ApplicationDetailsModal } from '../ApplicationDetailsModal';
+import { PreparedApplicationPanel } from './PreparedApplicationPanel';
+import { PreparedDraft, centreStatusLabel } from '../../lib/prepareApplication';
 import {
   PageHeader,
   Card,
@@ -19,6 +21,7 @@ import {
   Trash2,
   Eye,
   X,
+  Sparkles,
 } from 'lucide-react';
 
 interface ApplyTabProps {
@@ -33,6 +36,8 @@ interface ApplyTabProps {
   ) => void;
   onRemoveDocument: (applicationId: string, requirementName: string) => void;
   onSubmitApplication: (applicationId: string) => void;
+  preparedDrafts: Record<string, PreparedDraft>;
+  onUpdatePreparedDraft: (applicationId: string, draft: PreparedDraft) => void;
   onNavigateToFind: () => void;
   onNavigateToTrack: () => void;
 }
@@ -45,11 +50,14 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
   onUploadDocument,
   onRemoveDocument,
   onSubmitApplication,
+  preparedDrafts,
+  onUpdatePreparedDraft,
   onNavigateToFind,
   onNavigateToTrack,
 }) => {
   // Modal state for review and approve confirmation
   const [reviewingAppId, setReviewingAppId] = useState<string | null>(null);
+  const [confirmedReview, setConfirmedReview] = useState(false);
   const [viewingAppForDocs, setViewingAppForDocs] = useState<Application | null>(null);
 
   // Group applications
@@ -59,6 +67,10 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
   const reviewingCentre = reviewingApp
     ? centres.find((c) => c.id === reviewingApp.centreId)
     : null;
+  const reviewingDraft = reviewingApp ? preparedDrafts[reviewingApp.id] : undefined;
+  const emptyFieldCount = reviewingDraft
+    ? reviewingDraft.fields.filter((f) => f.source === 'parent to provide' && !f.value.trim()).length
+    : 0;
 
   // Handle actual file upload
   const handleFileChange = (
@@ -277,6 +289,17 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                     })}
                   </div>
 
+                  {/* AI-prepared application: partner centres only (open-data centres never have applications) */}
+                  <div className="pt-4 border-t border-[#E7E4DA]">
+                    <PreparedApplicationPanel
+                      app={app}
+                      centre={centre}
+                      parentProfile={parentProfile}
+                      draft={preparedDrafts[app.id]}
+                      onChange={(d) => onUpdatePreparedDraft(app.id, d)}
+                    />
+                  </div>
+
                   {/* Card Footer: Submit button */}
                   <div className="pt-4 border-t border-[#E7E4DA] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <p className="text-xs text-[#5B6B66]">
@@ -293,7 +316,10 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                     </p>
 
                     <PrimaryButton
-                      onClick={() => setReviewingAppId(app.id)}
+                      onClick={() => {
+                        setConfirmedReview(false);
+                        setReviewingAppId(app.id);
+                      }}
                       className="h-11"
                     >
                       Approve and send
@@ -382,10 +408,33 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
             {/* Checklist summary */}
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#5B6B66]">
-                Attached Checklist ({reviewingApp.completedRequirements.length}/{reviewingCentre.requirements.length}):
+                {reviewingDraft
+                  ? 'Checklist as you reviewed it:'
+                  : `Attached Checklist (${reviewingApp.completedRequirements.length}/${reviewingCentre.requirements.length}):`}
               </p>
               <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
-                {reviewingCentre.requirements.map((req) => {
+                {/* With an AI draft, show exactly the statuses that will be sent */}
+                {reviewingDraft?.checklist.map((c) => (
+                  <div
+                    key={c.requirement}
+                    className="flex items-center justify-between text-xs py-2 px-3 rounded-lg bg-[#FBFAF3] border border-[#E7E4DA]"
+                  >
+                    <div className="truncate pr-2">
+                      <span className="text-[#173F42] font-medium">{c.requirement}</span>
+                      {c.matchedDocument && (
+                        <span className="block text-[10px] text-[#7A8A84] truncate">File: {c.matchedDocument}</span>
+                      )}
+                    </div>
+                    <span
+                      className={`shrink-0 text-[11px] font-semibold ${
+                        c.status === 'ready' ? 'text-[#4E7A5A]' : c.status === 'missing' ? 'text-[#8A6411]' : 'text-[#5A4A85]'
+                      }`}
+                    >
+                      {centreStatusLabel(c)}
+                    </span>
+                  </div>
+                ))}
+                {!reviewingDraft && reviewingCentre.requirements.map((req) => {
                   const isDone = reviewingApp.completedRequirements.includes(req);
                   const doc = reviewingApp.uploadedDocuments?.[req];
 
@@ -417,9 +466,36 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
               </div>
             </div>
 
+            {/* AI draft summary: unfilled fields warn but don't block */}
+            {reviewingDraft && (
+              <div className="space-y-1.5 text-xs">
+                <p className="text-[#5B6B66] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#8A6A3B]" />
+                  Includes your reviewed AI draft: {reviewingDraft.fields.length} details, checklist statuses
+                  {reviewingDraft.noteToCentre.trim() ? ' and a note' : ''}.
+                </p>
+                {emptyFieldCount > 0 && (
+                  <p className="rounded-lg bg-[#FDF3DD] border border-[#EADBB8] px-3 py-2 text-[#8A6411]">
+                    {emptyFieldCount} {emptyFieldCount === 1 ? 'field' : 'fields'} still to provide. You can send now or fill
+                    them in first.
+                  </p>
+                )}
+              </div>
+            )}
+
             <p className="text-xs text-[#5B6B66] bg-[#E4ECE1]/40 border border-[#CBD9C6] p-3 rounded-xl">
               By approving, your verified application package will be marked <strong>"Submitted"</strong> and immediately transmitted to <strong>{reviewingCentre.name}</strong>.
             </p>
+
+            <label className="flex items-start gap-2 text-sm text-[#173F42] cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={confirmedReview}
+                onChange={(e) => setConfirmedReview(e.target.checked)}
+              />
+              <span>I&apos;ve reviewed this application and want to send it to {reviewingCentre.name}.</span>
+            </label>
 
             {/* Dialog Buttons */}
             <div className="pt-2 flex items-center justify-end gap-3">
@@ -430,7 +506,9 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                 Cancel
               </GhostButton>
               <PrimaryButton
+                disabled={!confirmedReview}
                 onClick={() => {
+                  if (!confirmedReview) return;
                   onSubmitApplication(reviewingApp.id);
                   setReviewingAppId(null);
                 }}

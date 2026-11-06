@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Application, Centre, UploadedDocument } from '../data/mockData';
 import { StatusBadge } from './StatusBadge';
+import { NOT_PROVIDED, centreStatusLabel } from '../lib/prepareApplication';
 import {
   X,
   FileText,
@@ -538,6 +539,64 @@ export const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = (
                 </div>
               )}
             </div>
+
+            {/* AI-prepared application, as approved and sent by the parent */}
+            {application.preparedWithAi && application.status !== 'Draft' && (
+              <div className="rounded-xl border border-[#E7D6A8] bg-[#FFFCF4] p-4 sm:p-5 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-stone-600">Application details from the parent</h3>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#F3EBDD] px-2 py-0.5 text-[10px] font-semibold text-[#5B4A2E]">
+                    <Sparkles className="w-3 h-3" /> Prepared with AI · approved by parent
+                  </span>
+                </div>
+
+                {application.noteToCentre && (
+                  <div className="text-xs text-stone-700">
+                    <span className="font-semibold">Note to the centre:</span>
+                    <p className="mt-1 rounded-lg bg-white border border-stone-200 p-2.5 italic text-stone-600">
+                      &ldquo;{application.noteToCentre}&rdquo;
+                    </p>
+                  </div>
+                )}
+
+                {application.preparedFields && application.preparedFields.length > 0 && (
+                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                    {application.preparedFields.map((f) => (
+                      <div key={f.label}>
+                        <dt className="text-stone-400">{f.label}</dt>
+                        <dd className={f.value === NOT_PROVIDED ? 'italic text-stone-400' : 'font-semibold text-stone-800'}>
+                          {f.value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+
+                {application.preparedChecklist && application.preparedChecklist.length > 0 && (
+                  <ul className="space-y-1.5 text-xs">
+                    {application.preparedChecklist.map((c) => (
+                      <li
+                        key={c.requirement}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white border border-stone-200 px-3 py-2"
+                      >
+                        <span className="font-medium text-stone-800">{c.requirement}</span>
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                            c.status === 'ready'
+                              ? 'bg-[#E4ECE1] text-[#4E7A5A] border-[#CBD9C6]'
+                              : c.status === 'missing'
+                              ? 'bg-[#FDF3DD] text-[#8A6411] border-[#EADBB8]'
+                              : 'bg-[#ECE8F5] text-[#5A4A85] border-[#D6CFE8]'
+                          }`}
+                        >
+                          {centreStatusLabel(c)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
 
             {/* Submitted Documents Section (Prompt: "centre should be able to view the application with the documents they submitted. and to be able to open and see it.") */}
             <div className="space-y-3">

@@ -52,7 +52,11 @@ interface CentreDashboardProps {
     waitlistPosition?: number,
     waitlistEstimate?: string
   ) => void;
-  onUpdateCentreRequirements: (centreId: string, newRequirements: string[]) => void;
+  onUpdateCentreRequirements: (
+    centreId: string,
+    newRequirements: string[],
+    requirementSources?: Record<string, string>
+  ) => void;
   onOpenConversation: (application: Application) => void;
   requests: SupportRequest[];
   onSubmitRequest: (newReq: Omit<SupportRequest, 'id' | 'referenceNumber' | 'submittedAt'>) => void;
@@ -173,7 +177,13 @@ A signed Photography & Media Consent Form is required for classroom developmenta
   const handleConfirmReplaceRequirements = () => {
     if (!extractedRequirements || extractedRequirements.length === 0) return;
     const requirementTitles = extractedRequirements.map((r) => r.requirement.trim()).filter(Boolean);
-    onUpdateCentreRequirements(singleCentre.id, requirementTitles);
+    // Keep each requirement's source sentence so parents (and the application helper) can see where it came from
+    const requirementSources = Object.fromEntries(
+      extractedRequirements
+        .filter((r) => r.requirement.trim())
+        .map((r) => [r.requirement.trim(), r.sourceSentence.trim()])
+    );
+    onUpdateCentreRequirements(singleCentre.id, requirementTitles, requirementSources);
     setPolicyUpdateSuccess(true);
     setLastActionMessage(
       `Successfully updated ${singleCentre.name}'s active requirements to ${requirementTitles.length} items.`

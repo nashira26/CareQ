@@ -12,6 +12,7 @@ import {
 } from '@google/genai';
 import { sanitizeCriteria, parseSearchFallback } from './src/lib/searchCriteria';
 import { factsSentence } from './src/lib/rankCentres';
+import { sanitizePrepareInput, finalizePrepared, prepareFallback } from './src/lib/prepareApplication';
 
 dotenv.config();
 
@@ -384,6 +385,85 @@ ${JSON.stringify(results)}`,
         modelUsed: null,
         fallbackReason: fallbackReasonFor(err),
         explanations: Object.fromEntries(results.map((r) => [r.id, fallbackFor(r)])),
+      });
+    }
+  });
+
+  // API 2c: Prepare an application for a CareQ partner centre (parent reviews and approves before sending).
+  // Only the fields in PrepareInput are sent to Gemini; guardrails in src/lib/prepareApplication.ts
+  // are applied to every result.
+  app.post('/api/prepare-application', async (req: Request, res: Response) => {
+    const input = sanitizePrepareInput(req.body);
+    if (!input) {
+      return res.status(400).json({ error: 'Child first name and at least one requirement are required.' });
+    }
+
+    try {
+      const { response, modelUsed } = await generateWithTimeout('prepare-application', {
+        contents: `Prepare a child care application for a parent to review. The parent reviews and approves everything before it is sent.
+
+Rules:
+- Use ONLY the data below. Never invent documents, facts, dates, names, phone numbers or reasons.
+- Never mention other families, priority, ranking, waitlist positions or availability.
+- Never assume the child's or parent's gender: no he/she/his/her; use the child's name.
+- fields: list ONLY extra information a requirement asks the parent to write in (e.g. "Emergency contact" for an emergency contact form). Leave value "" and source "parent to provide". Do not repeat the child's name, age, care type or start date, and never list a requirement itself (documents go in the checklist).
+- checklist: one item per requirement, using the requirement text exactly.
+  - "ready" ONLY if an uploaded document clearly matches the requirement; put its exact fileName in matchedDocument.
+  - "needs parent check" if the requirement is a condition the app cannot verify (e.g. living in a catchment area, toilet training).
+  - otherwise "missing".
+- noteToCentre: an optional short, polite cover note from the parent to the centre (max 80 words), using only the given facts.
+
+Data (JSON):
+${JSON.stringify(input)}`,
+        config: {
+          systemInstruction:
+            'You help a parent prepare an application. You only organise the data you are given. You never invent information and never rank or compare families.',
+          temperature: 0,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              fields: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    label: { type: Type.STRING },
+                    value: { type: Type.STRING },
+                    source: { type: Type.STRING, enum: ['family profile', 'parent to provide'] },
+                  },
+                  required: ['label', 'value', 'source'],
+                },
+              },
+              checklist: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    requirement: { type: Type.STRING },
+                    status: { type: Type.STRING, enum: ['ready', 'missing', 'needs parent check'] },
+                    matchedDocument: { type: Type.STRING, nullable: true },
+                  },
+                  required: ['requirement', 'status'],
+                },
+              },
+              missingItems: { type: Type.ARRAY, items: { type: Type.STRING } },
+              noteToCentre: { type: Type.STRING },
+            },
+            required: ['fields', 'checklist', 'missingItems', 'noteToCentre'],
+          },
+        },
+      });
+      const result = finalizePrepared(input, JSON.parse(response.text || '{}'));
+      return res.json({ success: true, aiMode: 'gemini', modelUsed, ...result });
+    } catch (err: unknown) {
+      console.warn('Gemini prepare-application error; using rule-based preparation:', err);
+      return res.json({
+        success: true,
+        aiMode: 'fallback',
+        modelUsed: null,
+        fallbackReason: fallbackReasonFor(err),
+        ...prepareFallback(input),
       });
     }
   });

@@ -35,6 +35,7 @@ import { AuthPage, MockAccount } from './components/AuthPage';
 import { HelpTab } from './components/HelpTab';
 import { AskCareQAssistant } from './components/AskCareQAssistant';
 import { SupportRequest, INITIAL_SUPPORT_REQUESTS, ConcernStep } from './data/helpData';
+import { PreparedDraft, NOT_PROVIDED } from './lib/prepareApplication';
 import { LogoFull } from './components/Logo';
 import {
   Search,
@@ -91,6 +92,11 @@ export default function App() {
   // In-memory application state
   const [applications, setApplications] = useState<Application[]>(INITIAL_APPLICATIONS);
 
+  // AI-prepared drafts, kept apart from applications so nothing reaches a centre before the parent submits
+  const [preparedDrafts, setPreparedDrafts] = useState<Record<string, PreparedDraft>>({});
+  const handleUpdatePreparedDraft = (applicationId: string, draft: PreparedDraft) =>
+    setPreparedDrafts((prev) => ({ ...prev, [applicationId]: draft }));
+
   // In-memory conversations map between centres and parents
   const [conversations, setConversations] = useState<ConversationsMap>(INITIAL_CONVERSATIONS);
 
@@ -133,6 +139,7 @@ export default function App() {
           ageGroups: ['Toddler', 'Preschool'],
           hours: '7:30 AM - 6:00 PM',
           requirements: [...singleCentre.requirements],
+          requirementSources: { ...(singleCentre.requirementSources ?? {}) },
           address: 'Ontario Licensed Child Care Facility',
         };
         setCentres((prev) => [newCentre, ...prev]);
@@ -345,16 +352,40 @@ export default function App() {
     const childName = targetApp ? targetApp.childName : PARENT_PROFILE.childName;
     const parentName = targetApp ? targetApp.parentName : PARENT_PROFILE.name;
 
+    // The parent approved: attach the reviewed AI draft (if any) to what is sent
+    const draft = preparedDrafts[applicationId];
+    const prepared: Partial<Application> = draft
+      ? {
+          preparedFields: draft.fields.map((f) => ({
+            label: f.label,
+            value: f.value.trim() || NOT_PROVIDED,
+            source: f.source,
+          })),
+          preparedChecklist: draft.checklist,
+          noteToCentre: draft.noteToCentre.trim() || undefined,
+          preparedWithAi: true,
+          aiMode: draft.aiMode,
+        }
+      : {};
+
     setApplications((prev) =>
       prev.map((app) => {
         if (app.id !== applicationId) return app;
         return {
           ...app,
+          ...prepared,
           status: 'Submitted' as ApplicationStatus,
           submittedAt: formattedDate,
         };
       })
     );
+    if (draft) {
+      setPreparedDrafts((prev) => {
+        const next = { ...prev };
+        delete next[applicationId];
+        return next;
+      });
+    }
 
     // Notify centre of new application submission
     const notif: InAppNotification = {
@@ -540,13 +571,19 @@ export default function App() {
   };
 
   // Centre view policy requirement update (from Gemini extractor)
-  const handleUpdateCentreRequirements = (centreId: string, newRequirements: string[]) => {
+  const handleUpdateCentreRequirements = (
+    centreId: string,
+    newRequirements: string[],
+    requirementSources?: Record<string, string>
+  ) => {
     setCentres((prev) =>
       prev.map((c) => {
         if (c.id !== centreId) return c;
         return {
           ...c,
           requirements: newRequirements,
+          // Source sentences confirmed by the centre in the policy reader
+          requirementSources: requirementSources ?? c.requirementSources,
         };
       })
     );
@@ -827,6 +864,8 @@ export default function App() {
                 onUploadDocument={handleUploadDocument}
                 onRemoveDocument={handleRemoveDocument}
                 onSubmitApplication={handleSubmitApplication}
+                preparedDrafts={preparedDrafts}
+                onUpdatePreparedDraft={handleUpdatePreparedDraft}
                 onNavigateToFind={() => setParentTab('find')}
                 onNavigateToTrack={() => setParentTab('track')}
               />
