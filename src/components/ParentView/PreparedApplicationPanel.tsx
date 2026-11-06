@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Sparkles, Loader2, Quote, FileCheck2, AlertTriangle } from 'lucide-react';
 import { Application, Centre, ParentProfile } from '../../data/mockData';
-import { AiFallbackNote } from '../ui/CareUI';
+import { AiFallbackNote, AiNotice } from '../ui/CareUI';
+import { aiPost, isUserFacingAiError } from '../../lib/aiFetch';
 import {
   CHECKLIST_STATUSES,
   ChecklistStatus,
@@ -52,19 +53,16 @@ interface Props {
 
 export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentProfile, draft, onChange }) => {
   const [loading, setLoading] = useState(false);
+  const [aiNotice, setAiNotice] = useState<string | null>(null);
 
   const handlePrepare = async () => {
     const input = buildPrepareInput(app, centre, parentProfile);
     setLoading(true);
     let next: PreparedDraft;
-    try {
-      const res = await fetch('/api/prepare-application', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
-      });
-      const data = await res.json();
-      if (!res.ok || !Array.isArray(data.checklist)) throw new Error(data.error || 'bad response');
+    setAiNotice(null);
+    const result = await aiPost<Omit<PreparedDraft, 'noteEditedByParent'>>('/api/prepare-application', input);
+    if (result.ok && Array.isArray(result.data.checklist)) {
+      const data = result.data;
       next = {
         fields: data.fields,
         checklist: data.checklist,
@@ -73,12 +71,12 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
         aiMode: data.aiMode,
         modelUsed: data.modelUsed ?? null,
       };
-    } catch {
-      // Server unreachable: same rules, in the browser
+    } else {
+      // Rate-limited, signed out or unreachable: the same rules, in the browser
       next = { ...prepareFallback(input), aiMode: 'fallback', modelUsed: null };
-    } finally {
-      setLoading(false);
+      if (!result.ok && isUserFacingAiError(result.status)) setAiNotice(result.message);
     }
+    setLoading(false);
     // Re-running never overwrites what the parent typed or chose
     onChange(mergePrepared(draft, next));
   };
@@ -121,6 +119,7 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
             <span className="rounded px-1.5 py-0.5 bg-[#F3EBDD] text-[#5B4A2E] text-[10px] font-semibold">Simulated centre</span>
           </div>
           <AiFallbackNote aiMode={draft.aiMode} />
+          <AiNotice message={aiNotice} />
 
           {/* Fields */}
           <div>

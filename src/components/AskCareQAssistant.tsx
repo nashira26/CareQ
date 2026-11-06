@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, X, Send, Sparkles, Loader2, MessageSquare, Info } from 'lucide-react';
 import { Centre } from '../data/mockData';
+import { aiPost, isUserFacingAiError } from '../lib/aiFetch';
 import { AiFallbackNote, AiMode } from './ui/CareUI';
 
 interface ChatMessage {
@@ -59,23 +60,20 @@ export const AskCareQAssistant: React.FC<AskCareQAssistantProps> = ({ centres })
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/ask-careq', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: q,
-          centres: centres.map((c) => ({
-            name: c.name,
-            neighbourhood: c.neighbourhood,
-            ageGroups: c.ageGroups,
-            hours: c.hours,
-            requirements: c.requirements,
-            feeNote: c.feeNote,
-          })),
-        }),
+      const result = await aiPost<{ answer?: string; aiMode?: AiMode }>('/api/ask-careq', {
+        question: q,
+        centres: centres.map((c) => ({
+          name: c.name,
+          neighbourhood: c.neighbourhood,
+          ageGroups: c.ageGroups,
+          hours: c.hours,
+          requirements: c.requirements,
+          feeNote: c.feeNote,
+        })),
       });
-
-      const data = await res.json();
+      // Too many questions: say so plainly (the reply is not an AI answer)
+      if (!result.ok) throw Object.assign(new Error(result.message), { userFacing: isUserFacingAiError(result.status) });
+      const data = result.data;
       const answer =
         data.answer || "I don't have that information; please contact the centre or use Help.";
 
@@ -89,12 +87,12 @@ export const AskCareQAssistant: React.FC<AskCareQAssistantProps> = ({ centres })
 
       setMessages((prev) => [...prev, botMsg]);
     } catch (err) {
-      console.error('Ask CareQ error:', err);
-      // Fallback
+      // Fallback (or the rate-limit message, which the user can act on)
+      const userFacing = (err as { userFacing?: boolean }).userFacing;
       const botMsg: ChatMessage = {
         id: `a-${Date.now()}`,
         sender: 'assistant',
-        text: "I don't have that information; please contact the centre or use Help.",
+        text: userFacing ? (err as Error).message : "I don't have that information; please contact the centre or use Help.",
         timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
         aiMode: 'fallback',
       };

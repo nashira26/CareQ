@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Centre, Application, ChatMessage } from '../data/mockData';
 import { StatusBadge } from './StatusBadge';
-import { AiFallbackNote, AiMode } from './ui/CareUI';
+import { AiFallbackNote, AiMode, AiNotice } from './ui/CareUI';
+import { aiPost, isUserFacingAiError } from '../lib/aiFetch';
 import {
   X,
   Send,
@@ -42,6 +43,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
   const [selectedIntent, setSelectedIntent] = useState<string>('');
   const [draftAiMode, setDraftAiMode] = useState<AiMode | null>(null);
   const [toneAiMode, setToneAiMode] = useState<AiMode | null>(null);
+  const [aiNotice, setAiNotice] = useState<string | null>(null);
 
   // Tone check states
   const [isCheckingTone, setIsCheckingTone] = useState<boolean>(false);
@@ -110,31 +112,23 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
     setIsGeneratingAiDraft(true);
     setAiDraft(null);
 
-    try {
-      const res = await fetch('/api/generate-message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          role,
-          childName: application.childName,
-          childAgeMonths: application.childAgeMonths,
-          centreName: centre.name,
-          applicationStatus: application.status,
-          waitlistPosition: application.waitlistPosition,
-          intent: intentText,
-        }),
-      });
-
-      const data = await res.json();
-      if (data.success && data.draftMessage) {
-        setAiDraft(data.draftMessage);
-        setDraftAiMode(data.aiMode ?? null);
-      }
-    } catch (err) {
-      console.error('Failed to generate message:', err);
-    } finally {
-      setIsGeneratingAiDraft(false);
+    setAiNotice(null);
+    const result = await aiPost<{ success?: boolean; draftMessage?: string; aiMode?: AiMode }>('/api/generate-message', {
+      role,
+      childName: application.childName,
+      childAgeMonths: application.childAgeMonths,
+      centreName: centre.name,
+      applicationStatus: application.status,
+      waitlistPosition: application.waitlistPosition,
+      intent: intentText,
+    });
+    if (result.ok && result.data.success && result.data.draftMessage) {
+      setAiDraft(result.data.draftMessage);
+      setDraftAiMode(result.data.aiMode ?? null);
+    } else if (!result.ok && isUserFacingAiError(result.status)) {
+      setAiNotice(`${result.message} You can still type your message yourself.`);
     }
+    setIsGeneratingAiDraft(false);
   };
 
   // Check tone using Gemini before sending any message
@@ -145,16 +139,16 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
     setToneWarning(null);
 
     try {
-      const res = await fetch('/api/check-tone', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: textToSend.trim(),
-          role,
-        }),
-      });
-
-      const data = await res.json();
+      const result = await aiPost<{ success?: boolean; isHarsh?: boolean; suggestedCalmerVersion?: string; aiMode?: AiMode }>(
+        '/api/check-tone',
+        { text: textToSend.trim(), role }
+      );
+      if (!result.ok) {
+        // Tone check unavailable: the message is still sent (the sender decides), and we say so
+        if (isUserFacingAiError(result.status)) setAiNotice(`Tone check skipped: ${result.message}`);
+        throw new Error(result.message);
+      }
+      const data = result.data;
       setToneAiMode(data.aiMode ?? null);
       if (data.success && data.isHarsh && data.suggestedCalmerVersion) {
         // Rude, threatening or aggressive tone detected! Show warning panel
@@ -501,6 +495,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
             </button>
           </form>
           {!isCheckingTone && <AiFallbackNote aiMode={toneAiMode} />}
+          <AiNotice message={aiNotice} />
         </div>
       </div>
     </div>

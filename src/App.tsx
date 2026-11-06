@@ -3,25 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  INITIAL_CENTRES,
-  INITIAL_APPLICATIONS,
-  INITIAL_CONVERSATIONS,
-  INITIAL_NOTIFICATIONS,
   PARENT_PROFILE,
-  PRIYA_CHILDREN,
-  PRIYA_ACCOUNT_ID,
-  RIVERDALE_CENTRE_ID,
   conversationKey,
   ParentProfile,
   Centre,
   Application,
   ApplicationStatus,
-  UploadedDocument,
-  ChatMessage,
-  ConversationsMap,
-  InAppNotification,
 } from './data/mockData';
 import { Navbar } from './components/Navbar';
 import { AppSidebar, SidebarItem } from './components/AppSidebar';
@@ -35,22 +24,21 @@ import { CentreOverview } from './components/CentreView/CentreOverview';
 import { CentreMessages } from './components/CentreView/CentreMessages';
 import { ConversationModal } from './components/ConversationModal';
 import { TrustTransparencyPage } from './components/TrustTransparencyPage';
-import { AuthPage, MockAccount } from './components/AuthPage';
+import { AuthPage } from './components/AuthPage';
 import { HelpTab } from './components/HelpTab';
 import { AskCareQAssistant } from './components/AskCareQAssistant';
-import { SupportRequest, INITIAL_SUPPORT_REQUESTS, ConcernStep } from './data/helpData';
-import { PreparedDraft, NOT_PROVIDED } from './lib/prepareApplication';
-import { DemoState, loadDemoState, saveDemoState, mergeCentres, splitCentres } from './lib/demoStorage';
-import { ResetDemo } from './components/ResetDemo';
+import type { SupportRequest } from './data/helpData';
+import type { PreparedDraft } from './lib/prepareApplication';
+import { ResetDemo, ResetContext } from './components/ResetDemo';
 import { ParentOnboarding } from './components/Onboarding/ParentOnboarding';
 import { CentreRegistration } from './components/Onboarding/CentreRegistration';
-import { Child, ageInMonths } from './lib/family';
+import { Child, CentreFormInput, ageInMonths } from './lib/family';
 import type { Area, FsaCentroids } from './lib/rankCentres';
+import { ApiStore, CentreStatus, DemoStore, LocalStore, StoreError, fetchConfig, isOutage } from './lib/store';
+import { EMPTY_SNAPSHOT, Snapshot } from './lib/world';
+import type { DraftChange } from './lib/service';
 import torontoAreas from './data/torontoAreas.json';
 import fsaCentroids from './data/fsaCentroids.json';
-
-const AREAS = (torontoAreas as { areas: Area[] }).areas;
-const FSA = fsaCentroids as FsaCentroids;
 import { LogoFull } from './components/Logo';
 import {
   Search,
@@ -59,130 +47,128 @@ import {
   ListFilter,
   HelpCircle,
   Home,
-  Building2,
   Info,
   Heart,
   LayoutGrid,
   ScrollText,
   Users,
+  WifiOff,
+  X,
+  Loader2,
 } from 'lucide-react';
 
-const INITIAL_MOCK_ACCOUNTS: MockAccount[] = [
-  {
-    id: PRIYA_ACCOUNT_ID,
-    role: 'parent',
-    email: 'priya@example.ca',
-    name: 'Priya Patel',
-    password: 'password',
-    children: PRIYA_CHILDREN,
-    onboarded: true,
-  },
-  {
-    id: 'centre-riverdale',
-    role: 'centre',
-    email: 'centre@riverdale.ca',
-    name: 'Sarah Jenkins',
-    password: 'password',
-    centreName: 'Riverdale Early Learning Centre',
-    centreId: RIVERDALE_CENTRE_ID,
-  },
-];
+const AREAS = (torontoAreas as { areas: Area[] }).areas;
+const FSA = fsaCentroids as FsaCentroids;
+const POLL_MS = 10_000; // mongo mode: pick up changes made on other devices
+const TYPING_SAVE_MS = 600; // notes and AI drafts are saved shortly after typing stops
 
-const formatDate = (opts: Intl.DateTimeFormatOptions) => new Date().toLocaleDateString('en-US', opts);
+type ParentTab = 'home' | 'find' | 'apply' | 'track' | 'companion' | 'help';
+type CentreTab = 'home' | 'applications' | 'messages' | 'policy' | 'help';
 
 export default function App() {
-  // Mock accounts stored in app state
-  // Demo state saved in this browser (null = start from the mock data). Read once on start.
-  const [saved] = useState(() => loadDemoState());
+  // ---------------- Data store (MongoDB via the API, or this browser in local mode) ----------------
+  const [store, setStore] = useState<DemoStore | null>(null);
+  const [resetAvailable, setResetAvailable] = useState(false);
+  const [bootError, setBootError] = useState<string | null>(null);
+  const [snapshot, setSnapshot] = useState<Snapshot>(EMPTY_SNAPSHOT);
+  const [outage, setOutage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  const [mockAccounts, setMockAccounts] = useState<MockAccount[]>(() =>
-    saved
-      ? [...INITIAL_MOCK_ACCOUNTS, ...saved.mockAccounts.filter((a) => !INITIAL_MOCK_ACCOUNTS.some((d) => d.id === a.id))]
-      : INITIAL_MOCK_ACCOUNTS
+  const boot = useCallback(async () => {
+    setBootError(null);
+    try {
+      const config = await fetchConfig();
+      const s: DemoStore = config.dataMode === 'local' ? new LocalStore() : new ApiStore();
+      setResetAvailable(config.resetAvailable);
+      setSnapshot(await s.load());
+      setStore(s);
+      setOutage(null);
+    } catch (e) {
+      setBootError(e instanceof StoreError ? e.message : "Can't reach the CareQ server.");
+    }
+  }, []);
+  useEffect(() => {
+    boot();
+  }, [boot]);
+
+  // Unsaved typing (notes, AI drafts): saved after a short pause, flushed before submitting
+  const pendingWrites = useRef(new Map<string, { timer: number; run: () => Promise<void> }>());
+
+  const handleStoreError = useCallback(
+    async (e: unknown) => {
+      if (isOutage(e)) {
+        setOutage((e as StoreError).message);
+      } else if (e instanceof StoreError && e.status === 401 && store) {
+        setSnapshot(await store.load().catch(() => EMPTY_SNAPSHOT)); // session ended: back to login
+      } else {
+        setActionError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+      }
+    },
+    [store]
   );
 
-  // Authenticated account in session (null = shows login/sign-up page)
-  const [currentAccount, setCurrentAccount] = useState<MockAccount | null>(() =>
-    saved?.sessionAccountId ? mockAccounts.find((a) => a.id === saved.sessionAccountId) ?? null : null
+  /** Runs a store call and shows its result (or a plain-language error). */
+  const run = useCallback(
+    async (p: Promise<Snapshot>): Promise<boolean> => {
+      try {
+        setSnapshot(await p);
+        setOutage(null);
+        return true;
+      } catch (e) {
+        await handleStoreError(e);
+        return false;
+      }
+    },
+    [handleStoreError]
   );
 
-  // Parent View Tab Switcher: 'home' | 'find' | 'apply' | 'track' | 'companion' | 'help'
-  const [parentTab, setParentTab] = useState<'home' | 'find' | 'apply' | 'track' | 'companion' | 'help'>('home');
+  // Mongo mode: refresh every 10 s and when the window regains focus, so other devices' changes show up
+  useEffect(() => {
+    if (!store || store.mode !== 'mongo') return;
+    const refresh = async () => {
+      if (pendingWrites.current.size > 0 || document.visibilityState === 'hidden') return;
+      try {
+        setSnapshot(await store.load());
+        setOutage(null);
+      } catch (e) {
+        if (isOutage(e)) setOutage((e as StoreError).message);
+      }
+    };
+    const timer = window.setInterval(refresh, POLL_MS);
+    window.addEventListener('focus', refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [store]);
 
-  // Centre View Tab Switcher: 'home' | 'applications' | 'messages' | 'policy' | 'help'
-  const [centreTab, setCentreTab] = useState<'home' | 'applications' | 'messages' | 'policy' | 'help'>('home');
+  const scheduleWrite = (key: string, write: () => Promise<Snapshot>) => {
+    const pending = pendingWrites.current;
+    const existing = pending.get(key);
+    if (existing) window.clearTimeout(existing.timer);
+    const runWrite = async () => {
+      pending.delete(key);
+      try {
+        await write(); // keep what's on screen (the user may still be typing)
+        setOutage(null);
+      } catch (e) {
+        await handleStoreError(e);
+      }
+    };
+    pending.set(key, { timer: window.setTimeout(runWrite, TYPING_SAVE_MS), run: runWrite });
+  };
+  const flushWrites = async () => {
+    const pending = [...pendingWrites.current.values()];
+    for (const p of pending) window.clearTimeout(p.timer);
+    await Promise.all(pending.map((p) => p.run()));
+  };
 
-  // In-memory centres state (Riverdale Early Learning Centre is the single centre managed in Centre role)
-  const [centres, setCentres] = useState<Centre[]>(() =>
-    saved ? mergeCentres(INITIAL_CENTRES, saved.centreOverrides, saved.selfRegisteredCentres) : INITIAL_CENTRES
-  );
-  const singleCentre = centres[0]; // Riverdale Early Learning Centre
+  // ---------------- What the signed-in user can see (already scoped by the store) ----------------
+  const { account: currentAccount, centres, applications, conversations, notifications, supportRequests, preparedDrafts } = snapshot;
 
-  // In-memory application state
-  const [applications, setApplications] = useState<Application[]>(() => saved?.applications ?? INITIAL_APPLICATIONS);
-
-  // AI-prepared drafts, kept apart from applications so nothing reaches a centre before the parent submits
-  const [preparedDrafts, setPreparedDrafts] = useState<Record<string, PreparedDraft>>(() => saved?.preparedDrafts ?? {});
-  const handleUpdatePreparedDraft = (applicationId: string, draft: PreparedDraft) =>
-    setPreparedDrafts((prev) => ({ ...prev, [applicationId]: draft }));
-
-  // In-memory conversations map between centres and parents
-  const [conversations, setConversations] = useState<ConversationsMap>(() => saved?.conversations ?? INITIAL_CONVERSATIONS);
-
-  // In-memory in-app notifications state
-  const [notifications, setNotifications] = useState<InAppNotification[]>(() => saved?.notifications ?? INITIAL_NOTIFICATIONS);
-
-  // Trust and transparency page navigation state
+  const [parentTab, setParentTab] = useState<ParentTab>('home');
+  const [centreTab, setCentreTab] = useState<CentreTab>('home');
   const [isTrustPageOpen, setIsTrustPageOpen] = useState<boolean>(false);
-
-  // Mark single notification as read
-  const handleMarkNotificationAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
-  };
-
-  // Mark all of the signed-in user's notifications as read
-  const handleMarkAllNotificationsAsRead = (_role: 'parent' | 'centre') => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.recipientId === myRecipientId ? { ...n, read: true } : n))
-    );
-  };
-
-  // Login handler
-  const handleLogin = (incoming: MockAccount) => {
-    const account = incoming;
-    setParentTab('home');
-    setCentreTab('home');
-
-    // Centre staff are linked to their centre by id; a new centre account registers its centre next
-
-    setMockAccounts((prev) => {
-      const i = prev.findIndex((a) => a.email.toLowerCase() === account.email.toLowerCase());
-      if (i === -1) return [...prev, account];
-      const next = [...prev];
-      next[i] = { ...prev[i], ...account };
-      return next;
-    });
-
-    setCurrentAccount(account);
-    setIsTrustPageOpen(false);
-  };
-
-  // Logout handler
-  const handleLogout = () => {
-    setCurrentAccount(null);
-    setIsTrustPageOpen(false);
-  };
-
-  // Update the signed-in account (and its saved copy)
-  const updateCurrentAccount = (patch: Partial<MockAccount>) => {
-    if (!currentAccount) return;
-    const updated = { ...currentAccount, ...patch };
-    setCurrentAccount(updated);
-    setMockAccounts((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
-  };
-
   // Centre registration: show the success screen until the centre chooses where to go next
   const [registrationScreenOpen, setRegistrationScreenOpen] = useState(false);
   // Policy text the centre asked AI to read right after registering
@@ -190,11 +176,9 @@ export default function App() {
 
   const currentRole = currentAccount ? currentAccount.role : 'parent';
 
-  // The signed-in parent and their active child (Priya's seed child is Anya)
-  const myAccountId = currentAccount?.id ?? PRIYA_ACCOUNT_ID;
-  const myChildren: Child[] =
-    currentAccount?.role === 'parent' ? currentAccount.children ?? [] : PRIYA_CHILDREN;
-  const activeChild: Child | undefined = myChildren[0]; // the first child is active everywhere for now
+  // The signed-in parent and their active child (the first child for now)
+  const myChildren: Child[] = currentAccount?.role === 'parent' ? currentAccount.children ?? [] : [];
+  const activeChild: Child | undefined = myChildren[0];
   const activeParentProfile: ParentProfile = activeChild
     ? {
         name: currentAccount?.name || PARENT_PROFILE.name,
@@ -206,584 +190,165 @@ export default function App() {
         preferredStartDate: activeChild.preferredStartDate,
         homeArea: activeChild.homeArea,
       }
-    : { ...PARENT_PROFILE, name: currentAccount?.name || PARENT_PROFILE.name };
+    : { ...PARENT_PROFILE, name: currentAccount?.name || PARENT_PROFILE.name, children: [] };
 
-  // The signed-in centre (by id)
+  // The signed-in centre
   const activeSingleCentre: Centre =
-    currentAccount && currentAccount.role === 'centre'
-      ? centres.find((c) => c.id === currentAccount.centreId) || singleCentre
-      : singleCentre;
+    centres.find((c) => c.id === currentAccount?.centreId) ?? centres[0] ?? ({ id: '', name: '', neighbourhood: '', ageGroups: [], hours: '', requirements: [] } as Centre);
 
-  // Notifications are addressed to a parent account or a centre
-  const myRecipientId = currentAccount?.role === 'centre' ? activeSingleCentre.id : myAccountId;
-  const myNotifications = notifications.filter((n) => n.recipientId === myRecipientId);
+  // ---------------- Actions ----------------
 
-  // Support & concern requests state (for Help tab)
-  const [supportRequests, setSupportRequests] = useState<SupportRequest[]>(
-    () => saved?.supportRequests ?? INITIAL_SUPPORT_REQUESTS
-  );
-
-  // Save the demo in this browser: debounced ~300 ms, and flushed when the page is hidden/closed.
-  const demoState: DemoState = {
-    mockAccounts: mockAccounts.filter((a) => !INITIAL_MOCK_ACCOUNTS.some((d) => d.id === a.id)),
-    sessionAccountId: currentAccount?.id ?? null,
-    applications,
-    conversations,
-    notifications,
-    supportRequests,
-    ...splitCentres(centres, INITIAL_CENTRES),
-    preparedDrafts,
+  const handleLogIn = async (input: { role: 'parent' | 'centre'; email: string; password: string }): Promise<string | null> => {
+    if (!store) return "Can't reach the CareQ server.";
+    try {
+      setSnapshot(await store.logIn(input));
+      setParentTab('home');
+      setCentreTab('home');
+      setIsTrustPageOpen(false);
+      return null;
+    } catch (e) {
+      if (isOutage(e)) setOutage((e as StoreError).message);
+      return (e as Error).message;
+    }
   };
-  const latestDemoState = useRef(demoState);
-  latestDemoState.current = demoState;
-  useEffect(() => {
-    const t = window.setTimeout(() => saveDemoState(latestDemoState.current), 300);
-    return () => window.clearTimeout(t);
-  }, [mockAccounts, currentAccount, applications, conversations, notifications, supportRequests, centres, preparedDrafts]);
-  useEffect(() => {
-    const flush = () => saveDemoState(latestDemoState.current);
-    window.addEventListener('pagehide', flush);
-    return () => window.removeEventListener('pagehide', flush);
-  }, []);
-
-  const handleCreateSupportRequest = (
-    newReq: Omit<SupportRequest, 'id' | 'referenceNumber' | 'submittedAt'>
-  ) => {
-    const today = new Date().toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-    const refNum = `CQ-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    const created: SupportRequest = {
-      ...newReq,
-      id: `req-${Date.now()}`,
-      referenceNumber: refNum,
-      submittedAt: today,
-    };
-
-    setSupportRequests((prev) => [created, ...prev]);
+  const handleSignUp = async (input: { role: 'parent' | 'centre'; name: string; email: string; password: string }): Promise<string | null> => {
+    if (!store) return "Can't reach the CareQ server.";
+    try {
+      setSnapshot(await store.signUp(input));
+      setParentTab('home');
+      setCentreTab('home');
+      setIsTrustPageOpen(false);
+      return null;
+    } catch (e) {
+      if (isOutage(e)) setOutage((e as StoreError).message);
+      return (e as Error).message;
+    }
+  };
+  const handleLogout = async () => {
+    await flushWrites();
+    setIsTrustPageOpen(false);
+    setRegistrationScreenOpen(false);
+    if (store) await run(store.logOut());
   };
 
-  const handleAdvanceConcernStep = (requestId: string) => {
-    const steps: ConcernStep[] = [
-      'Submitted',
-      'Under review by CareQ support',
-      'Shared with the other party (if needed)',
-      'Resolved',
-    ];
-    const today = new Date().toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+  const handleMarkNotificationAsRead = (id: string) => store && run(store.markRead([id]));
+  const handleMarkAllNotificationsAsRead = (_role: 'parent' | 'centre') => store && run(store.markRead('all'));
 
-    setSupportRequests((prev) =>
-      prev.map((req) => {
-        if (req.id !== requestId || req.type !== 'concern') return req;
+  const handleCreateSupportRequest = (newReq: Omit<SupportRequest, 'id' | 'referenceNumber' | 'submittedAt'>) =>
+    store && run(store.createSupportRequest({ type: newReq.type, subject: newReq.subject, message: newReq.message, category: newReq.category }));
+  const handleAdvanceConcernStep = (requestId: string) => store && run(store.advanceConcern(requestId));
 
-        const currentIdx = steps.indexOf(req.concernStep || 'Submitted');
-        const nextIdx = Math.min(steps.length - 1, currentIdx + 1);
-        const nextStep = steps[nextIdx];
-        const existingHistory = req.concernStepsHistory || [];
-        const updatedHistory = existingHistory.some((h) => h.step === nextStep)
-          ? existingHistory
-          : [...existingHistory, { step: nextStep, date: today }];
+  // Applications (parent)
+  const handleSelectCentre = async (centreId: string) => {
+    if (!store) return;
+    try {
+      const { snapshot: s } = await store.createDraft(centreId);
+      setSnapshot(s);
+      setParentTab('apply');
+    } catch (e) {
+      await handleStoreError(e);
+    }
+  };
+  const draftChange = (applicationId: string, change: DraftChange) => store && run(store.updateDraft(applicationId, change));
+  const handleToggleRequirement = (applicationId: string, requirement: string) =>
+    draftChange(applicationId, { kind: 'toggleRequirement', requirement });
+  const handleUploadDocument = (applicationId: string, requirement: string, file: { fileName: string; fileSize: string }) =>
+    draftChange(applicationId, { kind: 'uploadDocument', requirement, ...file });
+  const handleRemoveDocument = (applicationId: string, requirement: string) => draftChange(applicationId, { kind: 'removeDocument', requirement });
 
-        return {
-          ...req,
-          concernStep: nextStep,
-          concernStepsHistory: updatedHistory,
-          status: nextStep === 'Resolved' ? 'Resolved' : 'In progress',
-        };
-      })
-    );
+  // Typing: show at once, save after a short pause
+  const handleUpdateNoteToCentre = (applicationId: string, note: string) => {
+    setSnapshot((s) => ({ ...s, applications: s.applications.map((a) => (a.id === applicationId ? { ...a, noteToCentre: note } : a)) }));
+    if (store) scheduleWrite(`note:${applicationId}`, () => store.updateDraft(applicationId, { kind: 'noteToCentre', note }));
+  };
+  const handleUpdatePreparedDraft = (applicationId: string, draft: PreparedDraft) => {
+    setSnapshot((s) => ({ ...s, preparedDrafts: { ...s.preparedDrafts, [applicationId]: draft } }));
+    if (store) scheduleWrite(`draft:${applicationId}`, () => store.updateDraft(applicationId, { kind: 'preparedDraft', draft }));
   };
 
-  // Active chat modal state
-  const [activeChatModal, setActiveChatModal] = useState<{
-    isOpen: boolean;
-    centreId: string;
-    applicationId: string;
-  } | null>(null);
+  const handleSubmitApplication = async (applicationId: string) => {
+    if (!store) return;
+    await flushWrites(); // the reviewed draft and note must be saved before sending
+    if (await run(store.submit(applicationId))) setParentTab('track');
+  };
+  const handleAcceptOffer = (applicationId: string, withdrawOthers: boolean) => store && run(store.acceptOffer(applicationId, withdrawOthers));
+  const handleWithdrawApplication = (applicationId: string) => store && run(store.withdraw(applicationId));
 
-  // A new application (or an enquiry before applying) for the active child at a centre
-  const newApplicationFor = (centreId: string, id: string): Application => ({
+  // Centre actions
+  const handleUpdateStatus = (applicationId: string, newStatus: ApplicationStatus, waitlistPosition?: number, waitlistEstimate?: string) =>
+    store && run(store.setStatus(applicationId, newStatus as CentreStatus, waitlistPosition, waitlistEstimate));
+  const handleUpdateCentreRequirements = (centreId: string, requirements: string[], sources?: Record<string, string>) =>
+    store && run(store.updateRequirements(centreId, requirements, sources ?? {}));
+
+  // Onboarding and centre registration
+  const handleCompleteOnboarding = async (children: Child[]) => {
+    if (store && (await run(store.completeOnboarding(children)))) setParentTab('home');
+  };
+  const handleRegisterCentre = async (form: CentreFormInput, photoDataUrl?: string): Promise<{ centre?: Centre; error?: string }> => {
+    if (!store) return { error: "Can't reach the CareQ server." };
+    try {
+      setRegistrationScreenOpen(true);
+      const s = await store.registerCentre(form, photoDataUrl);
+      setSnapshot(s);
+      return { centre: s.centres.find((c) => c.id === s.account?.centreId) };
+    } catch (e) {
+      setRegistrationScreenOpen(false);
+      if (isOutage(e)) setOutage((e as StoreError).message);
+      return { error: (e as Error).message };
+    }
+  };
+
+  // ---------------- Conversations ----------------
+  const [activeChatModal, setActiveChatModal] = useState<{ isOpen: boolean; centreId: string; applicationId: string } | null>(null);
+
+  /** The parent's application for the active child at a centre, or an enquiry (not saved). */
+  const enquiryFor = (centreId: string, id: string): Application => ({
     id,
     centreId,
-    parentAccountId: myAccountId,
+    parentAccountId: currentAccount?.id ?? '',
     childId: activeParentProfile.childId,
     parentName: activeParentProfile.name,
     childName: activeParentProfile.childName,
     childAgeMonths: activeParentProfile.childAgeMonths,
     careType: activeParentProfile.careType,
     preferredStartDate: activeParentProfile.preferredStartDate,
-    parentNotes: activeChild?.notes || undefined,
     status: 'Draft',
     completedRequirements: [],
-    uploadedDocuments: {},
   });
-  const myApplicationAt = (centreId: string) =>
-    applications.find(
-      (a) => a.centreId === centreId && a.parentAccountId === myAccountId && a.childId === activeParentProfile.childId
-    );
-
-  // Add / select a centre for application from Parent Find tab
-  const handleSelectCentre = (centreId: string) => {
-    const existing = myApplicationAt(centreId);
-    if (!existing) {
-      const newApp = newApplicationFor(centreId, `app-${centreId}-${activeParentProfile.childId}-${Date.now()}`);
-      setApplications((prev) => [newApp, ...prev]);
-    }
-    // Switch to apply tab to view checklist
-    setParentTab('apply');
-  };
-
-  // Toggle requirement checklist item in Apply tab
-  const handleToggleRequirement = (applicationId: string, requirementName: string) => {
-    setApplications((prev) =>
-      prev.map((app) => {
-        if (app.id !== applicationId) return app;
-        const exists = app.completedRequirements.includes(requirementName);
-        return {
-          ...app,
-          completedRequirements: exists
-            ? app.completedRequirements.filter((r) => r !== requirementName)
-            : [...app.completedRequirements, requirementName],
-        };
-      })
-    );
-  };
-
-  // Upload or attach document to an application requirement
-  const handleUploadDocument = (
-    applicationId: string,
-    requirementName: string,
-    file: { fileName: string; fileSize: string }
-  ) => {
-    const formattedDate = new Date().toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-
-    const doc: UploadedDocument = {
-      fileName: file.fileName,
-      fileSize: file.fileSize,
-      uploadedAt: formattedDate,
-    };
-
-    setApplications((prev) =>
-      prev.map((app) => {
-        if (app.id !== applicationId) return app;
-        const existingDocs = app.uploadedDocuments || {};
-        const completed = app.completedRequirements.includes(requirementName)
-          ? app.completedRequirements
-          : [...app.completedRequirements, requirementName];
-
-        return {
-          ...app,
-          completedRequirements: completed,
-          uploadedDocuments: {
-            ...existingDocs,
-            [requirementName]: doc,
-          },
-        };
-      })
-    );
-  };
-
-  // Note to the centre on a draft (centres with no published requirements)
-  const handleUpdateNoteToCentre = (applicationId: string, note: string) =>
-    setApplications((prev) =>
-      prev.map((a) => (a.id === applicationId && a.status === 'Draft' ? { ...a, noteToCentre: note.slice(0, 1000) } : a))
-    );
-
-  // Remove uploaded document
-  const handleRemoveDocument = (applicationId: string, requirementName: string) => {
-    setApplications((prev) =>
-      prev.map((app) => {
-        if (app.id !== applicationId) return app;
-        const existingDocs = { ...(app.uploadedDocuments || {}) };
-        delete existingDocs[requirementName];
-
-        return {
-          ...app,
-          completedRequirements: app.completedRequirements.filter(
-            (r) => r !== requirementName
-          ),
-          uploadedDocuments: existingDocs,
-        };
-      })
-    );
-  };
-
-  // Submit application after Review & Approve confirmation
-  const handleSubmitApplication = (applicationId: string) => {
-    const formattedDate = new Date().toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-    const notifDate = new Date().toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
-
-    const targetApp = applications.find((a) => a.id === applicationId);
-    const childName = targetApp ? targetApp.childName : activeParentProfile.childName;
-    const parentName = targetApp ? targetApp.parentName : activeParentProfile.name;
-
-    // The parent approved: attach the reviewed AI draft (if any) to what is sent
-    const draft = preparedDrafts[applicationId];
-    const prepared: Partial<Application> = draft
-      ? {
-          preparedFields: draft.fields.map((f) => ({
-            label: f.label,
-            value: f.value.trim() || NOT_PROVIDED,
-            source: f.source,
-          })),
-          preparedChecklist: draft.checklist,
-          noteToCentre: draft.noteToCentre.trim() || undefined,
-          preparedWithAi: true,
-          aiMode: draft.aiMode,
-        }
-      : {};
-
-    setApplications((prev) =>
-      prev.map((app) => {
-        if (app.id !== applicationId) return app;
-        return {
-          ...app,
-          ...prepared,
-          status: 'Submitted' as ApplicationStatus,
-          submittedAt: formattedDate,
-        };
-      })
-    );
-    if (draft) {
-      setPreparedDrafts((prev) => {
-        const next = { ...prev };
-        delete next[applicationId];
-        return next;
-      });
-    }
-
-    // Notify centre of new application submission
-    const notif: InAppNotification = {
-      id: `notif-centre-sub-${Date.now()}`,
-      recipientRole: 'centre',
-      recipientId: targetApp?.centreId ?? RIVERDALE_CENTRE_ID,
-      message: `${parentName} submitted an application for ${childName} on ${notifDate}`,
-      timestamp: notifDate,
-      createdAt: Date.now(),
-      read: false,
-      type: 'application',
-    };
-    setNotifications((prev) => [notif, ...prev]);
-
-    // Switch to track tab to see newly submitted application in the queue table
-    setParentTab('track');
-  };
-
-  // Accept offer and optionally withdraw other applications
-  const handleAcceptOffer = (applicationId: string, withdrawOthers: boolean) => {
-    const notifDate = new Date().toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
-
-    const targetApp = applications.find((a) => a.id === applicationId);
-    const childName = targetApp ? targetApp.childName : activeParentProfile.childName;
-    const parentName = targetApp ? targetApp.parentName : activeParentProfile.name;
-
-    setApplications((prev) =>
-      prev.map((app) => {
-        if (app.id === applicationId) {
-          return { ...app, status: 'Accepted' as ApplicationStatus };
-        }
-        // Only withdraw this parent's other applications for the same child
-        if (
-          withdrawOthers &&
-          targetApp &&
-          app.parentAccountId === targetApp.parentAccountId &&
-          app.childId === targetApp.childId &&
-          app.status !== 'Withdrawn'
-        ) {
-          return { ...app, status: 'Withdrawn' as ApplicationStatus };
-        }
-        return app;
-      })
-    );
-
-    // Notify centre that offer was accepted
-    const notif: InAppNotification = {
-      id: `notif-centre-acc-${Date.now()}`,
-      recipientRole: 'centre',
-      recipientId: targetApp?.centreId ?? RIVERDALE_CENTRE_ID,
-      message: `${parentName} accepted the offer for ${childName} on ${notifDate}`,
-      timestamp: notifDate,
-      createdAt: Date.now(),
-      read: false,
-      type: 'offer',
-    };
-    setNotifications((prev) => [notif, ...prev]);
-  };
-
-  // Withdraw single application
-  const handleWithdrawApplication = (applicationId: string) => {
-    const notifDate = new Date().toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
-
-    const targetApp = applications.find((a) => a.id === applicationId);
-    const childName = targetApp ? targetApp.childName : activeParentProfile.childName;
-    const parentName = targetApp ? targetApp.parentName : activeParentProfile.name;
-
-    setApplications((prev) =>
-      prev.map((app) => {
-        if (app.id === applicationId) {
-          return { ...app, status: 'Withdrawn' as ApplicationStatus };
-        }
-        return app;
-      })
-    );
-
-    // Notify centre that application was withdrawn
-    const notif: InAppNotification = {
-      id: `notif-centre-wd-${Date.now()}`,
-      recipientRole: 'centre',
-      recipientId: targetApp?.centreId ?? RIVERDALE_CENTRE_ID,
-      message: `${parentName} withdrew the application for ${childName} on ${notifDate}`,
-      timestamp: notifDate,
-      createdAt: Date.now(),
-      read: false,
-      type: 'status',
-    };
-    setNotifications((prev) => [notif, ...prev]);
-  };
-
-  // Centre view updates: Under review, Waitlisted with position & wait estimate, Make offer
-  const handleUpdateStatus = (
-    applicationId: string,
-    newStatus: ApplicationStatus,
-    waitlistPosition?: number,
-    waitlistEstimate?: string
-  ) => {
-    const formattedDate = new Date().toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
-
-    const targetApp = applications.find((a) => a.id === applicationId);
-    const childName = targetApp ? targetApp.childName : 'your child';
-    const appCentre = (targetApp && centres.find((c) => c.id === targetApp.centreId)) || activeSingleCentre;
-    const parentName = targetApp ? targetApp.parentName : activeParentProfile.name;
-
-    setApplications((prev) =>
-      prev.map((app) => {
-        if (app.id !== applicationId) return app;
-        const isWaitlisted = newStatus === 'Waitlisted';
-
-        let newHistory = app.positionHistory ? [...app.positionHistory] : [];
-        if (isWaitlisted && typeof waitlistPosition === 'number' && waitlistPosition > 0) {
-          if (newHistory.length === 0 && app.waitlistPosition && app.waitlistReportedDate) {
-            newHistory.push({
-              position: app.waitlistPosition,
-              date: app.waitlistReportedDate,
-            });
-          }
-          newHistory.push({
-            position: waitlistPosition,
-            date: formattedDate,
-          });
-        }
-
-        return {
-          ...app,
-          status: newStatus,
-          waitlistPosition: isWaitlisted ? waitlistPosition : app.waitlistPosition,
-          waitlistReportedBy: isWaitlisted ? appCentre.name : app.waitlistReportedBy,
-          waitlistReportedDate: isWaitlisted ? formattedDate : app.waitlistReportedDate,
-          waitlistReportedTimestamp: isWaitlisted ? Date.now() : app.waitlistReportedTimestamp,
-          waitlistEstimate: isWaitlisted
-            ? (waitlistEstimate && waitlistEstimate.trim() ? waitlistEstimate.trim() : undefined)
-            : app.waitlistEstimate,
-          positionHistory: isWaitlisted && newHistory.length > 0 ? newHistory : app.positionHistory,
-        };
-      })
-    );
-
-    // Create notifications for parent and centre
-    let parentMessage = '';
-    let centreMessage = '';
-    let notifType: 'status' | 'position' | 'offer' = 'status';
-
-    if (newStatus === 'Waitlisted' && typeof waitlistPosition === 'number' && waitlistPosition > 0) {
-      parentMessage = `${appCentre.name} updated your position to ${waitlistPosition} on ${formattedDate}`;
-      centreMessage = `Updated ${childName}'s position to ${waitlistPosition} on ${formattedDate}`;
-      notifType = 'position';
-    } else if (newStatus === 'Offer') {
-      parentMessage = `${appCentre.name} made an offer for ${childName} on ${formattedDate}`;
-      centreMessage = `Made an offer to ${parentName} for ${childName} on ${formattedDate}`;
-      notifType = 'offer';
-    } else {
-      parentMessage = `${appCentre.name} updated your application status to ${newStatus} on ${formattedDate}`;
-      centreMessage = `Updated ${childName}'s status to ${newStatus} on ${formattedDate}`;
-      notifType = 'status';
-    }
-
-    const newNotifs: InAppNotification[] = [
-      {
-        id: `notif-parent-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        recipientRole: 'parent',
-        recipientId: targetApp?.parentAccountId ?? myAccountId,
-        message: parentMessage,
-        timestamp: formattedDate,
-        createdAt: Date.now(),
-        read: false,
-        type: notifType,
-      },
-      {
-        id: `notif-centre-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        recipientRole: 'centre',
-        recipientId: appCentre.id,
-        message: centreMessage,
-        timestamp: formattedDate,
-        createdAt: Date.now() + 1,
-        read: false,
-        type: notifType,
-      },
-    ];
-
-    setNotifications((prev) => [...newNotifs, ...prev]);
-  };
-
-  // Centre view policy requirement update (from Gemini extractor)
-  const handleUpdateCentreRequirements = (
-    centreId: string,
-    newRequirements: string[],
-    requirementSources?: Record<string, string>
-  ) => {
-    setCentres((prev) =>
-      prev.map((c) => {
-        if (c.id !== centreId) return c;
-        return {
-          ...c,
-          requirements: newRequirements,
-          // Source sentences confirmed by the centre in the policy reader
-          requirementSources: requirementSources ?? c.requirementSources,
-        };
-      })
-    );
-  };
-
-  // Open conversation from Parent View (clicking centre)
   const handleParentOpenConversation = (centreId: string) => {
-    // The parent's own application for the active child at this centre, or an enquiry
-    const app =
-      myApplicationAt(centreId) ??
-      newApplicationFor(centreId, `app-${centreId}-${activeParentProfile.childId}-inquiry`);
-    setActiveChatModal({
-      isOpen: true,
-      centreId,
-      applicationId: app.id,
-    });
+    const app = applications.find((a) => a.centreId === centreId && a.childId === activeParentProfile.childId);
+    setActiveChatModal({ isOpen: true, centreId, applicationId: app?.id ?? `enquiry-${centreId}-${activeParentProfile.childId}` });
   };
+  const handleCentreOpenConversation = (application: Application) =>
+    setActiveChatModal({ isOpen: true, centreId: application.centreId, applicationId: application.id });
 
-  // Open conversation from Centre View (clicking Message Parent on child's application)
-  const handleCentreOpenConversation = (application: Application) => {
-    setActiveChatModal({
-      isOpen: true,
-      centreId: application.centreId,
-      applicationId: application.id,
-    });
-  };
-
-  // Send message in active conversation
-  const handleSendMessage = (text: string, aiAssisted: boolean) => {
-    if (!activeChatModal) return;
-
-    const app = applications.find((a) => a.id === activeChatModal.applicationId);
-    const centre = centres.find((c) => c.id === activeChatModal.centreId) || singleCentre;
-    const convKey = conversationKey(activeChatModal.centreId, app ? app.childId : activeParentProfile.childId);
-
-    const formattedTime = new Date().toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-
-    const newMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      sender: currentRole,
-      senderName: currentRole === 'parent' ? activeParentProfile.name : centre.name,
-      text,
-      timestamp: `Today • ${formattedTime}`,
-      aiAssisted,
-    };
-
-    setConversations((prev) => {
-      const existing = prev[convKey] || [];
-      return {
-        ...prev,
-        [convKey]: [...existing, newMsg],
-      };
-    });
-  };
-
-  // Active chat modal resolved objects
   const activeChatApp = activeChatModal
-    ? applications.find((a) => a.id === activeChatModal.applicationId) ||
-      newApplicationFor(activeChatModal.centreId, activeChatModal.applicationId)
+    ? applications.find((a) => a.id === activeChatModal.applicationId) ?? enquiryFor(activeChatModal.centreId, activeChatModal.applicationId)
     : null;
+  const activeChatCentre = activeChatModal ? centres.find((c) => c.id === activeChatModal.centreId) ?? activeSingleCentre : activeSingleCentre;
+  const activeMessages = activeChatModal && activeChatApp ? conversations[conversationKey(activeChatModal.centreId, activeChatApp.childId)] ?? [] : [];
 
-  const activeChatCentre = activeChatModal
-    ? centres.find((c) => c.id === activeChatModal.centreId) || singleCentre
-    : singleCentre;
+  const handleSendMessage = (text: string, aiAssisted: boolean) => {
+    if (!store || !activeChatModal || !activeChatApp) return;
+    run(store.sendMessage({ centreId: activeChatModal.centreId, childId: activeChatApp.childId }, text, aiAssisted));
+  };
 
-  const activeConvKey =
-    activeChatModal && activeChatApp
-      ? conversationKey(activeChatModal.centreId, activeChatApp.childId)
-      : '';
+  // ---------------- Navigation ----------------
+  const myApplications = currentRole === 'parent' ? applications : [];
+  const draftCount = myApplications.filter((a) => a.status === 'Draft').length;
+  const offerCount = myApplications.filter((a) => a.status === 'Offer').length;
 
-  const activeMessages = conversations[activeConvKey] || [];
-
-  // The signed-in parent's applications only
-  const priyaApplications = applications.filter((a) => a.parentAccountId === myAccountId);
-
-  // Tab badge counts
-  const draftCount = priyaApplications.filter((a) => a.status === 'Draft').length;
-  const offerCount = priyaApplications.filter((a) => a.status === 'Offer').length;
-
-  // Parent sidebar items in this order: Overview (Home icon, id 'home'), Find Centres (Search, 'find'), Apply (FileEdit, 'apply', badge "{draftCount} in progress" if > 0), Track Status (ListFilter, 'track', badge "Offer" if offerCount > 0), Parent companion (Heart, 'companion'), Help & Support (HelpCircle, 'help')
   const parentSidebarItems: SidebarItem[] = [
     { id: 'home', label: 'Overview', icon: Home },
     { id: 'find', label: 'Find Centres', icon: Search },
-    {
-      id: 'apply',
-      label: 'Apply',
-      icon: FileEdit,
-      badge: draftCount > 0 ? `${draftCount} in progress` : undefined,
-    },
-    {
-      id: 'track',
-      label: 'Track Status',
-      icon: ListFilter,
-      badge: offerCount > 0 ? 'Offer' : undefined,
-    },
+    { id: 'apply', label: 'Apply', icon: FileEdit, badge: draftCount > 0 ? `${draftCount} in progress` : undefined },
+    { id: 'track', label: 'Track Status', icon: ListFilter, badge: offerCount > 0 ? 'Offer' : undefined },
     { id: 'companion', label: 'Parent companion', icon: Heart },
     { id: 'help', label: 'Help & Support', icon: HelpCircle },
   ];
 
-  const centreApplications = applications.filter(
-    (app) => app.centreId === activeSingleCentre.id
-  );
-  const centreSubmittedCount = centreApplications.filter(
-    (app) => app.status === 'Submitted'
-  ).length;
-
+  const centreApplications = currentRole === 'centre' ? applications : [];
+  const centreSubmittedCount = centreApplications.filter((app) => app.status === 'Submitted').length;
   const centreSidebarItems: SidebarItem[] = [
     { id: 'home', label: 'Centre overview', icon: LayoutGrid },
     {
@@ -797,45 +362,85 @@ export default function App() {
     { id: 'help', label: 'Contact & support', icon: Users },
   ];
 
+  // ---------------- Banners ----------------
+  const banners = (
+    <>
+      {outage && (
+        <div role="alert" className="fixed top-0 inset-x-0 z-[70] bg-[#A4543A] text-white text-xs sm:text-sm px-4 py-2 flex items-center justify-center gap-2">
+          <WifiOff className="w-4 h-4 shrink-0" />
+          <span>{outage} Retrying…</span>
+        </div>
+      )}
+      {actionError && (
+        <div role="alert" className="fixed top-12 right-4 z-[70] max-w-sm rounded-xl bg-white border border-[#E7D6A8] shadow-lg p-3 pr-9 text-sm text-[#5B4A2E]">
+          {actionError}
+          <button type="button" onClick={() => setActionError(null)} aria-label="Dismiss" className="absolute top-2 right-2 p-1 cursor-pointer">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+    </>
+  );
+
+  // ---------------- Screens ----------------
+
+  if (!store) {
+    return (
+      <div className="min-h-screen bg-[#FAF9F4] flex flex-col items-center justify-center gap-4 p-6 text-center text-[#173F42]">
+        <LogoFull size={44} />
+        {bootError ? (
+          <>
+            <p role="alert" className="text-sm text-[#A4543A] flex items-center gap-2">
+              <WifiOff className="w-4 h-4" /> {bootError}
+            </p>
+            <button type="button" onClick={boot} className="h-10 px-4 rounded-xl bg-[#0B4A52] text-white text-sm font-semibold cursor-pointer">
+              Try again
+            </button>
+          </>
+        ) : (
+          <p className="text-sm text-[#5B6B66] flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" /> Loading CareQ…
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  const resetCtx = { mode: store.mode, isDemoAccount: Boolean(currentAccount?.isDemoAccount), resetAvailable };
+
   // New parent: onboarding (tell us about your child, your family)
   if (currentAccount?.role === 'parent' && currentAccount.onboarded === false) {
     return (
-      <ParentOnboarding
-        parentName={currentAccount.name}
-        areas={AREAS}
-        onComplete={(children) => {
-          updateCurrentAccount({ children, onboarded: true });
-          setParentTab('home');
-        }}
-        onLogout={handleLogout}
-      />
+      <ResetContext.Provider value={resetCtx}>
+        {banners}
+        <ParentOnboarding parentName={currentAccount.name} areas={AREAS} onComplete={handleCompleteOnboarding} onLogout={handleLogout} />
+      </ResetContext.Provider>
     );
   }
 
   // New centre account: register the centre
   if (currentAccount?.role === 'centre' && (!currentAccount.centreId || registrationScreenOpen)) {
     return (
-      <CentreRegistration
-        staffEmail={currentAccount.email}
-        areas={AREAS}
-        fsa={FSA}
-        onRegistered={(centre) => {
-          setRegistrationScreenOpen(true);
-          setCentres((prev) => [centre, ...prev]);
-          updateCurrentAccount({ centreId: centre.id, centreName: centre.name });
-        }}
-        onDone={(next) => {
-          setRegistrationScreenOpen(false);
-          if (next === 'policy') {
-            const text = centres.find((c) => c.id === currentAccount.centreId)?.registration?.policyText;
-            setPolicyToRead(text ?? null);
-            setCentreTab('policy');
-          } else {
-            setCentreTab('home');
-          }
-        }}
-        onLogout={handleLogout}
-      />
+      <ResetContext.Provider value={resetCtx}>
+        {banners}
+        <CentreRegistration
+          staffEmail={currentAccount.email}
+          areas={AREAS}
+          fsa={FSA}
+          onRegister={handleRegisterCentre}
+          onDone={(next) => {
+            setRegistrationScreenOpen(false);
+            if (next === 'policy') {
+              const text = centres.find((c) => c.id === currentAccount.centreId)?.registration?.policyText;
+              setPolicyToRead(text ?? null);
+              setCentreTab('policy');
+            } else {
+              setCentreTab('home');
+            }
+          }}
+          onLogout={handleLogout}
+        />
+      </ResetContext.Provider>
     );
   }
 
@@ -843,252 +448,244 @@ export default function App() {
   if (!currentAccount) {
     if (isTrustPageOpen) {
       return (
-        <div className="min-h-screen bg-[#F7F8F7] text-stone-900 font-sans flex flex-col antialiased">
-          <header className="bg-white border-b border-stone-200 py-3.5 px-4 sm:px-8 shadow-2xs">
-            <div className="max-w-6xl mx-auto flex items-center justify-between">
-              <LogoFull size={38} />
-              <button
-                type="button"
-                onClick={() => setIsTrustPageOpen(false)}
-                className="text-xs font-semibold text-[#0B4A52] hover:text-[#45B5A5] underline cursor-pointer"
-              >
-                Back to Sign-in
-              </button>
-            </div>
-          </header>
-          <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
-            <TrustTransparencyPage
-              onBack={() => setIsTrustPageOpen(false)}
-              centres={centres}
-            />
-          </main>
-          <footer className="border-t border-stone-200 bg-white py-4 px-4 text-center text-xs text-stone-500">
-            <p>CareQ • Simplified Ontario Child Care Intake & Central Waitlist Management</p>
-          </footer>
-          <AskCareQAssistant centres={centres} />
-        </div>
+        <ResetContext.Provider value={resetCtx}>
+          {banners}
+          <div className="min-h-screen bg-[#F7F8F7] text-stone-900 font-sans flex flex-col antialiased">
+            <header className="bg-white border-b border-stone-200 py-3.5 px-4 sm:px-8 shadow-2xs">
+              <div className="max-w-6xl mx-auto flex items-center justify-between">
+                <LogoFull size={38} />
+                <button
+                  type="button"
+                  onClick={() => setIsTrustPageOpen(false)}
+                  className="text-xs font-semibold text-[#0B4A52] hover:text-[#45B5A5] underline cursor-pointer"
+                >
+                  Back to Sign-in
+                </button>
+              </div>
+            </header>
+            <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+              <TrustTransparencyPage onBack={() => setIsTrustPageOpen(false)} centres={centres} />
+            </main>
+            <footer className="border-t border-stone-200 bg-white py-4 px-4 text-center text-xs text-stone-500">
+              <p>CareQ • Simplified Ontario Child Care Intake & Central Waitlist Management</p>
+            </footer>
+            <AskCareQAssistant centres={centres} />
+          </div>
+        </ResetContext.Provider>
       );
     }
 
     return (
-      <>
-        <AuthPage
-          onLogin={handleLogin}
-          mockAccounts={mockAccounts}
-          onOpenTrustPage={() => setIsTrustPageOpen(true)}
-        />
+      <ResetContext.Provider value={resetCtx}>
+        {banners}
+        <AuthPage onLogIn={handleLogIn} onSignUp={handleSignUp} onOpenTrustPage={() => setIsTrustPageOpen(true)} />
         <AskCareQAssistant centres={centres} />
-      </>
+      </ResetContext.Provider>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-[#FAF9F4] text-[#1E3F42] font-sans antialiased">
-      <AppSidebar
-        role={currentRole}
-        items={currentRole === 'parent' ? parentSidebarItems : centreSidebarItems}
-        activeId={currentRole === 'parent' ? parentTab : centreTab}
-        onSelect={(id) => {
-          if (currentRole === 'parent') {
-            setParentTab(id as 'home' | 'find' | 'apply' | 'track' | 'companion' | 'help');
-          } else {
-            setCentreTab(id as 'home' | 'applications' | 'messages' | 'policy' | 'help');
-          }
-        }}
-        onLogout={handleLogout}
-      />
-      <div className="flex-1 min-w-0 flex flex-col">
-        {/* Thin simulation prototype notice band above Navbar */}
-        <div className="h-8 bg-[#F3EBDD] text-[11px] text-[#5B4A2E] flex items-center justify-center gap-3 px-4 shrink-0 select-none">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#B9933E] shrink-0" />
-          <span className="font-bold tracking-[0.14em]">PROTOTYPE</span>
-          <span className="hidden sm:inline">Centres, families, waitlists and messages in this demo are simulated.</span>
-          <span className="sm:hidden">Simulated data prototype.</span>
-          <Info className="w-3.5 h-3.5 text-[#5B4A2E] shrink-0" />
-        </div>
-
-        {/* Top Navbar: Role is fixed to the logged-in account (parents see only parent view; centres see only centre view) */}
-        <Navbar
-          currentRole={currentRole}
-          parentProfile={activeParentProfile}
-          singleCentre={activeSingleCentre}
-          notifications={myNotifications}
-          onMarkAsRead={handleMarkNotificationAsRead}
-          onMarkAllAsRead={handleMarkAllNotificationsAsRead}
+    <ResetContext.Provider value={resetCtx}>
+      {banners}
+      <div className="flex min-h-screen bg-[#FAF9F4] text-[#1E3F42] font-sans antialiased">
+        <AppSidebar
+          role={currentRole}
+          items={currentRole === 'parent' ? parentSidebarItems : centreSidebarItems}
+          activeId={currentRole === 'parent' ? parentTab : centreTab}
+          onSelect={(id) => {
+            if (currentRole === 'parent') setParentTab(id as ParentTab);
+            else setCentreTab(id as CentreTab);
+          }}
           onLogout={handleLogout}
         />
+        <div className="flex-1 min-w-0 flex flex-col">
+          {/* Thin simulation prototype notice band above Navbar */}
+          <div className="h-8 bg-[#F3EBDD] text-[11px] text-[#5B4A2E] flex items-center justify-center gap-3 px-4 shrink-0 select-none">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#B9933E] shrink-0" />
+            <span className="font-bold tracking-[0.14em]">PROTOTYPE</span>
+            <span className="hidden sm:inline">Centres, families, waitlists and messages in this demo are simulated.</span>
+            <span className="sm:hidden">Simulated data prototype.</span>
+            <Info className="w-3.5 h-3.5 text-[#5B4A2E] shrink-0" />
+          </div>
 
-        {/* Main Container: Strictly one role view visible or Trust & Transparency page */}
-        <main className="flex-1 max-w-[1180px] w-full mx-auto px-6 lg:px-10 py-10">
-          <div id="app-sidebar-mobile-mount" />
-        {isTrustPageOpen ? (
-          <TrustTransparencyPage
-            onBack={() => setIsTrustPageOpen(false)}
-            centres={centres}
+          {/* Top Navbar: Role is fixed to the logged-in account (parents see only parent view; centres see only centre view) */}
+          <Navbar
+            currentRole={currentRole}
+            parentProfile={activeParentProfile}
+            singleCentre={activeSingleCentre}
+            notifications={notifications}
+            onMarkAsRead={handleMarkNotificationAsRead}
+            onMarkAllAsRead={handleMarkAllNotificationsAsRead}
+            onLogout={handleLogout}
           />
-        ) : currentRole === 'parent' ? (
-          /* Parents see ONLY the parent screens */
-          <div className="space-y-6">
-            {/* Parent Tabs Content */}
-            {parentTab === 'home' && (
-              <ParentOverview
-                parentProfile={activeParentProfile}
-                applications={priyaApplications}
-                centres={centres}
-                notifications={myNotifications}
-                onNavigate={setParentTab}
-              />
-            )}
 
-            {parentTab === 'companion' && (
-              <ParentHome
-                parentProfile={activeParentProfile}
-                applications={priyaApplications}
-                centres={centres}
-                notifications={myNotifications}
-                onMarkAsRead={handleMarkNotificationAsRead}
-                onMarkAllAsRead={() => handleMarkAllNotificationsAsRead('parent')}
-                onNavigate={setParentTab}
-              />
-            )}
+          {/* Main Container: Strictly one role view visible or Trust & Transparency page */}
+          <main className="flex-1 max-w-[1180px] w-full mx-auto px-6 lg:px-10 py-10">
+            <div id="app-sidebar-mobile-mount" />
+            {isTrustPageOpen ? (
+              <TrustTransparencyPage onBack={() => setIsTrustPageOpen(false)} centres={centres} />
+            ) : currentRole === 'parent' ? (
+              /* Parents see ONLY the parent screens */
+              <div className="space-y-6">
+                {parentTab === 'home' && (
+                  <ParentOverview
+                    parentProfile={activeParentProfile}
+                    applications={myApplications}
+                    centres={centres}
+                    notifications={notifications}
+                    onNavigate={setParentTab}
+                  />
+                )}
 
-            {parentTab === 'find' && (
-              <FindTab
-                centres={centres}
-                applications={priyaApplications}
-                parentProfile={activeParentProfile}
-                homeArea={activeParentProfile.homeArea}
-                onSelectCentre={handleSelectCentre}
-                onNavigateToApply={() => setParentTab('apply')}
-                onOpenConversation={handleParentOpenConversation}
-              />
-            )}
+                {parentTab === 'companion' && (
+                  <ParentHome
+                    parentProfile={activeParentProfile}
+                    applications={myApplications}
+                    centres={centres}
+                    notifications={notifications}
+                    onMarkAsRead={handleMarkNotificationAsRead}
+                    onMarkAllAsRead={() => handleMarkAllNotificationsAsRead('parent')}
+                    onNavigate={setParentTab}
+                  />
+                )}
 
-            {parentTab === 'apply' && (
-              <ApplyTab
-                centres={centres}
-                applications={priyaApplications}
-                parentProfile={activeParentProfile}
-                onToggleRequirement={handleToggleRequirement}
-                onUploadDocument={handleUploadDocument}
-                onRemoveDocument={handleRemoveDocument}
-                onSubmitApplication={handleSubmitApplication}
-                preparedDrafts={preparedDrafts}
-                onUpdatePreparedDraft={handleUpdatePreparedDraft}
-                onUpdateNoteToCentre={handleUpdateNoteToCentre}
-                onNavigateToFind={() => setParentTab('find')}
-                onNavigateToTrack={() => setParentTab('track')}
-              />
-            )}
+                {parentTab === 'find' && (
+                  <FindTab
+                    centres={centres}
+                    applications={myApplications}
+                    parentProfile={activeParentProfile}
+                    homeArea={activeParentProfile.homeArea}
+                    onSelectCentre={handleSelectCentre}
+                    onNavigateToApply={() => setParentTab('apply')}
+                    onOpenConversation={handleParentOpenConversation}
+                  />
+                )}
 
-            {parentTab === 'track' && (
-              <TrackTab
-                centres={centres}
-                applications={priyaApplications}
-                parentProfile={activeParentProfile}
-                onAcceptOffer={handleAcceptOffer}
-                onWithdrawApplication={handleWithdrawApplication}
-                onNavigateToApply={() => setParentTab('apply')}
-                onNavigateToFind={() => setParentTab('find')}
-                onOpenConversation={handleParentOpenConversation}
-              />
-            )}
+                {parentTab === 'apply' && (
+                  <ApplyTab
+                    centres={centres}
+                    applications={myApplications}
+                    parentProfile={activeParentProfile}
+                    onToggleRequirement={handleToggleRequirement}
+                    onUploadDocument={handleUploadDocument}
+                    onRemoveDocument={handleRemoveDocument}
+                    onSubmitApplication={handleSubmitApplication}
+                    preparedDrafts={preparedDrafts}
+                    onUpdatePreparedDraft={handleUpdatePreparedDraft}
+                    onUpdateNoteToCentre={handleUpdateNoteToCentre}
+                    onNavigateToFind={() => setParentTab('find')}
+                    onNavigateToTrack={() => setParentTab('track')}
+                  />
+                )}
 
-            {parentTab === 'help' && (
-              <HelpTab
-                role="parent"
-                userName={activeParentProfile.name}
-                requests={supportRequests}
-                onSubmitRequest={handleCreateSupportRequest}
-                onAdvanceConcernStep={handleAdvanceConcernStep}
-              />
-            )}
-          </div>
-        ) : (
-          /* Centres see ONLY the centre screens */
-          <div className="space-y-6">
-            {centreTab === 'home' && (
-              <CentreOverview
-                singleCentre={activeSingleCentre}
-                applications={centreApplications}
-                notifications={myNotifications}
-                onNavigate={setCentreTab}
-              />
-            )}
+                {parentTab === 'track' && (
+                  <TrackTab
+                    centres={centres}
+                    applications={myApplications}
+                    parentProfile={activeParentProfile}
+                    onAcceptOffer={handleAcceptOffer}
+                    onWithdrawApplication={handleWithdrawApplication}
+                    onNavigateToApply={() => setParentTab('apply')}
+                    onNavigateToFind={() => setParentTab('find')}
+                    onOpenConversation={handleParentOpenConversation}
+                  />
+                )}
 
-            {centreTab === 'messages' && (
-              <CentreMessages
-                singleCentre={activeSingleCentre}
-                applications={applications}
-                conversations={conversations}
-                onOpenConversation={handleCentreOpenConversation}
-              />
+                {parentTab === 'help' && (
+                  <HelpTab
+                    role="parent"
+                    userName={activeParentProfile.name}
+                    requests={supportRequests}
+                    onSubmitRequest={handleCreateSupportRequest}
+                    onAdvanceConcernStep={handleAdvanceConcernStep}
+                  />
+                )}
+              </div>
+            ) : (
+              /* Centres see ONLY the centre screens */
+              <div className="space-y-6">
+                {centreTab === 'home' && (
+                  <CentreOverview
+                    singleCentre={activeSingleCentre}
+                    applications={centreApplications}
+                    notifications={notifications}
+                    onNavigate={setCentreTab}
+                  />
+                )}
+
+                {centreTab === 'messages' && (
+                  <CentreMessages
+                    singleCentre={activeSingleCentre}
+                    applications={centreApplications}
+                    conversations={conversations}
+                    onOpenConversation={handleCentreOpenConversation}
+                  />
+                )}
+
+                {(centreTab === 'applications' || centreTab === 'policy' || centreTab === 'help') && (
+                  <CentreDashboard
+                    singleCentre={activeSingleCentre}
+                    applications={centreApplications}
+                    autoReadPolicyText={policyToRead}
+                    onAutoReadPolicyStarted={() => setPolicyToRead(null)}
+                    onUpdateStatus={handleUpdateStatus}
+                    onUpdateCentreRequirements={handleUpdateCentreRequirements}
+                    onOpenConversation={handleCentreOpenConversation}
+                    requests={supportRequests}
+                    onSubmitRequest={handleCreateSupportRequest}
+                    onAdvanceConcernStep={handleAdvanceConcernStep}
+                    activeTab={centreTab}
+                    onTabChange={setCentreTab}
+                  />
+                )}
+              </div>
             )}
+          </main>
 
-            {(centreTab === 'applications' || centreTab === 'policy' || centreTab === 'help') && (
-              <CentreDashboard
-                singleCentre={activeSingleCentre}
-                applications={applications}
-                autoReadPolicyText={policyToRead}
-                onAutoReadPolicyStarted={() => setPolicyToRead(null)}
-                onUpdateStatus={handleUpdateStatus}
-                onUpdateCentreRequirements={handleUpdateCentreRequirements}
-                onOpenConversation={handleCentreOpenConversation}
-                requests={supportRequests}
-                onSubmitRequest={handleCreateSupportRequest}
-                onAdvanceConcernStep={handleAdvanceConcernStep}
-                activeTab={centreTab}
-                onTabChange={setCentreTab}
-              />
-            )}
-          </div>
-        )}
-      </main>
+          {/* Bidirectional Conversation Modal with AI Assistant */}
+          {activeChatModal?.isOpen && activeChatApp && activeChatCentre && (
+            <ConversationModal
+              isOpen={activeChatModal.isOpen}
+              onClose={() => setActiveChatModal(null)}
+              role={currentRole}
+              centre={activeChatCentre}
+              application={activeChatApp}
+              messages={activeMessages}
+              onSendMessage={handleSendMessage}
+            />
+          )}
 
-      {/* Bidirectional Conversation Modal with AI Assistant */}
-      {activeChatModal?.isOpen && activeChatApp && activeChatCentre && (
-        <ConversationModal
-          isOpen={activeChatModal.isOpen}
-          onClose={() => setActiveChatModal(null)}
-          role={currentRole}
-          centre={activeChatCentre}
-          application={activeChatApp}
-          messages={activeMessages}
-          onSendMessage={handleSendMessage}
-        />
-      )}
-
-      {/* Footer linked for both parents and centres */}
-      <footer className="border-t border-[#E7E4DA] bg-white/70 py-6 mt-12 text-center text-xs text-[#6E7C77]">
-        <div className="max-w-[1180px] w-full mx-auto px-6 lg:px-10 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p>CareQ • Simplified Ontario Child Care Intake &amp; Central Waitlist Management</p>
-          <div className="flex items-center gap-4 text-xs">
-            <button
-              type="button"
-              onClick={() => setIsTrustPageOpen(true)}
-              className="text-[#0B4A52] hover:text-[#4E7A5A] font-semibold underline transition-colors cursor-pointer"
-            >
-              Trust and transparency
-            </button>
-            <span className="text-stone-300">|</span>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="text-[#5B6B66] hover:text-[#173F42] transition-colors cursor-pointer"
-              title="Log out of session"
-            >
-              Log out
-            </button>
-            <span className="text-stone-300 lg:hidden">|</span>
-            {/* The sidebar (with Reset demo) is hidden below lg, so offer it here too */}
-            <ResetDemo variant="link" className="lg:hidden" />
-          </div>
+          {/* Footer linked for both parents and centres */}
+          <footer className="border-t border-[#E7E4DA] bg-white/70 py-6 mt-12 text-center text-xs text-[#6E7C77]">
+            <div className="max-w-[1180px] w-full mx-auto px-6 lg:px-10 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <p>CareQ • Simplified Ontario Child Care Intake &amp; Central Waitlist Management</p>
+              <div className="flex items-center gap-4 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setIsTrustPageOpen(true)}
+                  className="text-[#0B4A52] hover:text-[#4E7A5A] font-semibold underline transition-colors cursor-pointer"
+                >
+                  Trust and transparency
+                </button>
+                <span className="text-stone-300">|</span>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="text-[#5B6B66] hover:text-[#173F42] transition-colors cursor-pointer"
+                  title="Log out of session"
+                >
+                  Log out
+                </button>
+                {/* The sidebar (with Reset demo) is hidden below lg, so offer it here too */}
+                <ResetDemo variant="link" className="lg:hidden" />
+              </div>
+            </div>
+          </footer>
         </div>
-      </footer>
-    </div>
 
-    {/* Ask CareQ Assistant Floating on every screen */}
-    <AskCareQAssistant centres={centres} />
-  </div>
-);
+        {/* Ask CareQ Assistant Floating on every screen */}
+        <AskCareQAssistant centres={centres} />
+      </div>
+    </ResetContext.Provider>
+  );
 }

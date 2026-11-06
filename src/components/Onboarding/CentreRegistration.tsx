@@ -6,9 +6,6 @@ import {
   CENTRE_PROGRAM_OPTIONS,
   CentreFormInput,
   FieldErrors,
-  approximateLocation,
-  findArea,
-  normalisePostal,
   validateCentre,
 } from '../../lib/family';
 import type { Area, FsaCentroids } from '../../lib/rankCentres';
@@ -54,12 +51,15 @@ interface Props {
   staffEmail: string;
   areas: Area[];
   fsa: FsaCentroids;
-  onRegistered: (centre: Centre) => void;
+  /** Saves the registration; returns the new centre, or a plain-language error. */
+  onRegister: (form: CentreFormInput, photoDataUrl?: string) => Promise<{ centre?: Centre; error?: string }>;
   onDone: (next: 'policy' | 'home') => void;
   onLogout: () => void;
 }
 
-export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, fsa, onRegistered, onDone, onLogout }) => {
+export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, onRegister, onDone, onLogout }) => {
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [form, setForm] = useState<CentreFormInput>({
     name: '', street: '', postalCode: '', neighbourhood: '', licenceNumber: '', ageGroups: [], programOptions: [],
     languages: ['English'], hours: '', capacity: '', contactEmail: staffEmail, policyText: '',
@@ -97,7 +97,7 @@ export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, fsa, on
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const input = { ...form, languages: allLanguages() };
     const errs = validateCentre(input, areas);
@@ -107,35 +107,13 @@ export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, fsa, on
       focusFirstError(bad.map((k) => `centre-${k}`));
       return;
     }
-    const loc = approximateLocation(input.neighbourhood, input.postalCode, areas, fsa)!;
-    const postal = normalisePostal(input.postalCode);
-    const centre: Centre = {
-      id: `c-self-${Date.now()}`,
-      name: input.name.trim(),
-      neighbourhood: findArea(input.neighbourhood, areas)!.name,
-      address: `${input.street.trim()}, Toronto, ON ${postal}`,
-      ageGroups: input.ageGroups,
-      programOptions: input.programOptions,
-      languages: input.languages,
-      hours: input.hours.trim(),
-      requirements: [], // published later via the policy reader (the centre confirms)
-      requirementSources: {},
-      lat: loc.lat,
-      lng: loc.lng,
-      registration: {
-        selfRegistered: true,
-        licenceNumber: input.licenceNumber.trim() || undefined,
-        contactEmail: input.contactEmail.trim(),
-        capacity: input.capacity.trim() ? Number(input.capacity) : undefined,
-        locationApproximate: true,
-        locationSource: loc.source,
-        photoDataUrl: photo,
-        policyText: input.policyText.trim() || undefined,
-        registeredAt: new Date().toISOString(),
-      },
-    };
-    onRegistered(centre);
-    setRegistered(centre);
+    // The centre is built (and its approximate location computed) by the server / store
+    setSubmitting(true);
+    setSubmitError(null);
+    const result = await onRegister(input, photo);
+    setSubmitting(false);
+    if (result.centre) setRegistered(result.centre);
+    else setSubmitError(result.error ?? 'Registration failed. Please try again.');
   };
 
   if (registered) {
@@ -299,8 +277,15 @@ export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, fsa, on
             {(a) => <textarea {...a} rows={5} value={form.policyText} onChange={set('policyText')} className={`${inputClass(!!errors.policyText)} h-auto py-2.5`} />}
           </Field>
 
+          {submitError && (
+            <p role="alert" className="text-sm font-medium text-[#A4543A]">
+              {submitError}
+            </p>
+          )}
           <div className="flex justify-end">
-            <PrimaryButton type="submit">Register centre</PrimaryButton>
+            <PrimaryButton type="submit" disabled={submitting}>
+              {submitting ? 'Registering…' : 'Register centre'}
+            </PrimaryButton>
           </div>
         </form>
       </Card>

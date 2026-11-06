@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { LogoFull } from './Logo';
 import { ResetDemo } from './ResetDemo';
-import { hashPassword } from '../lib/demoStorage';
 import { isValidEmail, MIN_PASSWORD_LENGTH, Child } from '../lib/family';
 
 export interface MockAccount {
@@ -34,16 +33,19 @@ export interface MockAccount {
 }
 
 interface AuthPageProps {
-  onLogin: (account: MockAccount) => void;
-  mockAccounts: MockAccount[];
+  /** Resolves to an error message, or null when signed in. */
+  onLogIn: (input: { role: 'parent' | 'centre'; email: string; password: string }) => Promise<string | null>;
+  onSignUp: (input: { role: 'parent' | 'centre'; name: string; email: string; password: string }) => Promise<string | null>;
   onOpenTrustPage: () => void;
 }
 
-export const AuthPage: React.FC<AuthPageProps> = ({
-  onLogin,
-  mockAccounts,
-  onOpenTrustPage,
-}) => {
+const DEMO_LOGINS = {
+  parent: { email: 'priya@example.ca', password: 'password' },
+  centre: { email: 'centre@riverdale.ca', password: 'password' },
+};
+
+export const AuthPage: React.FC<AuthPageProps> = ({ onLogIn, onSignUp, onOpenTrustPage }) => {
+  const [busy, setBusy] = useState(false);
   // Selected Portal: "parent" | "centre"
   const [targetRole, setTargetRole] = useState<'parent' | 'centre'>('parent');
 
@@ -74,67 +76,42 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     }
   };
 
-  // Handle Login submission: the account must exist and the password must match
+  // Handle Login submission (checked by the server in mongo mode)
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
-    const email = loginEmail.trim().toLowerCase();
-    const found = mockAccounts.find((a) => a.role === targetRole && a.email.toLowerCase() === email);
-    if (!found) {
-      setLoginError(
-        `We couldn't find a ${targetRole === 'parent' ? 'parent' : 'centre'} account with that email. Check the email, or create an account.`
-      );
-      return;
-    }
-    if (found.password !== undefined) {
-      // Built-in demo accounts (their password is shown in the demo box below)
-      if (loginPassword !== found.password) {
-        setLoginError('That password isn\'t right. The demo accounts use the password "password".');
-        return;
-      }
-    } else if (found.passwordHash) {
-      if ((await hashPassword(loginPassword)) !== found.passwordHash) {
-        setLoginError('That password isn\'t right. Please try again.');
-        return;
-      }
-    }
-    onLogin(found);
+    setBusy(true);
+    const error = await onLogIn({ role: targetRole, email: loginEmail.trim(), password: loginPassword });
+    setBusy(false);
+    if (error) setLoginError(error);
   };
 
-  // Handle Quick Demo Login button
-  const handleQuickDemoLogin = (role: 'parent' | 'centre') => {
-    const demo = mockAccounts.find((a) => a.role === role);
-    if (demo) {
-      onLogin(demo);
-    }
+  // One-click demo login: the demo accounts' published password
+  const handleQuickDemoLogin = async (role: 'parent' | 'centre') => {
+    setLoginError(null);
+    setBusy(true);
+    const error = await onLogIn({ role, ...DEMO_LOGINS[role] });
+    setBusy(false);
+    if (error) setLoginError(error);
   };
 
-  // Handle Sign-Up submission (demo account, saved only in this browser; no email is ever sent)
+  // Handle Sign-Up submission (demo account; no email is ever sent)
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignupError(null);
     const email = signupEmail.trim();
+    // Quick checks here for instant feedback; the server checks again
     if (!signupName.trim()) return setSignupError('Please enter your name.');
     if (!isValidEmail(email)) return setSignupError('Please enter a valid email address, like name@example.ca.');
-    if (mockAccounts.some((a) => a.email.toLowerCase() === email.toLowerCase())) {
-      return setSignupError('An account with this email already exists. Please log in instead.');
-    }
     if (signupPassword.length < MIN_PASSWORD_LENGTH) {
       return setSignupError(`Please use a password with at least ${MIN_PASSWORD_LENGTH} characters.`);
     }
     if (!termsAccepted) return setSignupError('Please confirm you have read the terms and how CareQ uses AI.');
-
-    const newAccount: MockAccount = {
-      id: `acc-${Date.now()}`,
-      role: targetRole,
-      email,
-      name: signupName.trim(),
-      // Never keep the plain-text password: only a hash, never shown again
-      passwordHash: await hashPassword(signupPassword),
-      ...(targetRole === 'parent' ? { children: [], onboarded: false } : {}),
-    };
-    setSignupPassword('');
-    onLogin(newAccount);
+    setBusy(true);
+    const error = await onSignUp({ role: targetRole, name: signupName.trim(), email, password: signupPassword });
+    setBusy(false);
+    if (error) setSignupError(error);
+    else setSignupPassword('');
   };
 
   return (
@@ -447,7 +424,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
                 <button
                   type="submit"
-                  className="h-14 w-full rounded-xl bg-[#0B4A52] hover:bg-[#08383E] text-white text-base font-semibold shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  disabled={busy}
+                  className="h-14 w-full rounded-xl bg-[#0B4A52] hover:bg-[#08383E] text-white text-base font-semibold shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                 >
                   <span>Log In as {targetRole === 'parent' ? 'Parent' : 'Child-Care Centre'}</span>
                   <ArrowRight className="w-4 h-4" />
@@ -533,7 +511,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
                 <button
                   type="submit"
-                  disabled={!termsAccepted}
+                  disabled={!termsAccepted || busy}
                   className={`h-14 w-full rounded-xl text-base font-semibold shadow-xs transition-colors flex items-center justify-center gap-2 ${
                     termsAccepted
                       ? 'bg-[#0B4A52] hover:bg-[#08383E] text-white cursor-pointer'

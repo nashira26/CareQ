@@ -19,7 +19,9 @@ import {
   SimNote,
   AiFallbackNote,
   AiMode,
+  AiNotice,
 } from '../ui/CareUI';
+import { aiPost, isUserFacingAiError } from '../../lib/aiFetch';
 import {
   Sparkles,
   CheckCircle2,
@@ -123,6 +125,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
   const [editingText, setEditingText] = useState<string>('');
   const [policyUpdateSuccess, setPolicyUpdateSuccess] = useState<boolean>(false);
   const [extractAiMode, setExtractAiMode] = useState<AiMode | null>(null);
+  const [aiNotice, setAiNotice] = useState<string | null>(null);
 
   // Applications specifically for this single centre
   // Only applications the parent has sent: drafts are never visible to the centre
@@ -164,23 +167,18 @@ A signed Photography & Media Consent Form is required for classroom developmenta
     setIsExtracting(true);
     setPolicyUpdateSuccess(false);
 
-    try {
-      const res = await fetch('/api/extract-policy-requirements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ policyText: text }),
-      });
-
-      const data = await res.json();
-      if (data.success && data.requirements) {
-        setExtractedRequirements(data.requirements);
-        setExtractAiMode(data.aiMode ?? null);
-      }
-    } catch (err) {
-      console.error('Extraction error:', err);
-    } finally {
-      setIsExtracting(false);
+    setAiNotice(null);
+    const result = await aiPost<{ success?: boolean; requirements?: ExtractedRequirement[]; aiMode?: AiMode }>(
+      '/api/extract-policy-requirements',
+      { policyText: text }
+    );
+    if (result.ok && result.data.success && result.data.requirements) {
+      setExtractedRequirements(result.data.requirements);
+      setExtractAiMode(result.data.aiMode ?? null);
+    } else if (!result.ok && isUserFacingAiError(result.status)) {
+      setAiNotice(`${result.message} You can still add requirements yourself later.`);
     }
+    setIsExtracting(false);
   };
 
   // After registration: fill in the centre's own policy and read it with AI once (the centre still confirms)
@@ -751,6 +749,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                   </span>
                 </PrimaryButton>
               </div>
+              <AiNotice message={aiNotice} />
             </Card>
 
             {/* RIGHT Card: Requirements found */}

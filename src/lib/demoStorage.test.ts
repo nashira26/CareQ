@@ -3,15 +3,13 @@ import assert from 'node:assert/strict';
 import {
   DEMO_STORAGE_KEY,
   SHORTLIST_KEY,
-  DemoState,
-  loadDemoState,
-  saveDemoState,
+  loadLocalWorld,
+  saveLocalWorld,
   clearDemoStorage,
   hashPassword,
-  mergeCentres,
-  splitCentres,
+  browserHasher,
 } from './demoStorage';
-import { INITIAL_CENTRES, INITIAL_APPLICATIONS } from '../data/mockData';
+import { buildSeedWorld } from './world';
 
 const memory = () => {
   const m = new Map<string, string>();
@@ -34,63 +32,45 @@ const throwing = {
   },
 };
 
-const state: DemoState = {
-  mockAccounts: [{ id: 'a1', role: 'parent', email: 'x@y.ca', name: 'X', ...({ password: 'secret' } as object) }],
-  sessionAccountId: 'a1',
-  applications: INITIAL_APPLICATIONS.slice(0, 2),
-  conversations: {},
-  notifications: [],
-  supportRequests: [],
-  centreOverrides: [],
-  selfRegisteredCentres: [],
-  preparedDrafts: {},
-};
-
-test('missing, invalid JSON or other version -> null (use mock data)', () => {
+test('missing, invalid JSON or other version -> null (use seed data)', () => {
   const s = memory();
-  assert.equal(loadDemoState(s), null);
+  assert.equal(loadLocalWorld(s), null);
   s.setItem(DEMO_STORAGE_KEY, '{not json');
-  assert.equal(loadDemoState(s), null);
-  s.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 99, applications: [] }));
-  assert.equal(loadDemoState(s), null);
-  assert.equal(loadDemoState(null), null);
+  assert.equal(loadLocalWorld(s), null);
+  s.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 99, world: {} }));
+  assert.equal(loadLocalWorld(s), null);
+  assert.equal(loadLocalWorld(null), null);
 });
 
-test('an old careq-demo-v1 save is deleted, not converted', () => {
+test('older saves (v1, v2) are deleted, not converted', () => {
   const s = memory();
-  s.setItem('careq-demo-v1', JSON.stringify({ version: 1, applications: [{ id: 'old' }] }));
-  assert.equal(loadDemoState(s), null);
+  s.setItem('careq-demo-v1', '{}');
+  s.setItem('careq-demo-v2', '{}');
+  loadLocalWorld(s);
   assert.equal(s.getItem('careq-demo-v1'), null);
+  assert.equal(s.getItem('careq-demo-v2'), null);
 });
 
-test('round trip keeps state; malformed sections fall back individually', () => {
+test('round trip keeps the world and session; no plain-text passwords', async () => {
   const s = memory();
-  assert.equal(saveDemoState(state, s), true);
-  const back = loadDemoState(s)!;
-  assert.equal(back.sessionAccountId, 'a1');
-  assert.deepEqual(back.applications.map((a) => a.id), state.applications.map((a) => a.id));
-  const raw = JSON.parse(s.getItem(DEMO_STORAGE_KEY)!);
-  raw.notifications = 'oops';
-  s.setItem(DEMO_STORAGE_KEY, JSON.stringify(raw));
-  assert.deepEqual(loadDemoState(s)!.notifications, []);
+  const world = await buildSeedWorld(browserHasher);
+  assert.equal(saveLocalWorld(world, 'parent-priya', s), true);
+  const back = loadLocalWorld(s)!;
+  assert.equal(back.sessionAccountId, 'parent-priya');
+  assert.equal(back.world.applications.length, world.applications.length);
+  assert.doesNotMatch(s.getItem(DEMO_STORAGE_KEY)!, /"password"\s*:/);
+  assert.ok(await browserHasher.verify('password', back.world.accounts[0].passwordHash));
 });
 
-test('plain-text passwords are never saved', () => {
-  const s = memory();
-  saveDemoState(state, s);
-  assert.doesNotMatch(s.getItem(DEMO_STORAGE_KEY)!, /secret/);
-  assert.equal((loadDemoState(s)!.mockAccounts[0] as any).password, undefined);
-});
-
-test('storage that throws (private window) never breaks the app', () => {
-  assert.equal(loadDemoState(throwing), null);
-  assert.equal(saveDemoState(state, throwing), false);
+test('storage that throws (private window) never breaks the app', async () => {
+  assert.equal(loadLocalWorld(throwing), null);
+  assert.equal(saveLocalWorld(await buildSeedWorld(browserHasher), null, throwing), false);
   assert.doesNotThrow(() => clearDemoStorage(throwing));
 });
 
-test('reset clears the demo key and the shortlist', () => {
+test('reset clears the demo key and the shortlist only', () => {
   const s = memory();
-  saveDemoState(state, s);
+  s.setItem(DEMO_STORAGE_KEY, '{}');
   s.setItem(SHORTLIST_KEY, '["c1"]');
   s.setItem('unrelated', 'keep');
   clearDemoStorage(s);
@@ -99,24 +79,7 @@ test('reset clears the demo key and the shortlist', () => {
   assert.equal(s.getItem('unrelated'), 'keep');
 });
 
-test('centres: overrides for mock centres, full copies of self-registered ones', () => {
-  const custom = { ...INITIAL_CENTRES[0], id: 'c-custom-1', name: 'New Centre' };
-  const edited = INITIAL_CENTRES.map((c) =>
-    c.id === 'c2' ? { ...c, requirements: ['Only one'], requirementSources: { 'Only one': 'Sentence.' } } : c
-  );
-  const split = splitCentres([custom, ...edited], INITIAL_CENTRES);
-  assert.deepEqual(split.selfRegisteredCentres.map((c) => c.id), ['c-custom-1']);
-  const merged = mergeCentres(INITIAL_CENTRES, split.centreOverrides, split.selfRegisteredCentres);
-  assert.equal(merged[0].id, 'c-custom-1');
-  assert.deepEqual(merged.find((c) => c.id === 'c2')!.requirements, ['Only one']);
-  assert.equal(merged.find((c) => c.id === 'c2')!.name, INITIAL_CENTRES[1].name); // other fields from mock data
-  assert.equal(merged.length, INITIAL_CENTRES.length + 1);
-});
-
 test('hashPassword: SHA-256 hex, empty -> undefined', async () => {
   assert.equal(await hashPassword(''), undefined);
-  assert.equal(
-    await hashPassword('password'),
-    '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'
-  );
+  assert.equal(await hashPassword('password'), '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8');
 });

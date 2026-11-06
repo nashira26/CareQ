@@ -25,7 +25,9 @@ import {
   HouseIllustrationTone,
   AiFallbackNote,
   AiMode,
+  AiNotice,
 } from '../ui/CareUI';
+import { aiPost, isUserFacingAiError } from '../../lib/aiFetch';
 import { EMPTY_CRITERIA, SearchCriteria, hasAnyCriteria, sanitizeCriteria, parseSearchFallback } from '../../lib/searchCriteria';
 import {
   Area,
@@ -116,6 +118,7 @@ export const FindTab: React.FC<FindTabProps> = ({
   const [isParsing, setIsParsing] = useState(false);
   const [parseAiMode, setParseAiMode] = useState<AiMode | null>(null);
   const [explainAiMode, setExplainAiMode] = useState<AiMode | null>(null);
+  const [aiNotice, setAiNotice] = useState<string | null>(null);
   const [explanations, setExplanations] = useState<Record<string, string>>({});
   const [explainRequest, setExplainRequest] = useState(0);
   const [includeSchoolAgeOnly, setIncludeSchoolAgeOnly] = useState(false);
@@ -193,31 +196,34 @@ export const FindTab: React.FC<FindTabProps> = ({
     if (!explainRequest || !ranked || ranked.length === 0) return;
     const top = ranked.slice(0, EXPLAIN_TOP_N);
     let cancelled = false;
-    fetch('/api/explain-results', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        results: top.map((r) => ({
-          id: r.id,
-          name: entryById.get(r.id)?.name ?? '',
-          matchedFacts: r.matchedFacts,
-          unknownFacts: r.unknownFacts,
-        })),
-      }),
+    aiPost<{ explanations?: Record<string, string>; aiMode?: AiMode }>('/api/explain-results', {
+      results: top.map((r) => ({
+        id: r.id,
+        name: entryById.get(r.id)?.name ?? '',
+        matchedFacts: r.matchedFacts,
+        unknownFacts: r.unknownFacts,
+      })),
     })
-      .then((res) => res.json())
-      .then((data) => {
-        if (cancelled || !data?.explanations) return;
+      .then((result) => {
+        if (cancelled) return;
+        if (!result.ok) {
+          // Keep the plain facts sentences; say why if the user can act on it
+          setExplainAiMode('fallback');
+          if (isUserFacingAiError(result.status)) setAiNotice(result.message);
+          return;
+        }
+        const data = result.data;
+        if (!data?.explanations) return;
+        const explanations = data.explanations;
         setExplainAiMode(data.aiMode ?? null);
         setExplanations((prev) => {
           const next = { ...prev };
           top.forEach((r) => {
-            if (typeof data.explanations[r.id] === 'string') next[explainKey(r)] = data.explanations[r.id];
+            if (typeof explanations[r.id] === 'string') next[explainKey(r)] = explanations[r.id];
           });
           return next;
         });
-      })
-      .catch(() => !cancelled && setExplainAiMode('fallback'));
+      });
     return () => {
       cancelled = true;
     };
@@ -234,23 +240,19 @@ export const FindTab: React.FC<FindTabProps> = ({
     }
     setIsParsing(true);
     setExplainAiMode(null);
-    try {
-      const res = await fetch('/api/parse-search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      });
-      const data = await res.json();
-      setCriteria(sanitizeCriteria(data.criteria));
-      setParseAiMode(data.aiMode ?? null);
-    } catch {
-      // Server unreachable: same keyword parser, in the browser
+    setAiNotice(null);
+    const result = await aiPost<{ criteria?: unknown; aiMode?: AiMode }>('/api/parse-search', { text });
+    if (result.ok) {
+      setCriteria(sanitizeCriteria(result.data.criteria));
+      setParseAiMode(result.data.aiMode ?? null);
+    } else {
+      // Rate-limited, signed out or unreachable: the same keyword parser, in the browser
       setCriteria(parseSearchFallback(text));
       setParseAiMode('fallback');
-    } finally {
-      setIsParsing(false);
-      setExplainRequest((n) => n + 1);
+      if (isUserFacingAiError(result.status)) setAiNotice(result.message);
     }
+    setIsParsing(false);
+    setExplainRequest((n) => n + 1);
   };
 
   const handleClear = () => {
@@ -508,6 +510,7 @@ export const FindTab: React.FC<FindTabProps> = ({
           knownLanguages={knownLanguages}
         />
         <AiFallbackNote aiMode={parseAiMode} />
+        <AiNotice message={aiNotice} />
 
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1 text-xs text-[#173F42]">
           <label className="flex items-center gap-2 cursor-pointer">

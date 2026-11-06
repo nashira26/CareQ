@@ -173,3 +173,43 @@ export function approximateLocation(
   const c = fsa[postalCode.toUpperCase().replace(/\s+/g, '').slice(0, 3)];
   return c ? { lat: c.lat, lng: c.lng, source: 'postal code' } : null;
 }
+
+/**
+ * Builds a self-registered centre from the registration form. Location is recomputed here
+ * (neighbourhood or postal-code area, never a geocoder), so the server never trusts client coordinates.
+ */
+export function buildRegisteredCentre(
+  input: CentreFormInput,
+  photoDataUrl: string | undefined,
+  areas: Area[],
+  fsa: FsaCentroids,
+  id: string,
+  now: Date = new Date()
+): import('../data/mockData').Centre {
+  const loc = approximateLocation(input.neighbourhood, input.postalCode, areas, fsa)!;
+  return {
+    id,
+    name: input.name.trim(),
+    neighbourhood: findArea(input.neighbourhood, areas)!.name,
+    address: `${input.street.trim()}, Toronto, ON ${normalisePostal(input.postalCode)}`,
+    ageGroups: input.ageGroups,
+    programOptions: input.programOptions,
+    languages: input.languages,
+    hours: input.hours.trim(),
+    requirements: [], // published later via the policy reader (the centre confirms)
+    requirementSources: {},
+    lat: loc.lat,
+    lng: loc.lng,
+    registration: {
+      selfRegistered: true,
+      licenceNumber: input.licenceNumber.trim() || undefined,
+      contactEmail: input.contactEmail.trim(),
+      capacity: input.capacity.trim() ? Number(input.capacity) : undefined,
+      locationApproximate: true,
+      locationSource: loc.source,
+      photoDataUrl,
+      policyText: input.policyText.trim() || undefined,
+      registeredAt: now.toISOString(),
+    },
+  };
+}

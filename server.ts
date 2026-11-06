@@ -1,5 +1,4 @@
 import express, { Request, Response } from 'express';
-import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
@@ -13,6 +12,13 @@ import {
 import { sanitizeCriteria, parseSearchFallback } from './src/lib/searchCriteria';
 import { factsSentence } from './src/lib/rankCentres';
 import { sanitizePrepareInput, finalizePrepared, prepareFallback } from './src/lib/prepareApplication';
+import type { Area, FsaCentroids } from './src/lib/rankCentres';
+import { createDataApi } from './server/api';
+import { connectMongo, ensureIndexes, isEmpty, reseed, mongo, pingMongo } from './server/db';
+import { sessionAccount } from './server/auth';
+import { rateLimit, AI_LIMIT_PER_SESSION, AI_LIMIT_ANON_ASK, RATE_LIMIT_MESSAGE } from './server/rateLimit';
+import torontoAreas from './src/data/torontoAreas.json';
+import fsaCentroids from './src/data/fsaCentroids.json';
 
 dotenv.config();
 
@@ -46,11 +52,90 @@ const fallbackReasonFor = (err: unknown): 'timeout' | 'error' =>
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Where demo data lives: "mongo" (default, shared across devices) or "local" (each browser keeps its own).
+const DATA_MODE: 'mongo' | 'local' = process.env.DATA_MODE === 'local' ? 'local' : 'mongo';
+const ALLOW_RESET = process.env.ALLOW_RESET === 'true';
+const RESET_TOKEN = process.env.RESET_TOKEN || undefined;
+
 async function startServer() {
   const app = express();
   const port = process.env.PORT || 3000;
 
   app.use(express.json({ limit: '10mb' }));
+  // Render (and most hosts) terminate HTTPS at a proxy: needed for secure cookies and client IPs
+  app.set('trust proxy', 1);
+  app.disable('x-powered-by');
+
+  // ---------------- Data mode, health, data API ----------------
+
+  app.get('/api/config', (_req, res) => {
+    res.json({ dataMode: DATA_MODE, resetAvailable: DATA_MODE === 'mongo' && ALLOW_RESET && Boolean(RESET_TOKEN) });
+  });
+
+  // Health for Render: MongoDB reachable (mongo mode) and a Gemini key configured (never the key itself)
+  app.get('/api/health', async (_req, res) => {
+    const mongoUp = DATA_MODE === 'mongo' ? await pingMongo() : null;
+    const geminiKeyConfigured = Boolean(process.env.GEMINI_API_KEY);
+    const ok = (DATA_MODE === 'local' || mongoUp === true) && geminiKeyConfigured;
+    res.status(ok ? 200 : 503).json({
+      status: ok ? 'ok' : 'degraded',
+      dataMode: DATA_MODE,
+      mongo: DATA_MODE === 'mongo' ? (mongoUp ? 'up' : 'down') : 'not used',
+      geminiKeyConfigured,
+    });
+  });
+
+  if (DATA_MODE === 'mongo') {
+    app.use(
+      '/api',
+      createDataApi({
+        allowReset: ALLOW_RESET,
+        resetToken: RESET_TOKEN,
+        areas: (torontoAreas as { areas: Area[] }).areas,
+        fsa: fsaCentroids as FsaCentroids,
+      })
+    );
+    // Connect once at startup (reused for every request); seed automatically if the database is empty
+    connectMongo(process.env.MONGODB_URI, process.env.MONGODB_DB, async (db) => {
+      await ensureIndexes(db);
+      if (await isEmpty(db)) {
+        console.log('[mongo] database is empty: seeding demo data');
+        await reseed(db);
+      }
+    });
+  }
+
+  // ---------------- AI endpoints: sign-in (mongo mode) + rate limits ----------------
+
+  /**
+   * In mongo mode every AI endpoint needs a signed-in session, except Ask CareQ (also on the
+   * login page), which is allowed anonymously but limited per IP. Limits: 20/min per session,
+   * 10/min per IP for anonymous Ask CareQ. In local mode there are no server sessions, so limits are per IP.
+   */
+  const aiGuard = (endpoint: string) => async (req: Request, res: Response, next: () => void) => {
+    let accountId: string | null = null;
+    if (DATA_MODE === 'mongo' && mongo.db) {
+      try {
+        accountId = (await sessionAccount(mongo.db, req))?.id ?? null;
+      } catch {
+        accountId = null;
+      }
+    }
+    const anonymousAllowed = endpoint === 'ask-careq' || DATA_MODE === 'local';
+    if (!accountId && !anonymousAllowed) {
+      res.status(401).json({ error: 'Please log in to use CareQ\'s AI features.' });
+      return;
+    }
+    const limit = accountId
+      ? rateLimit(`ai:session:${accountId}`, AI_LIMIT_PER_SESSION)
+      : rateLimit(`ai:ip:${req.ip}:${endpoint === 'ask-careq' ? 'ask' : 'ai'}`, endpoint === 'ask-careq' ? AI_LIMIT_ANON_ASK : AI_LIMIT_PER_SESSION);
+    if (!limit.ok) {
+      res.setHeader('Retry-After', String(limit.retryAfterSeconds));
+      res.status(429).json({ error: RATE_LIMIT_MESSAGE, retryAfterSeconds: limit.retryAfterSeconds });
+      return;
+    }
+    next();
+  };
 
   // Shared Gemini client (initialized with User-Agent header)
   const ai = new GoogleGenAI({
@@ -131,7 +216,7 @@ async function startServer() {
   };
 
   // API 1: Extract policy requirements from pasted text using Gemini
-  app.post('/api/extract-policy-requirements', async (req: Request, res: Response) => {
+  app.post('/api/extract-policy-requirements', aiGuard('extract-policy-requirements'), async (req: Request, res: Response) => {
     const { policyText } = req.body;
 
     if (!policyText || typeof policyText !== 'string' || !policyText.trim()) {
@@ -250,7 +335,7 @@ ${policyText}
 
   // API 2a: Parse a parent's description into search criteria (no ranking, no scores).
   // Ranking happens in plain code in the browser (src/lib/rankCentres.ts).
-  app.post('/api/parse-search', async (req: Request, res: Response) => {
+  app.post('/api/parse-search', aiGuard('parse-search'), async (req: Request, res: Response) => {
     const { text } = req.body;
     if (!text || typeof text !== 'string' || !text.trim()) {
       return res.status(400).json({ error: 'Search text is required.' });
@@ -323,7 +408,7 @@ ${description}
   });
 
   // API 2b: One plain sentence per top result, restating ONLY the facts computed by rankCentres.
-  app.post('/api/explain-results', async (req: Request, res: Response) => {
+  app.post('/api/explain-results', aiGuard('explain-results'), async (req: Request, res: Response) => {
     const raw = Array.isArray(req.body?.results) ? req.body.results : null;
     if (!raw || raw.length === 0) {
       return res.status(400).json({ error: 'results are required.' });
@@ -392,7 +477,7 @@ ${JSON.stringify(results)}`,
   // API 2c: Prepare an application for a CareQ partner centre (parent reviews and approves before sending).
   // Only the fields in PrepareInput are sent to Gemini; guardrails in src/lib/prepareApplication.ts
   // are applied to every result.
-  app.post('/api/prepare-application', async (req: Request, res: Response) => {
+  app.post('/api/prepare-application', aiGuard('prepare-application'), async (req: Request, res: Response) => {
     const input = sanitizePrepareInput(req.body);
     if (!input) {
       return res.status(400).json({ error: 'Child first name and at least one requirement are required.' });
@@ -469,7 +554,7 @@ ${JSON.stringify(input)}`,
   });
 
   // API 3: AI Message Drafting for Parent & Centre communication
-  app.post('/api/generate-message', async (req: Request, res: Response) => {
+  app.post('/api/generate-message', aiGuard('generate-message'), async (req: Request, res: Response) => {
     const {
       role = 'parent', // 'parent' | 'centre'
       childName = 'Anya',
@@ -546,7 +631,7 @@ Return only the message text without quotes.`;
   });
 
   // API 4: Message tone check before sending
-  app.post('/api/check-tone', async (req: Request, res: Response) => {
+  app.post('/api/check-tone', aiGuard('check-tone'), async (req: Request, res: Response) => {
     const { text, role = 'parent' } = req.body;
 
     if (!text || typeof text !== 'string' || !text.trim()) {
@@ -653,7 +738,7 @@ If it is respectful, calm, neutral, professional, or standard:
   });
 
   // API 5: Ask CareQ Assistant
-  app.post('/api/ask-careq', async (req: Request, res: Response) => {
+  app.post('/api/ask-careq', aiGuard('ask-careq'), async (req: Request, res: Response) => {
     const { question, centres } = req.body;
 
     if (!question || typeof question !== 'string' || !question.trim()) {
@@ -780,23 +865,27 @@ ${question}
     }
   });
 
-  // In development, hook up Vite middleware
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    // Serve static files in production
-    app.use(express.static(path.resolve(__dirname, 'dist')));
+  // Unknown /api routes are JSON 404s (never the HTML app)
+  app.use('/api', (_req, res) => {
+    res.status(404).json({ error: 'Not found.' });
+  });
+
+  if (process.env.NODE_ENV === 'production') {
+    // Serve the built frontend (npm run build -> dist/); no Vite in production
+    const dist = path.resolve(__dirname, 'dist');
+    app.use(express.static(dist, { index: false, maxAge: '1h' }));
     app.get('*', (_req, res) => {
-      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+      res.sendFile(path.join(dist, 'index.html'));
     });
+  } else {
+    // Development: Vite middleware (imported only here so production never needs it)
+    const { createServer: createViteServer } = await import('vite');
+    const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' });
+    app.use(vite.middlewares);
   }
 
-  app.listen(port, () => {
-    console.log(`CareQ server running at http://localhost:${port}`);
+  app.listen(Number(port), () => {
+    console.log(`CareQ server running at http://localhost:${port} (${process.env.NODE_ENV === 'production' ? 'production' : 'development'}, data: ${DATA_MODE})`);
   });
 }
 
