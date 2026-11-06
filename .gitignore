@@ -6,3 +6,7 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Raw open-data downloads (regenerate src/data/ontarioCentres.json with npm run import:ontario)
+ontario_childcare.csv
+toronto_childcare.csv

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { StatusBadge } from '../StatusBadge';
 import { DaycareMap } from './DaycareMap';
+import { useOntarioCentres, OntarioCentresSection } from './OntarioCentres';
 import {
   PageHeader,
   Eyebrow,
@@ -61,6 +62,9 @@ export const FindTab: React.FC<FindTabProps> = ({
   const [agentSummary, setAgentSummary] = useState<string | null>(null);
   const [rankedMatches, setRankedMatches] = useState<PrioritizedMatch[] | null>(null);
   const [matchAiMode, setMatchAiMode] = useState<AiMode | null>(null);
+
+  // Real licensed centres from Ontario / City of Toronto open data (separate from demo centres)
+  const ontario = useOntarioCentres(searchQuery, selectedAgeGroup);
 
   // Extract unique neighbourhoods
   const neighbourhoods = useMemo(() => {
@@ -161,6 +165,7 @@ export const FindTab: React.FC<FindTabProps> = ({
             applications={applications}
             parentProfile={parentProfile}
             rankedMatches={rankedMatches}
+            realCentres={ontario.filtered}
             onSelectCentre={onSelectCentre}
             onOpenConversation={onOpenConversation}
             onNavigateToApply={onNavigateToApply}
@@ -275,9 +280,9 @@ export const FindTab: React.FC<FindTabProps> = ({
       <div className="flex items-center justify-between pt-1">
         <div className="flex items-baseline gap-2">
           <span className="text-sm font-bold text-[#173F42]">
-            {displayedCentres.length} centres
+            {displayedCentres.length} simulated demo centres
           </span>
-          <span className="text-xs text-[#7A8A84]">· Toronto demo</span>
+          <span className="text-xs text-[#7A8A84]">· used for the Apply and Track demo</span>
           {rankedMatches && (
             <span className="text-xs font-semibold text-[#4E7A5A] ml-1">
               · Ordered by match score
@@ -342,9 +347,14 @@ export const FindTab: React.FC<FindTabProps> = ({
                   {/* Body p-5 */}
                   <div className="p-5">
                     {/* Row with MapPin icon + neighbourhood */}
-                    <div className="flex items-center gap-1.5 text-[11px] text-[#7A8A84]">
-                      <MapPin className="w-3 h-3 text-[#7A8A84] shrink-0" />
-                      <span>{centre.neighbourhood}</span>
+                    <div className="flex items-center justify-between gap-2 text-[11px] text-[#7A8A84]">
+                      <span className="flex items-center gap-1.5">
+                        <MapPin className="w-3 h-3 text-[#7A8A84] shrink-0" />
+                        <span>{centre.neighbourhood}</span>
+                      </span>
+                      <span className="rounded px-1.5 py-0.5 bg-[#F3EBDD] text-[#5B4A2E] text-[10px] font-semibold">
+                        Simulated demo centre
+                      </span>
                     </div>
 
                     {/* Centre Name */}
@@ -454,6 +464,8 @@ export const FindTab: React.FC<FindTabProps> = ({
           </button>
         </Card>
       )}
+
+      <OntarioCentresSection state={ontario} />
     </div>
   );
 };

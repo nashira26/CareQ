@@ -1,0 +1,40 @@
+{
+  "generatedBy": "scripts/import-ontario-data.ts",
+  "sources": {
+    "ontario": {
+      "name": "Licensed child care facilities in Ontario",
+      "publisher": "Ontario Ministry of Education",
+      "url": "https://data.ontario.ca/dataset/licensed-child-care-facilities-in-ontario",
+      "licence": "Open Government Licence – Ontario",
+      "dataDate": "2026-09-30",
+      "downloadedOn": "2026-11-05"
+    },
+    "toronto": {
+      "name": "Licensed Child Care Centres",
+      "publisher": "City of Toronto, Children's Services",
+      "url": "https://open.toronto.ca/dataset/licensed-child-care-centres/",
+      "licence": "Open Government Licence – Toronto",
+      "dataDate": "2026-11-05",
+      "downloadedOn": "2026-11-05"
+    },
+    "osm": {
+      "name": "Nominatim geocoding",
+      "publisher": "OpenStreetMap contributors",
+      "url": "https://www.openstreetmap.org/copyright",
+      "licence": "ODbL",
+      "dataDate": null,
+      "downloadedOn": "2026-11-05"
+    }
+  },
+  "filter": "CMSM / DSSAB Name = City of Toronto, Program Type = Child Care Centre, Licence Status = Active",
+  "centreCount": 1102,
+  "joinStats": {
+    "licence": 0,
+    "namePostal": 727,
+    "postalDistinctiveWord": 257,
+    "geocoded": 110,
+    "none": 8,
+    "withoutMapLocation": 8,
+    "schoolAgeOnly": 183
+  }
+}

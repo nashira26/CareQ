@@ -1,6 +1,11 @@
 import React from 'react';
 import { ArrowLeft, ShieldCheck, Scale, Bot, Lock, ExternalLink, FileText, CheckCircle2 } from 'lucide-react';
 import { Centre } from '../data/mockData';
+import ontarioMeta from '../data/ontarioCentres.meta.json';
+import { OntarioCentresFile, formatSourceDate } from '../data/ontarioTypes';
+
+const dataSources = (ontarioMeta as OntarioCentresFile['metadata']).sources;
+const joinStats = (ontarioMeta as OntarioCentresFile['metadata']).joinStats;
 
 interface TrustTransparencyPageProps {
   onBack: () => void;
@@ -291,6 +296,51 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
           </div>
         </div>
 
+        {/* Data sources for the real licensed centres on the Find page */}
+        <div className="space-y-2 pt-2">
+          <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider">
+            Data sources
+          </h3>
+          <div className="p-4 rounded-xl bg-stone-50 border border-stone-200 text-xs sm:text-sm text-stone-700 space-y-2 leading-relaxed">
+            <p>
+              <span className="font-bold text-stone-900">Source: </span>
+              <a href={dataSources.ontario.url} target="_blank" rel="noopener noreferrer" className="text-[#0B4A52] underline">
+                {dataSources.ontario.name}
+              </a>{' '}
+              ({dataSources.ontario.publisher}, {dataSources.ontario.licence}), data as of{' '}
+              {formatSourceDate(dataSources.ontario.dataDate)}, downloaded{' '}
+              {formatSourceDate(dataSources.ontario.downloadedOn)}.
+            </p>
+            <p>
+              <span className="font-bold text-stone-900">Source: </span>
+              <a href={dataSources.toronto.url} target="_blank" rel="noopener noreferrer" className="text-[#0B4A52] underline">
+                {dataSources.toronto.name}
+              </a>{' '}
+              ({dataSources.toronto.publisher}, {dataSources.toronto.licence}), data as of{' '}
+              {formatSourceDate(dataSources.toronto.dataDate)}: map locations, age groups served,
+              licensed capacity and CWELCC participation.
+            </p>
+            <p>
+              <a href={dataSources.osm.url} target="_blank" rel="noopener noreferrer" className="text-[#0B4A52] underline">
+                Geocoding © OpenStreetMap contributors
+              </a>{' '}
+              (Nominatim), used only for centres without City of Toronto coordinates.
+            </p>
+            <p>
+              <span className="font-bold text-stone-900">How the datasets were joined: </span>
+              {joinStats.namePostal + joinStats.postalDistinctiveWord + joinStats.licence} centres
+              matched to City of Toronto data ({joinStats.namePostal} exact,{' '}
+              {joinStats.postalDistinctiveWord} by postal code and name); {joinStats.geocoded} located
+              with OpenStreetMap; {joinStats.withoutMapLocation} without a map location.
+            </p>
+            <p className="text-stone-500">
+              CareQ shows no availability, waitlist or fee information for these real centres. The
+              demo centres used for applications, waitlists and offers are simulated and labelled
+              "Simulated demo centre".
+            </p>
+          </div>
+        </div>
+
         {/* Direct links to each centre's published policy */}
         <div className="space-y-2 pt-2">
           <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider">
@@ -308,7 +358,7 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
                     {c.name}
                   </span>
                   <span className="text-[11px] text-stone-500">
-                    {c.neighbourhood} • Published Admission Policy
+                    {c.neighbourhood} • Simulated demo centre • Sample admission policy
                   </span>
                 </div>
                 <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0B4A52] bg-white border border-stone-200 px-2 py-1 rounded-lg">

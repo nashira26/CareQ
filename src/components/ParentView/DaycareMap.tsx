@@ -1,6 +1,12 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
 import { Centre, Application, ParentProfile } from '../../data/mockData';
+import { OntarioCentre } from '../../data/ontarioTypes';
+
+const NO_REAL_CENTRES: OntarioCentre[] = [];
+
+const escapeHtml = (s: string) =>
+  s.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]!);
 import {
   MapPin,
   Clock,
@@ -18,6 +24,8 @@ interface DaycareMapProps {
   applications: Application[];
   parentProfile: ParentProfile;
   rankedMatches?: { centreId: string; priorityRank: number; matchReason: string }[] | null;
+  /** Real open-data centres: shown as small dots; centres without lat/lng are skipped. */
+  realCentres?: OntarioCentre[];
   onSelectCentre: (centreId: string) => void;
   onOpenConversation: (centreId: string) => void;
   onNavigateToApply: () => void;
@@ -28,6 +36,7 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
   applications,
   parentProfile,
   rankedMatches,
+  realCentres = NO_REAL_CENTRES,
   onSelectCentre,
   onOpenConversation,
   onNavigateToApply,
@@ -35,6 +44,11 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Record<string, L.Marker>>({});
+  const realLayerRef = useRef<L.LayerGroup | null>(null);
+  const realCentresOnMap = useMemo(
+    () => realCentres.filter((c) => typeof c.lat === 'number' && typeof c.lng === 'number'),
+    [realCentres]
+  );
   const [activeCentreId, setActiveCentreId] = useState<string | null>(
     centres.length > 0 ? centres[0].id : null
   );
@@ -155,6 +169,40 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
     return () => clearTimeout(timeout);
   }, [centres, rankedMatches, applications]);
 
+  // Real open-data centres on their own layer (canvas dots, fast for ~1,100 points).
+  // Runs after the effect above has created the map.
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    if (!realLayerRef.current) realLayerRef.current = L.layerGroup().addTo(map);
+    const layer = realLayerRef.current;
+    layer.clearLayers();
+    const renderer = L.canvas({ padding: 0.5 });
+
+    realCentresOnMap.forEach((c) => {
+      const ages = c.ageGroups === null ? 'Ages not reported' : c.ageGroups.join(', ') || 'No infant, toddler or preschool spaces listed';
+      L.circleMarker([c.lat as number, c.lng as number], {
+        renderer,
+        radius: 4,
+        color: '#ffffff',
+        weight: 1,
+        fillColor: '#6B5B95',
+        fillOpacity: 0.85,
+      })
+        .bindPopup(
+          `<div class="p-1 font-sans text-xs max-w-[220px]">
+            <div class="font-bold text-sm text-stone-900 leading-tight mb-1">${escapeHtml(c.name)}</div>
+            <div class="text-stone-600 mb-1">${escapeHtml(c.address)}</div>
+            <div class="text-stone-500 text-[11px]">${escapeHtml(ages)}</div>
+            <div class="text-stone-700 text-[11px] font-semibold mt-1">Availability not reported</div>
+            <div class="text-stone-400 text-[10px] mt-1">Licensed centre · open data</div>
+          </div>`,
+          { closeButton: false }
+        )
+        .addTo(layer);
+    });
+  }, [realCentresOnMap]);
+
   // When active centre changes, fly to its coordinates
   const handleSelectActiveCentre = (centre: Centre) => {
     setActiveCentreId(centre.id);
@@ -197,8 +245,14 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
             <div className="text-[11px] text-stone-500 flex items-center gap-2">
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-teal-700 inline-block"></span>
-                <span>Licensed Centre</span>
+                <span>Simulated demo centre</span>
               </span>
+              {realCentresOnMap.length > 0 && (
+                <span className="flex items-center gap-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#6B5B95] inline-block"></span>
+                  <span>Licensed centre (open data)</span>
+                </span>
+              )}
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block"></span>
                 <span>Selected</span>
@@ -208,7 +262,7 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
 
           {/* Bottom helper pill */}
           <div className="absolute bottom-3 left-3 z-1000 bg-stone-900/80 backdrop-blur-xs text-white text-[11px] px-3 py-1 rounded-full shadow-sm pointer-events-none">
-            Powered by OpenStreetMap • Showing {centres.length} licensed centres
+            Powered by OpenStreetMap • {centres.length} simulated demo + {realCentresOnMap.length} licensed centres
           </div>
         </div>
 
