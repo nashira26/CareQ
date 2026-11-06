@@ -15,11 +15,14 @@ cd CareQ
 npm install
 ```
 
-Create a file called `.env.local` in the project folder:
+Create a file called `.env` in the project folder (copy `.env.example`):
 
 ```
 GEMINI_API_KEY=your_own_key_here
+GEMINI_MODEL=gemini-3.5-flash
 ```
+
+`.env` is in `.gitignore`; never commit it. Optional: `GEMINI_TIMEOUT_MS` (default 15000) sets how long to wait for Gemini before the basic fallback is used.
 
 Then run:
 
@@ -27,65 +30,57 @@ Then run:
 npm run dev
 ```
 
-Get a free Gemini API key from Google AI Studio. **Never commit keys.** `.env.local` must stay in `.gitignore`. AI Studio does not copy secrets to GitHub, so everyone adds their own key locally.
-
----
-
-## Working with Google AI Studio and GitHub
-
-AI Studio is linked to this repository with two-way sync (Settings → GitHub tab).
-
-**Every session in AI Studio:**
-
-1. **Pull first** from GitHub, so you have your teammates' latest changes.
-2. Make **one small change per prompt** (see "Prompting rules" below).
-3. Check it works in the preview.
-4. **Push** to GitHub straight away.
+## Working wit GitHub
 
 **Every session locally:**
 
 1. `git pull` before you start.
 2. Work on your own area only.
-3. Commit small, clear changes: `git commit -m "Add queue position to Track tab"`.
-4. `git push` when it works.
+3. Check what changed: `git status`
+4. Stage your changes: `git add .` (or `git add path/to/file` for one file)
+5. Commit: `git commit -m "Add queue position to Track tab"`
+6. `git push` when it works.
 
-**To avoid conflicts:**
+Open http://localhost:3000 (or the port in your `PORT` variable).
 
-- GitHub is the source of truth. If AI Studio and GitHub disagree, GitHub wins.
-- Never edit the same files in AI Studio and locally at the same time.
-- If a sync goes wrong, stop and tell the team before pushing again.
+## Demo accounts
 
----
+The login page has one-click demo buttons. Accounts are mock, nothing is stored on a server, and refreshing the page resets the demo.
 
-## Prompting rules (to save credits)
+## What it does
 
-- One feature per prompt, and end with: _"Do not change anything else. When done, list the files you changed and stop."_
-- Never say "make it better" or "improve the design"; name the exact change.
-- Fix small text and colour changes by hand in the code, not by prompting.
-- For anything big, ask for a plan first: _"List the files you'd change and stop."_
+**Parents:** find licensed centres on a map, apply with a checklist built from each centre's policy, track status and queue position (as reported by the centre), accept an offer and withdraw the rest, and message centres.
+**Centres:** review applications, set status, queue position and wait estimate, paste an admission policy to create a checklist, and reply to families.
 
----
+## Where AI is used
 
-## Data rules (important for judging)
+Five Gemini tools run on the server (`server.ts`). The API key never reaches the browser.
 
-| Type              | Examples                                                      | How to show it                     |
-| ----------------- | ------------------------------------------------------------- | ---------------------------------- |
-| **Real, public**  | Ontario licensed centres dataset; centres' published policies | Show the source link               |
-| **From a centre** | Status, queue position, wait given by the centre              | "Reported by [centre] on [date]"   |
-| **Simulated**     | Families, centre replies, waitlists, past placements          | Always tagged **"Simulated data"** |
+| Tool            | Endpoint                           | Guardrail                                                                        |
+| --------------- | ---------------------------------- | -------------------------------------------------------------------------------- |
+| Policy reader   | `/api/extract-policy-requirements` | Quotes the exact source sentence; centre confirms before parents see it          |
+| Centre matcher  | `/api/match-centres`               | Only explains why a centre fits                                                  |
+| Message drafter | `/api/generate-message`            | Sender edits and approves                                                        |
+| Tone check      | `/api/check-tone`                  | Suggests only                                                                    |
+| Ask CareQ       | `/api/ask-careq`                   | Answers only from confirmed info; says "I don't have that information" otherwise |
 
-- Never show simulated information as real availability or real waitlist positions.
-- Never show a wait or position the centre didn't enter. If there's none: "No wait estimate provided by the centre."
-- Every application, message and withdrawal needs a person's approval before it is sent.
+If Gemini is unavailable, each tool falls back to a basic non-AI version.
 
----
+## Responsible AI rules
 
-## Build order
+- People approve every application, message and withdrawal.
+- Centres decide admissions. The AI never ranks children or families.
+- Queue positions and waits are shown only as the centre reported them, with a date, or as "not provided". CareQ never predicts them.
+- All centres, families, waitlists and messages in the demo are simulated and labelled.
 
-1. App skeleton: parent and centre views with mock data _(done when the flow clicks through)_
-2. Queue position and wait reported by centres
-3. AI reads a centre's policy and extracts requirements, with source sentences
-4. AI prepares application drafts and flags missing documents
-5. AI-drafted messages, confirmed by the sender
-6. Real Toronto centres from the Ontario dataset
-7. _Optional, if time:_ estimated wait from simulated past records
+## Tech stack
+
+React 19 · Vite · Tailwind CSS 4 · Express · Google Gemini API (`@google/genai`) · Leaflet + OpenStreetMap
+
+## Project structure
+
+- `server.ts`: Express server and the Gemini endpoints
+- `src/App.tsx`: app state, login and routing
+- `src/components/ParentView/`: parent pages (Find, Apply, Track, home)
+- `src/components/CentreView/`: centre pages
+- `src/data/`: mock centres, applications, messages and help content

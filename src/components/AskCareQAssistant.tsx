@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, X, Send, Sparkles, Loader2, MessageSquare, Info } from 'lucide-react';
 import { Centre } from '../data/mockData';
+import { AiFallbackNote, AiMode } from './ui/CareUI';
 
 interface ChatMessage {
   id: string;
   sender: 'user' | 'assistant';
   text: string;
   timestamp: string;
+  aiMode?: AiMode;
 }
 
 interface AskCareQAssistantProps {
@@ -82,6 +84,7 @@ export const AskCareQAssistant: React.FC<AskCareQAssistantProps> = ({ centres })
         sender: 'assistant',
         text: answer,
         timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+        aiMode: data.aiMode,
       };
 
       setMessages((prev) => [...prev, botMsg]);
@@ -93,6 +96,7 @@ export const AskCareQAssistant: React.FC<AskCareQAssistantProps> = ({ centres })
         sender: 'assistant',
         text: "I don't have that information; please contact the centre or use Help.",
         timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+        aiMode: 'fallback',
       };
       setMessages((prev) => [...prev, botMsg]);
     } finally {
@@ -170,6 +174,7 @@ export const AskCareQAssistant: React.FC<AskCareQAssistantProps> = ({ centres })
                   >
                     {msg.text}
                   </div>
+                  {!isUser && <AiFallbackNote aiMode={msg.aiMode} className="mt-1 px-1" />}
                   <span className="text-[10px] text-stone-400 mt-1 px-1">
                     {msg.timestamp}
                   </span>

@@ -17,6 +17,8 @@ import {
   Eyebrow,
   DemoBanner,
   SimNote,
+  AiFallbackNote,
+  AiMode,
 } from '../ui/CareUI';
 import {
   Sparkles,
@@ -108,6 +110,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState<string>('');
   const [policyUpdateSuccess, setPolicyUpdateSuccess] = useState<boolean>(false);
+  const [extractAiMode, setExtractAiMode] = useState<AiMode | null>(null);
 
   // Applications specifically for this single centre
   const centreApplications = applications.filter((app) => app.centreId === singleCentre.id);
@@ -157,6 +160,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
       const data = await res.json();
       if (data.success && data.requirements) {
         setExtractedRequirements(data.requirements);
+        setExtractAiMode(data.aiMode ?? null);
       }
     } catch (err) {
       console.error('Extraction error:', err);
@@ -735,6 +739,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
 
               {extractedRequirements && extractedRequirements.length > 0 ? (
                 <div className="space-y-3">
+                  <AiFallbackNote aiMode={extractAiMode} />
                   <div className="max-h-[380px] overflow-y-auto space-y-3 pr-1">
                     {extractedRequirements.map((item, index) => {
                       const isEditing = editingIndex === index;

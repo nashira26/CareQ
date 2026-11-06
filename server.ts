@@ -3,9 +3,22 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, Type, GenerateContentParameters } from '@google/genai';
 
 dotenv.config();
+
+// Single place to set the Gemini model. Override with the GEMINI_MODEL env var.
+// gemini-3.8-flash is listed but timed out (504) in testing on 2026-11-05; gemini-3.5-flash responds.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+
+// Max time to wait for Gemini before using the non-AI fallback. Override with GEMINI_TIMEOUT_MS.
+const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 15000;
+
+class GeminiTimeoutError extends Error {}
+
+/** Why an endpoint used its fallback: 'timeout' if Gemini took too long, otherwise 'error'. */
+const fallbackReasonFor = (err: unknown): 'timeout' | 'error' =>
+  err instanceof GeminiTimeoutError ? 'timeout' : 'error';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,6 +39,30 @@ async function startServer() {
     },
   });
 
+  // Every Gemini call goes through here so it is cut off after GEMINI_TIMEOUT_MS.
+  const generateWithTimeout = async (label: string, params: GenerateContentParameters) => {
+    const controller = new AbortController();
+    let timer: NodeJS.Timeout | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        controller.abort();
+        console.warn(`[gemini] ${label}: timed out after ${GEMINI_TIMEOUT_MS}ms; using fallback`);
+        reject(new GeminiTimeoutError(`Gemini timed out after ${GEMINI_TIMEOUT_MS}ms`));
+      }, GEMINI_TIMEOUT_MS);
+    });
+    try {
+      return await Promise.race([
+        ai.models.generateContent({
+          ...params,
+          config: { ...params.config, abortSignal: controller.signal },
+        }),
+        timeout,
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
   // API 1: Extract policy requirements from pasted text using Gemini
   app.post('/api/extract-policy-requirements', async (req: Request, res: Response) => {
     const { policyText } = req.body;
@@ -35,8 +72,8 @@ async function startServer() {
     }
 
     try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+      const response = await generateWithTimeout('extract-policy-requirements', {
+        model: GEMINI_MODEL,
         contents: `You are an expert Ontario child care licensing and intake policy analyst. Read the following child care centre intake policy text carefully.
 Extract every specific prerequisite document, certificate, immunization, proof of address, medical form, or parental consent that a parent must submit as part of the application or enrolment package.
 For every extracted requirement:
@@ -74,7 +111,7 @@ ${policyText}
 
       const rawText = response.text || '[]';
       const extracted = JSON.parse(rawText);
-      return res.json({ success: true, requirements: extracted });
+      return res.json({ success: true, aiMode: 'gemini', requirements: extracted });
     } catch (err: unknown) {
       console.warn('Gemini extraction error or missing key; using fallback parser:', err);
 
@@ -135,6 +172,8 @@ ${policyText}
       }
 
       return res.json({
+        aiMode: 'fallback',
+        fallbackReason: fallbackReasonFor(err),
         success: true,
         requirements: fallbackList,
         fallbackNotice: 'Heuristic parsing applied',
@@ -179,8 +218,8 @@ Rank and prioritize all the centres from highest match to lowest match.
 Provide a priority rank (1, 2, 3...), a match score (between 65 and 99), a compelling 1-2 sentence matchReason explaining why it suits the parent's criteria, and a short 3-5 word keyHighlight.
 Also provide a 2-sentence agentSummary introducing the recommendation.`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+      const response = await generateWithTimeout('match-centres', {
+        model: GEMINI_MODEL,
         contents: prompt,
         config: {
           systemInstruction:
@@ -214,7 +253,7 @@ Also provide a 2-sentence agentSummary introducing the recommendation.`;
       });
 
       const parsed = JSON.parse(response.text || '{}');
-      return res.json({ success: true, data: parsed });
+      return res.json({ success: true, aiMode: 'gemini', data: parsed });
     } catch (err: unknown) {
       console.warn('Gemini match error or missing key; using fallback ranking:', err);
 
@@ -254,6 +293,8 @@ Also provide a 2-sentence agentSummary introducing the recommendation.`;
       });
 
       return res.json({
+        aiMode: 'fallback',
+        fallbackReason: fallbackReasonFor(err),
         success: true,
         data: {
           agentSummary: `Based on your request, our agent analyzed available licensed centres in Toronto prioritizing age-eligibility for Anya (22 months) and neighbourhood accessibility.`,
@@ -296,8 +337,8 @@ ${customNote ? `Centre staff note: "${customNote}"` : ''}
 Draft a clear, courteous, and official message (2-4 sentences) on behalf of the centre that staff can review, edit, and approve before sending to the parent.
 Return only the message text without quotes.`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+      const response = await generateWithTimeout('generate-message', {
+        model: GEMINI_MODEL,
         contents: prompt,
         config: {
           systemInstruction:
@@ -306,7 +347,7 @@ Return only the message text without quotes.`;
       });
 
       const draftMessage = (response.text || '').trim();
-      return res.json({ success: true, draftMessage });
+      return res.json({ success: true, aiMode: 'gemini', draftMessage });
     } catch (err: unknown) {
       console.warn('Gemini message generation error; using template fallback:', err);
 
@@ -331,7 +372,12 @@ Return only the message text without quotes.`;
         }
       }
 
-      return res.json({ success: true, draftMessage: fallbackMessage });
+      return res.json({
+        success: true,
+        aiMode: 'fallback',
+        fallbackReason: fallbackReasonFor(err),
+        draftMessage: fallbackMessage,
+      });
     }
   });
 
@@ -344,8 +390,8 @@ Return only the message text without quotes.`;
     }
 
     try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+      const response = await generateWithTimeout('check-tone', {
+        model: GEMINI_MODEL,
         contents: `You are a professional child-care communication mediator for Ontario families and licensed centres.
 Analyze the tone of the following message being sent by a ${role === 'parent' ? 'parent to a child care centre' : 'child care centre to a parent'}:
 
@@ -390,6 +436,7 @@ If it is respectful, calm, neutral, professional, or standard:
 
       const parsed = JSON.parse(response.text || '{}');
       return res.json({
+        aiMode: 'gemini',
         success: true,
         isHarsh: Boolean(parsed.isHarsh),
         suggestedCalmerVersion: parsed.suggestedCalmerVersion || '',
@@ -430,6 +477,8 @@ If it is respectful, calm, neutral, professional, or standard:
       }
 
       return res.json({
+        aiMode: 'fallback',
+        fallbackReason: fallbackReasonFor(err),
         success: true,
         isHarsh,
         suggestedCalmerVersion: suggested,
@@ -518,8 +567,8 @@ USER'S QUESTION:
 ${question}
 """`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+      const response = await generateWithTimeout('ask-careq', {
+        model: GEMINI_MODEL,
         contents: prompt,
         config: {
           temperature: 0.1,
@@ -534,6 +583,7 @@ ${question}
       }
 
       return res.json({
+        aiMode: 'gemini',
         success: true,
         answer: text,
       });
@@ -556,6 +606,8 @@ ${question}
       }
 
       return res.json({
+        aiMode: 'fallback',
+        fallbackReason: fallbackReasonFor(err),
         success: true,
         answer,
       });

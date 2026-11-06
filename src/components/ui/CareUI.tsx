@@ -132,6 +132,17 @@ export const SimNote: React.FC<SimNoteProps> = ({ children, className = '' }) =>
   </div>
 );
 
+export type AiMode = 'gemini' | 'fallback';
+
+/** Small grey note shown when an AI endpoint answered with its non-AI fallback. */
+export const AiFallbackNote: React.FC<{ aiMode?: AiMode | null; className?: string }> = ({
+  aiMode,
+  className = '',
+}) =>
+  aiMode === 'fallback' ? (
+    <p className={`text-[11px] text-[#7A8A84] ${className}`}>AI unavailable: basic mode used</p>
+  ) : null;
+
 export interface DemoBannerProps {
   title: string;
   children: React.ReactNode;

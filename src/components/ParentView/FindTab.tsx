@@ -20,6 +20,8 @@ import {
   GhostButton,
   HouseIllustration,
   HouseIllustrationTone,
+  AiFallbackNote,
+  AiMode,
 } from '../ui/CareUI';
 
 interface PrioritizedMatch {
@@ -58,6 +60,7 @@ export const FindTab: React.FC<FindTabProps> = ({
   const [isAgentMatching, setIsAgentMatching] = useState<boolean>(false);
   const [agentSummary, setAgentSummary] = useState<string | null>(null);
   const [rankedMatches, setRankedMatches] = useState<PrioritizedMatch[] | null>(null);
+  const [matchAiMode, setMatchAiMode] = useState<AiMode | null>(null);
 
   // Extract unique neighbourhoods
   const neighbourhoods = useMemo(() => {
@@ -99,6 +102,7 @@ export const FindTab: React.FC<FindTabProps> = ({
       if (json.success && json.data) {
         setAgentSummary(json.data.agentSummary);
         setRankedMatches(json.data.rankedCentres);
+        setMatchAiMode(json.aiMode ?? null);
       }
     } catch (err) {
       console.error('Failed to run agent matching:', err);
@@ -251,6 +255,7 @@ export const FindTab: React.FC<FindTabProps> = ({
               Agent Recommendation Analysis:
             </span>
             <p className="text-[#5B6B66] leading-relaxed">{agentSummary}</p>
+            <AiFallbackNote aiMode={matchAiMode} />
           </div>
           <button
             type="button"

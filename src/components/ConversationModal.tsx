@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Centre, Application, ChatMessage } from '../data/mockData';
 import { StatusBadge } from './StatusBadge';
+import { AiFallbackNote, AiMode } from './ui/CareUI';
 import {
   X,
   Send,
@@ -39,6 +40,8 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
   const [isGeneratingAiDraft, setIsGeneratingAiDraft] = useState<boolean>(false);
   const [aiDraft, setAiDraft] = useState<string | null>(null);
   const [selectedIntent, setSelectedIntent] = useState<string>('');
+  const [draftAiMode, setDraftAiMode] = useState<AiMode | null>(null);
+  const [toneAiMode, setToneAiMode] = useState<AiMode | null>(null);
 
   // Tone check states
   const [isCheckingTone, setIsCheckingTone] = useState<boolean>(false);
@@ -125,6 +128,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
       const data = await res.json();
       if (data.success && data.draftMessage) {
         setAiDraft(data.draftMessage);
+        setDraftAiMode(data.aiMode ?? null);
       }
     } catch (err) {
       console.error('Failed to generate message:', err);
@@ -151,6 +155,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
       });
 
       const data = await res.json();
+      setToneAiMode(data.aiMode ?? null);
       if (data.success && data.isHarsh && data.suggestedCalmerVersion) {
         // Rude, threatening or aggressive tone detected! Show warning panel
         setToneWarning({
@@ -428,6 +433,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                 onChange={(e) => setAiDraft(e.target.value)}
                 className="w-full text-xs sm:text-sm bg-white border border-amber-200 rounded-lg p-2.5 text-stone-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 leading-relaxed resize-y"
               />
+              <AiFallbackNote aiMode={draftAiMode} />
 
               <div className="flex items-center justify-end gap-2 pt-1">
                 <button
@@ -494,6 +500,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
               )}
             </button>
           </form>
+          {!isCheckingTone && <AiFallbackNote aiMode={toneAiMode} />}
         </div>
       </div>
     </div>
