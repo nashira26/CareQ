@@ -32,6 +32,7 @@ import {
   FsaCentroids,
   RankableCentre,
   RankedCentre,
+  distanceLabel,
   factsSentence,
   knownLanguagesOf,
   rankCentres,
@@ -54,6 +55,8 @@ interface FindTabProps {
   onSelectCentre: (centreId: string) => void;
   onNavigateToApply: () => void;
   onOpenConversation: (centreId: string) => void;
+  /** Active child's home area: the first search is "near {area}". */
+  homeArea?: string;
 }
 
 type Entry =
@@ -70,6 +73,7 @@ const partnerToRankable = (c: Centre): RankableCentre => ({
   programOptions: c.programOptions ?? [],
   languages: c.languages ?? [],
   cwelcc: c.feeNote ? /cwelcc/i.test(c.feeNote) : null,
+  approximateLocation: c.registration?.locationApproximate ? { neighbourhood: c.neighbourhood } : undefined,
 });
 
 const openDataToRankable = (c: OntarioCentre): RankableCentre => ({
@@ -99,12 +103,16 @@ export const FindTab: React.FC<FindTabProps> = ({
   centres,
   applications,
   parentProfile: _parentProfile,
+  homeArea,
   onSelectCentre,
   onNavigateToApply,
   onOpenConversation,
 }) => {
   const [searchText, setSearchText] = useState('');
-  const [criteria, setCriteria] = useState<SearchCriteria>(EMPTY_CRITERIA);
+  // Pre-filled with the active child's home area, so the first list is sorted by distance from home
+  const [criteria, setCriteria] = useState<SearchCriteria>(() =>
+    homeArea ? { ...EMPTY_CRITERIA, areaText: homeArea } : EMPTY_CRITERIA
+  );
   const [isParsing, setIsParsing] = useState(false);
   const [parseAiMode, setParseAiMode] = useState<AiMode | null>(null);
   const [explainAiMode, setExplainAiMode] = useState<AiMode | null>(null);
@@ -287,6 +295,7 @@ export const FindTab: React.FC<FindTabProps> = ({
   const renderPartnerCard = (centre: Centre, index: number, result?: ResultInfo) => {
     const existingApp = appByCentre.get(centre.id);
     const tone = TONES[index % TONES.length];
+    const reg = centre.registration; // self-registered by its own staff (demo, not verified)
     return (
       <div
         key={centre.id}
@@ -294,17 +303,27 @@ export const FindTab: React.FC<FindTabProps> = ({
       >
         <div>
           <div className="relative h-[150px] overflow-hidden bg-[#FAF9F4] flex items-center justify-center">
-            <HouseIllustration tone={tone} className="w-full h-full object-cover" />
+            {reg?.photoDataUrl ? (
+              <img src={reg.photoDataUrl} alt={`${centre.name}`} className="w-full h-full object-cover" />
+            ) : (
+              <HouseIllustration tone={tone} className="w-full h-full object-cover" />
+            )}
             <span className="absolute bottom-2.5 left-3 text-[10px] bg-white/80 backdrop-blur-xs text-[#5B6B66] font-medium rounded px-1.5 py-0.5 border border-[#E7E4DA]">
-              Illustration · not a site photo
+              {reg?.photoDataUrl ? 'Photo provided by the centre' : 'Illustration · not a site photo'}
             </span>
           </div>
 
           <div className="p-5">
             <div className="flex items-start justify-between gap-2">
-              <span className="inline-block rounded px-1.5 py-0.5 bg-[#0B4A52]/10 text-[#0B4A52] text-[10px] font-semibold">
-                CareQ partner centre · Simulated
-              </span>
+              {reg ? (
+                <span className="inline-block rounded px-1.5 py-0.5 bg-[#FBE9E1] text-[#A4543A] text-[10px] font-semibold">
+                  Self-registered · not verified
+                </span>
+              ) : (
+                <span className="inline-block rounded px-1.5 py-0.5 bg-[#0B4A52]/10 text-[#0B4A52] text-[10px] font-semibold">
+                  CareQ partner centre · Simulated
+                </span>
+              )}
               <HeartButton name={centre.name} active={shortlist.includes(centre.id)} onToggle={() => toggleShortlist(centre.id)} />
             </div>
             <div className="flex items-center gap-1.5 text-[11px] text-[#7A8A84] mt-1">
@@ -313,13 +332,20 @@ export const FindTab: React.FC<FindTabProps> = ({
               {result?.distanceKm != null && (
                 <span className="font-semibold text-[#173F42] flex items-center gap-1 ml-1">
                   <Navigation className="w-3 h-3" />
-                  {result.distanceKm.toFixed(1)} km
+                  {distanceLabel(result.distanceKm, reg ? { neighbourhood: centre.neighbourhood } : undefined)}
                 </span>
               )}
             </div>
             <h3 className="text-[17px] font-bold text-[#173F42] mt-1 leading-snug">{centre.name}</h3>
             <div className="mt-1.5">{statusPill(centre.id)}</div>
             {centre.address && <p className="text-xs text-[#5B6B66] mt-2">{centre.address}</p>}
+            {reg && (
+              <p className="text-[11px] text-[#7A8A84] mt-1">
+                {reg.licenceNumber ? `Licence #${reg.licenceNumber} · Self-reported, not verified · ` : ''}
+                Approximate location ({reg.locationSource})
+                {reg.capacity ? ` · ${reg.capacity} licensed spaces (capacity, not availability)` : ''}
+              </p>
+            )}
 
             {result?.reason && (
               <p className="mt-3 text-xs text-[#5B6B66] bg-[#F3EEE3]/60 border border-[#E7E4DA] rounded-lg p-2.5">
@@ -414,7 +440,11 @@ export const FindTab: React.FC<FindTabProps> = ({
               return (
                 <div key={id} className="shrink-0 w-[230px] sm:w-auto rounded-xl border border-[#E7E4DA] bg-white p-3 space-y-1.5">
                   <p className="text-[10px] font-semibold text-[#7A8A84]">
-                    {e.kind === 'partner' ? 'CareQ partner centre · Simulated' : 'Not on CareQ yet · Ontario open data'}
+                    {e.kind === 'open-data'
+                      ? 'Not on CareQ yet · Ontario open data'
+                      : (e.centre as Centre).registration
+                      ? 'Self-registered · not verified'
+                      : 'CareQ partner centre · Simulated'}
                   </p>
                   <p className="text-sm font-bold text-[#173F42] leading-snug line-clamp-2">{e.name}</p>
                   <div className="flex items-center justify-between gap-2">

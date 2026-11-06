@@ -7,6 +7,7 @@ import {
   checkableFact,
   uncheckableCriteria,
   factsSentence,
+  distanceLabel,
   knownLanguagesOf,
   unverifiableLanguages,
   RankableCentre,
@@ -214,6 +215,18 @@ test('a language no centre lists is unverifiable: grey chip, no points, no "not 
   assert.equal(r[1].score, 0);
   assert.ok(r.every((x) => !x.unknownFacts.some((f) => /tamil/i.test(f))));
   assert.ok(r.every((x) => !x.matchedFacts.some((f) => /tamil/i.test(f))));
+});
+
+test('approximate locations: no precise distance under 1 km, ≈ above; ranking still uses the distance', () => {
+  const approx = { neighbourhood: 'Danforth & Pape' };
+  assert.equal(distanceLabel(0.04, approx), 'In Danforth & Pape · approximate location');
+  assert.equal(distanceLabel(2.34, approx), '≈ 2.3 km');
+  assert.equal(distanceLabel(0.04), '0.0 km');
+  const r = rankCentres(criteria({}), [centre('near-approx', 0.04, { approximateLocation: approx }), centre('far-approx', 2.3, { approximateLocation: approx }), centre('exact', 0.5)], origin);
+  assert.deepEqual(r.map((x) => x.id), ['near-approx', 'exact', 'far-approx']); // ordered by computed distance
+  assert.deepEqual(r[0].matchedFacts, ['In Danforth & Pape · approximate location']);
+  assert.deepEqual(r[2].matchedFacts, ['≈ 2.3 km from Danforth & Pape']);
+  assert.deepEqual(r[1].matchedFacts, ['0.5 km from Danforth & Pape']);
 });
 
 test('factsSentence joins facts without adding anything', () => {

@@ -38,6 +38,8 @@ interface ApplyTabProps {
   onSubmitApplication: (applicationId: string) => void;
   preparedDrafts: Record<string, PreparedDraft>;
   onUpdatePreparedDraft: (applicationId: string, draft: PreparedDraft) => void;
+  /** Note to the centre on a draft (used when the centre has no published requirements). */
+  onUpdateNoteToCentre: (applicationId: string, note: string) => void;
   onNavigateToFind: () => void;
   onNavigateToTrack: () => void;
 }
@@ -52,6 +54,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
   onSubmitApplication,
   preparedDrafts,
   onUpdatePreparedDraft,
+  onUpdateNoteToCentre,
   onNavigateToFind,
   onNavigateToTrack,
 }) => {
@@ -137,6 +140,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                 app.completedRequirements.includes(r)
               ).length;
               const isAllReady = totalRequirements > 0 && completedCount === totalRequirements;
+              const noRequirements = totalRequirements === 0;
               const progressPct =
                 totalRequirements > 0
                   ? Math.round((completedCount / totalRequirements) * 100)
@@ -165,7 +169,30 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                     </div>
                   </div>
 
+                  {noRequirements && (
+                    <div className="rounded-xl border border-[#E7D6A8] bg-[#FBF6EA] p-4 space-y-3">
+                      <p className="text-sm font-semibold text-[#5B4A2E]">This centre hasn't published its requirements yet</p>
+                      <p className="text-xs text-[#5B4A2E]">
+                        You can still send your application with a note. The centre may ask for documents later.
+                      </p>
+                      <div>
+                        <label htmlFor={`note-only-${app.id}`} className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5B6B66]">
+                          Note to {centre.name}
+                        </label>
+                        <textarea
+                          id={`note-only-${app.id}`}
+                          rows={3}
+                          value={app.noteToCentre ?? ''}
+                          onChange={(e) => onUpdateNoteToCentre(app.id, e.target.value)}
+                          placeholder={`e.g. Hello, I'd like to apply for ${app.childName} for ${app.careType.toLowerCase()} care from ${app.preferredStartDate}.`}
+                          className="mt-1 w-full rounded-xl border border-[#E7E4DA] bg-white p-2.5 text-sm text-[#173F42] focus:outline-hidden focus:ring-2 focus:ring-[#CBD9C6]"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {/* Thin Progress Bar: bg #E7E4DA, fill #4E7A5A */}
+                  {!noRequirements && (
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs text-[#5B6B66] font-medium">
                       <span>Checklist readiness</span>
@@ -180,6 +207,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                       />
                     </div>
                   </div>
+                  )}
 
                   {/* Requirement rows as checkbox lines */}
                   <div className="space-y-3">
@@ -291,6 +319,11 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
 
                   {/* AI-prepared application: partner centres only (open-data centres never have applications) */}
                   <div className="pt-4 border-t border-[#E7E4DA]">
+                    {noRequirements ? (
+                      <p className="text-xs text-[#7A8A84]">
+                        Prepare with AI is available once {centre.name} publishes its requirements.
+                      </p>
+                    ) : (
                     <PreparedApplicationPanel
                       app={app}
                       centre={centre}
@@ -298,6 +331,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                       draft={preparedDrafts[app.id]}
                       onChange={(d) => onUpdatePreparedDraft(app.id, d)}
                     />
+                    )}
                   </div>
 
                   {/* Card Footer: Submit button */}
@@ -310,7 +344,9 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                         </span>
                       ) : (
                         <span>
-                          Attach remaining requirements or sample items before submitting.
+                          {noRequirements
+                            ? 'Add a note if you like, then send when you are ready.'
+                            : 'Attach remaining requirements or sample items before submitting.'}
                         </span>
                       )}
                     </p>
@@ -465,6 +501,13 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                 })}
               </div>
             </div>
+
+            {reviewingCentre.requirements.length === 0 && (
+              <p className="text-xs text-[#5B4A2E] bg-[#FBF6EA] border border-[#E7D6A8] rounded-lg px-3 py-2">
+                {reviewingCentre.name} hasn't published its requirements yet.
+                {reviewingApp.noteToCentre?.trim() ? ` Your note: “${reviewingApp.noteToCentre.trim()}”` : ' No note added.'}
+              </p>
+            )}
 
             {/* AI draft summary: unfilled fields warn but don't block */}
             {reviewingDraft && (

@@ -6,6 +6,7 @@ import {
   InAppNotification,
 } from '../../data/mockData';
 import { StatusBadge } from '../StatusBadge';
+import { ageInMonths, formatAge } from '../../lib/family';
 import {
   PageHeader,
   Card,
@@ -74,6 +75,14 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
         }
         subtitle="One family profile. A clearer path to care."
       />
+
+      {/* Read-only family line (ages derived from dates of birth) */}
+      {parentProfile.children.length > 0 && (
+        <p className="-mt-4 text-sm text-[#5B6B66]">
+          <span className="font-semibold text-[#173F42]">Your family:</span>{' '}
+          {parentProfile.children.map((c) => `${c.firstName}, ${formatAge(ageInMonths(c.dateOfBirth))}`).join(' · ')}
+        </p>
+      )}
 
       {/* Hero Card */}
       <div className="rounded-[28px] bg-[#E4ECE1] border border-[#D9E4D3] p-7 sm:p-9 overflow-hidden">

@@ -30,6 +30,8 @@ export interface RankableCentre {
   programOptions: string[];
   languages: string[]; // [] = not reported
   cwelcc: boolean | null;
+  /** Location is an approximate area point (self-registered centres): shown without false precision. */
+  approximateLocation?: { neighbourhood: string };
 }
 
 export interface Place {
@@ -176,6 +178,19 @@ const CARE_TYPE_PROGRAM: Record<string, string> = {
 };
 const AGE_LABEL: Record<AgeGroup, string> = { Infant: 'infants', Toddler: 'toddlers', Preschool: 'preschoolers' };
 
+/** How a distance is shown. Approximate locations never show a precise distance under 1 km. */
+export const APPROX_NEAR_KM = 1;
+export function distanceLabel(distanceKm: number, approx?: RankableCentre['approximateLocation']): string {
+  if (!approx) return `${distanceKm.toFixed(1)} km`;
+  return distanceKm < APPROX_NEAR_KM
+    ? `In ${approx.neighbourhood} · approximate location`
+    : `≈ ${distanceKm.toFixed(1)} km`;
+}
+const distanceFact = (distanceKm: number, origin: Place, c: RankableCentre) =>
+  c.approximateLocation && distanceKm < APPROX_NEAR_KM
+    ? distanceLabel(distanceKm, c.approximateLocation)
+    : `${distanceLabel(distanceKm, c.approximateLocation)} from ${origin.label}`;
+
 // ---------- Ranking ----------
 
 export function rankCentres(
@@ -211,7 +226,7 @@ export function rankCentres(
         distanceKm = haversineKm(origin.lat, origin.lng, c.lat, c.lng);
         if (criteria.maxDistanceKm !== null && distanceKm > criteria.maxDistanceKm) continue; // hard filter
         score += POINTS.distance * Math.max(0, 1 - distanceKm / scale);
-        matched.push(`${distanceKm.toFixed(1)} km from ${origin.label}`);
+        matched.push(distanceFact(distanceKm, origin, c));
       } else {
         unknown.push('Location not available');
       }

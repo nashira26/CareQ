@@ -540,6 +540,13 @@ export const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = (
               )}
             </div>
 
+            {!application.preparedWithAi && application.noteToCentre && application.status !== 'Draft' && (
+              <div className="rounded-xl border border-stone-200 bg-white p-4 text-xs text-stone-700">
+                <span className="font-semibold">Note from the parent:</span>
+                <p className="mt-1 italic text-stone-600">&ldquo;{application.noteToCentre}&rdquo;</p>
+              </div>
+            )}
+
             {/* AI-prepared application, as approved and sent by the parent */}
             {application.preparedWithAi && application.status !== 'Draft' && (
               <div className="rounded-xl border border-[#E7D6A8] bg-[#FFFCF4] p-4 sm:p-5 space-y-4">

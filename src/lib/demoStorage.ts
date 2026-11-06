@@ -11,6 +11,7 @@
 import type { Application, Centre, ChatMessage, InAppNotification } from '../data/mockData';
 import type { SupportRequest } from '../data/helpData';
 import type { PreparedDraft } from './prepareApplication';
+import type { Child } from './family';
 
 export const DEMO_STORAGE_KEY = 'careq-demo-v2';
 export const DEMO_STORAGE_VERSION = 2;
@@ -31,6 +32,8 @@ export interface SavedAccount {
   childAgeMonths?: number;
   centreName?: string;
   centreId?: string;
+  children?: Child[];
+  onboarded?: boolean;
 }
 
 export interface CentreOverride {

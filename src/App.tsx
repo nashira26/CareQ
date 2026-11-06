@@ -10,6 +10,7 @@ import {
   INITIAL_CONVERSATIONS,
   INITIAL_NOTIFICATIONS,
   PARENT_PROFILE,
+  PRIYA_CHILDREN,
   PRIYA_ACCOUNT_ID,
   RIVERDALE_CENTRE_ID,
   conversationKey,
@@ -41,6 +42,15 @@ import { SupportRequest, INITIAL_SUPPORT_REQUESTS, ConcernStep } from './data/he
 import { PreparedDraft, NOT_PROVIDED } from './lib/prepareApplication';
 import { DemoState, loadDemoState, saveDemoState, mergeCentres, splitCentres } from './lib/demoStorage';
 import { ResetDemo } from './components/ResetDemo';
+import { ParentOnboarding } from './components/Onboarding/ParentOnboarding';
+import { CentreRegistration } from './components/Onboarding/CentreRegistration';
+import { Child, ageInMonths } from './lib/family';
+import type { Area, FsaCentroids } from './lib/rankCentres';
+import torontoAreas from './data/torontoAreas.json';
+import fsaCentroids from './data/fsaCentroids.json';
+
+const AREAS = (torontoAreas as { areas: Area[] }).areas;
+const FSA = fsaCentroids as FsaCentroids;
 import { LogoFull } from './components/Logo';
 import {
   Search,
@@ -64,8 +74,8 @@ const INITIAL_MOCK_ACCOUNTS: MockAccount[] = [
     email: 'priya@example.ca',
     name: 'Priya Patel',
     password: 'password',
-    childName: 'Anya',
-    childAgeMonths: 22,
+    children: PRIYA_CHILDREN,
+    onboarded: true,
   },
   {
     id: 'centre-riverdale',
@@ -141,30 +151,11 @@ export default function App() {
 
   // Login handler
   const handleLogin = (incoming: MockAccount) => {
-    let account = incoming;
+    const account = incoming;
+    setParentTab('home');
+    setCentreTab('home');
 
-    // Centre staff are linked to their centre by id (created here if it doesn't exist yet)
-    if (account.role === 'centre' && !account.centreId) {
-      const byName = account.centreName
-        ? centres.find((c) => c.name.toLowerCase() === account.centreName!.toLowerCase())
-        : undefined;
-      if (byName) {
-        account = { ...account, centreId: byName.id };
-      } else {
-        const newCentre: Centre = {
-          id: `c-custom-${Date.now()}`,
-          name: account.centreName || account.name,
-          neighbourhood: 'Toronto & GTA',
-          ageGroups: ['Toddler', 'Preschool'],
-          hours: '7:30 AM - 6:00 PM',
-          requirements: [...singleCentre.requirements],
-          requirementSources: { ...(singleCentre.requirementSources ?? {}) },
-          address: 'Ontario Licensed Child Care Facility',
-        };
-        setCentres((prev) => [newCentre, ...prev]);
-        account = { ...account, centreId: newCentre.id };
-      }
-    }
+    // Centre staff are linked to their centre by id; a new centre account registers its centre next
 
     setMockAccounts((prev) => {
       const i = prev.findIndex((a) => a.email.toLowerCase() === account.email.toLowerCase());
@@ -184,23 +175,38 @@ export default function App() {
     setIsTrustPageOpen(false);
   };
 
+  // Update the signed-in account (and its saved copy)
+  const updateCurrentAccount = (patch: Partial<MockAccount>) => {
+    if (!currentAccount) return;
+    const updated = { ...currentAccount, ...patch };
+    setCurrentAccount(updated);
+    setMockAccounts((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+  };
+
+  // Centre registration: show the success screen until the centre chooses where to go next
+  const [registrationScreenOpen, setRegistrationScreenOpen] = useState(false);
+  // Policy text the centre asked AI to read right after registering
+  const [policyToRead, setPolicyToRead] = useState<string | null>(null);
+
   const currentRole = currentAccount ? currentAccount.role : 'parent';
 
   // The signed-in parent and their active child (Priya's seed child is Anya)
   const myAccountId = currentAccount?.id ?? PRIYA_ACCOUNT_ID;
-  const activeParentProfile: ParentProfile =
-    currentAccount && currentAccount.role === 'parent'
-      ? currentAccount.id === PRIYA_ACCOUNT_ID
-        ? { ...PARENT_PROFILE, name: currentAccount.name || PARENT_PROFILE.name }
-        : {
-            name: currentAccount.name,
-            childId: `child-${currentAccount.id}`,
-            childName: currentAccount.childName || 'Child',
-            childAgeMonths: currentAccount.childAgeMonths || 24,
-            careType: PARENT_PROFILE.careType,
-            preferredStartDate: PARENT_PROFILE.preferredStartDate,
-          }
-      : PARENT_PROFILE;
+  const myChildren: Child[] =
+    currentAccount?.role === 'parent' ? currentAccount.children ?? [] : PRIYA_CHILDREN;
+  const activeChild: Child | undefined = myChildren[0]; // the first child is active everywhere for now
+  const activeParentProfile: ParentProfile = activeChild
+    ? {
+        name: currentAccount?.name || PARENT_PROFILE.name,
+        children: myChildren,
+        childId: activeChild.id,
+        childName: activeChild.firstName,
+        childAgeMonths: ageInMonths(activeChild.dateOfBirth), // derived from date of birth
+        careType: activeChild.careType,
+        preferredStartDate: activeChild.preferredStartDate,
+        homeArea: activeChild.homeArea,
+      }
+    : { ...PARENT_PROFILE, name: currentAccount?.name || PARENT_PROFILE.name };
 
   // The signed-in centre (by id)
   const activeSingleCentre: Centre =
@@ -313,6 +319,7 @@ export default function App() {
     childAgeMonths: activeParentProfile.childAgeMonths,
     careType: activeParentProfile.careType,
     preferredStartDate: activeParentProfile.preferredStartDate,
+    parentNotes: activeChild?.notes || undefined,
     status: 'Draft',
     completedRequirements: [],
     uploadedDocuments: {},
@@ -386,6 +393,12 @@ export default function App() {
       })
     );
   };
+
+  // Note to the centre on a draft (centres with no published requirements)
+  const handleUpdateNoteToCentre = (applicationId: string, note: string) =>
+    setApplications((prev) =>
+      prev.map((a) => (a.id === applicationId && a.status === 'Draft' ? { ...a, noteToCentre: note.slice(0, 1000) } : a))
+    );
 
   // Remove uploaded document
   const handleRemoveDocument = (applicationId: string, requirementName: string) => {
@@ -784,6 +797,48 @@ export default function App() {
     { id: 'help', label: 'Contact & support', icon: Users },
   ];
 
+  // New parent: onboarding (tell us about your child, your family)
+  if (currentAccount?.role === 'parent' && currentAccount.onboarded === false) {
+    return (
+      <ParentOnboarding
+        parentName={currentAccount.name}
+        areas={AREAS}
+        onComplete={(children) => {
+          updateCurrentAccount({ children, onboarded: true });
+          setParentTab('home');
+        }}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  // New centre account: register the centre
+  if (currentAccount?.role === 'centre' && (!currentAccount.centreId || registrationScreenOpen)) {
+    return (
+      <CentreRegistration
+        staffEmail={currentAccount.email}
+        areas={AREAS}
+        fsa={FSA}
+        onRegistered={(centre) => {
+          setRegistrationScreenOpen(true);
+          setCentres((prev) => [centre, ...prev]);
+          updateCurrentAccount({ centreId: centre.id, centreName: centre.name });
+        }}
+        onDone={(next) => {
+          setRegistrationScreenOpen(false);
+          if (next === 'policy') {
+            const text = centres.find((c) => c.id === currentAccount.centreId)?.registration?.policyText;
+            setPolicyToRead(text ?? null);
+            setCentreTab('policy');
+          } else {
+            setCentreTab('home');
+          }
+        }}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   // If not logged in, render separate Parent / Centre Login & Sign-up Portal
   if (!currentAccount) {
     if (isTrustPageOpen) {
@@ -902,6 +957,7 @@ export default function App() {
                 centres={centres}
                 applications={priyaApplications}
                 parentProfile={activeParentProfile}
+                homeArea={activeParentProfile.homeArea}
                 onSelectCentre={handleSelectCentre}
                 onNavigateToApply={() => setParentTab('apply')}
                 onOpenConversation={handleParentOpenConversation}
@@ -919,6 +975,7 @@ export default function App() {
                 onSubmitApplication={handleSubmitApplication}
                 preparedDrafts={preparedDrafts}
                 onUpdatePreparedDraft={handleUpdatePreparedDraft}
+                onUpdateNoteToCentre={handleUpdateNoteToCentre}
                 onNavigateToFind={() => setParentTab('find')}
                 onNavigateToTrack={() => setParentTab('track')}
               />
@@ -972,6 +1029,8 @@ export default function App() {
               <CentreDashboard
                 singleCentre={activeSingleCentre}
                 applications={applications}
+                autoReadPolicyText={policyToRead}
+                onAutoReadPolicyStarted={() => setPolicyToRead(null)}
                 onUpdateStatus={handleUpdateStatus}
                 onUpdateCentreRequirements={handleUpdateCentreRequirements}
                 onOpenConversation={handleCentreOpenConversation}

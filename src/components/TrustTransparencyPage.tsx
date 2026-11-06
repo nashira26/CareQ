@@ -341,6 +341,11 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
             <p className="font-semibold text-stone-900">
               Partner centres, their waitlists, offers and messages are simulated for this demo.
             </p>
+            <p>
+              Accounts and centres created on this device are demo data saved only in this browser and removed by
+              Reset demo. Centres registered by their own staff are labelled “Self-registered · not verified”; their
+              licence number is self-reported and their map location is approximate.
+            </p>
           </div>
         </div>
 

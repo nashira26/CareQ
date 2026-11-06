@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Centre,
   Application,
@@ -63,6 +63,9 @@ interface CentreDashboardProps {
   onAdvanceConcernStep: (requestId: string) => void;
   activeTab?: 'applications' | 'policy' | 'help';
   onTabChange?: (t: 'applications' | 'policy' | 'help') => void;
+  /** Policy text to read with AI as soon as the policy tab opens (after centre registration). */
+  autoReadPolicyText?: string | null;
+  onAutoReadPolicyStarted?: () => void;
 }
 
 export const CentreDashboard: React.FC<CentreDashboardProps> = ({
@@ -76,6 +79,8 @@ export const CentreDashboard: React.FC<CentreDashboardProps> = ({
   onAdvanceConcernStep,
   activeTab,
   onTabChange,
+  autoReadPolicyText,
+  onAutoReadPolicyStarted,
 }) => {
   // Centre View internal tabs: 'applications' | 'policy' | 'help'
   const [internalCentreTab, setInternalCentreTab] = useState<'applications' | 'policy' | 'help'>('applications');
@@ -98,8 +103,11 @@ export const CentreDashboard: React.FC<CentreDashboardProps> = ({
   const [selectedAppForDetails, setSelectedAppForDetails] = useState<Application | null>(null);
 
   // Policy text and AI extraction state
-  const [policyInputText, setPolicyInputText] = useState<string>(
-    `${singleCentre.name} - 2026/2027 CWELCC Intake & Admission Policy.
+  const [policyInputText, setPolicyInputText] = useState<string>(() =>
+    // A self-registered centre starts from its own policy text; demo centres keep the sample policy
+    singleCentre.registration
+      ? singleCentre.registration.policyText ?? ''
+      : `${singleCentre.name} - 2026/2027 CWELCC Intake & Admission Policy.
 Pursuant to the Ontario Child Care and Early Years Act (CCEYA), every child admitted into the toddler or preschool program must submit an official Birth Certificate or Canadian passport verifying age.
 Parents must present a verified Yellow Immunization Card in compliance with Immunization of School Pupils Act (ISPA) prior to the first day of care.
 To qualify for Toronto municipal operating guidelines, parents must provide Proof of Ontario Residency via a recent residential utility bill or lease agreement.
@@ -117,7 +125,8 @@ A signed Photography & Media Consent Form is required for classroom developmenta
   const [extractAiMode, setExtractAiMode] = useState<AiMode | null>(null);
 
   // Applications specifically for this single centre
-  const centreApplications = applications.filter((app) => app.centreId === singleCentre.id);
+  // Only applications the parent has sent: drafts are never visible to the centre
+  const centreApplications = applications.filter((app) => app.centreId === singleCentre.id && app.status !== 'Draft');
 
   // Filtered applications by sub-filter
   const filteredApps = centreApplications.filter((app) => {
@@ -147,9 +156,10 @@ A signed Photography & Media Consent Form is required for classroom developmenta
     );
   };
 
-  // Call Gemini to extract policy requirements
-  const handleExtractRequirements = async () => {
-    if (!policyInputText.trim()) return;
+  // Call Gemini to extract policy requirements (text can be passed in, e.g. right after registration)
+  const handleExtractRequirements = async (textOverride?: unknown) => {
+    const text = typeof textOverride === 'string' ? textOverride : policyInputText;
+    if (!text.trim()) return;
 
     setIsExtracting(true);
     setPolicyUpdateSuccess(false);
@@ -158,7 +168,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
       const res = await fetch('/api/extract-policy-requirements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ policyText: policyInputText }),
+        body: JSON.stringify({ policyText: text }),
       });
 
       const data = await res.json();
@@ -172,6 +182,16 @@ A signed Photography & Media Consent Form is required for classroom developmenta
       setIsExtracting(false);
     }
   };
+
+  // After registration: fill in the centre's own policy and read it with AI once (the centre still confirms)
+  useEffect(() => {
+    if (!autoReadPolicyText) return;
+    setPolicyInputText(autoReadPolicyText);
+    setExtractedRequirements(null);
+    onAutoReadPolicyStarted?.();
+    handleExtractRequirements(autoReadPolicyText);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoReadPolicyText]);
 
   // Confirm and replace centre requirements
   const handleConfirmReplaceRequirements = () => {
@@ -289,7 +309,14 @@ A signed Photography & Media Consent Form is required for classroom developmenta
           </div>
 
           {/* 4. Table in Card p-0 overflow-hidden */}
-          {filteredApps.length === 0 ? (
+          {centreApplications.length === 0 ? (
+            <Card className="py-12 text-center space-y-1.5">
+              <p className="text-sm font-semibold text-[#173F42]">No applications yet</p>
+              <p className="text-xs text-[#7A8A84] max-w-sm mx-auto">
+                When families apply to {singleCentre.name} through CareQ, their applications will appear here.
+              </p>
+            </Card>
+          ) : filteredApps.length === 0 ? (
             <Card className="py-12 text-center text-xs text-[#7A8A84]">
               No applications match this status filter.
             </Card>

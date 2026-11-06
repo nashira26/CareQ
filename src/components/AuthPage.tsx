@@ -13,6 +13,7 @@ import {
 import { LogoFull } from './Logo';
 import { ResetDemo } from './ResetDemo';
 import { hashPassword } from '../lib/demoStorage';
+import { isValidEmail, MIN_PASSWORD_LENGTH, Child } from '../lib/family';
 
 export interface MockAccount {
   id: string;
@@ -24,8 +25,12 @@ export interface MockAccount {
   childName?: string;
   childAgeMonths?: number;
   centreName?: string;
-  /** Centre staff: the centre this account manages. */
+  /** Centre staff: the centre this account manages (set when the centre is registered). */
   centreId?: string;
+  /** Parents: children added during onboarding (the first is the active child). */
+  children?: Child[];
+  /** Parents: false until onboarding is finished. */
+  onboarded?: boolean;
 }
 
 interface AuthPageProps {
@@ -54,9 +59,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const [signupName, setSignupName] = useState<string>('');
   const [signupEmail, setSignupEmail] = useState<string>('');
   const [signupPassword, setSignupPassword] = useState<string>('');
-  const [signupChildName, setSignupChildName] = useState<string>('');
-  const [signupChildAgeMonths, setSignupChildAgeMonths] = useState<number>(24);
-  const [signupCentreName, setSignupCentreName] = useState<string>('');
   const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
   const [signupError, setSignupError] = useState<string | null>(null);
 
@@ -72,30 +74,31 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     }
   };
 
-  // Handle Login submission
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  // Handle Login submission: the account must exist and the password must match
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
-
-    const found = mockAccounts.find(
-      (a) => a.role === targetRole && a.email.toLowerCase() === loginEmail.trim().toLowerCase()
-    );
-
-    if (found) {
-      onLogin(found);
-    } else {
-      // For prototype convenience, if an email doesn't match predefined test accounts, log in with provided credentials
-      const autoAccount: MockAccount = {
-        id: `acc-${Date.now()}`,
-        role: targetRole,
-        email: loginEmail.trim(),
-        name: targetRole === 'parent' ? (loginEmail.split('@')[0] || 'Parent') : (loginEmail.split('@')[0] || 'Child-Care Centre'),
-        childName: targetRole === 'parent' ? 'Child' : undefined,
-        childAgeMonths: targetRole === 'parent' ? 24 : undefined,
-        centreName: targetRole === 'centre' ? (loginEmail.split('@')[0] || 'Child-Care Centre') : undefined,
-      };
-      onLogin(autoAccount);
+    const email = loginEmail.trim().toLowerCase();
+    const found = mockAccounts.find((a) => a.role === targetRole && a.email.toLowerCase() === email);
+    if (!found) {
+      setLoginError(
+        `We couldn't find a ${targetRole === 'parent' ? 'parent' : 'centre'} account with that email. Check the email, or create an account.`
+      );
+      return;
     }
+    if (found.password !== undefined) {
+      // Built-in demo accounts (their password is shown in the demo box below)
+      if (loginPassword !== found.password) {
+        setLoginError('That password isn\'t right. The demo accounts use the password "password".');
+        return;
+      }
+    } else if (found.passwordHash) {
+      if ((await hashPassword(loginPassword)) !== found.passwordHash) {
+        setLoginError('That password isn\'t right. Please try again.');
+        return;
+      }
+    }
+    onLogin(found);
   };
 
   // Handle Quick Demo Login button
@@ -106,33 +109,31 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     }
   };
 
-  // Handle Sign-Up submission
+  // Handle Sign-Up submission (demo account, saved only in this browser; no email is ever sent)
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignupError(null);
-
-    if (!termsAccepted) {
-      setSignupError('Please check the required terms and AI usage agreement.');
-      return;
+    const email = signupEmail.trim();
+    if (!signupName.trim()) return setSignupError('Please enter your name.');
+    if (!isValidEmail(email)) return setSignupError('Please enter a valid email address, like name@example.ca.');
+    if (mockAccounts.some((a) => a.email.toLowerCase() === email.toLowerCase())) {
+      return setSignupError('An account with this email already exists. Please log in instead.');
     }
-
-    if (!signupEmail.trim() || !signupName.trim()) {
-      setSignupError('Please fill in all required fields.');
-      return;
+    if (signupPassword.length < MIN_PASSWORD_LENGTH) {
+      return setSignupError(`Please use a password with at least ${MIN_PASSWORD_LENGTH} characters.`);
     }
+    if (!termsAccepted) return setSignupError('Please confirm you have read the terms and how CareQ uses AI.');
 
     const newAccount: MockAccount = {
       id: `acc-${Date.now()}`,
       role: targetRole,
-      email: signupEmail.trim(),
+      email,
       name: signupName.trim(),
-      // Never keep the plain-text password; the prototype doesn't check passwords at login
+      // Never keep the plain-text password: only a hash, never shown again
       passwordHash: await hashPassword(signupPassword),
-      childName: targetRole === 'parent' ? (signupChildName.trim() || 'Child') : undefined,
-      childAgeMonths: targetRole === 'parent' ? Number(signupChildAgeMonths) || 24 : undefined,
-      centreName: targetRole === 'centre' ? (signupCentreName.trim() || signupName.trim()) : undefined,
+      ...(targetRole === 'parent' ? { children: [], onboarded: false } : {}),
     };
-
+    setSignupPassword('');
     onLogin(newAccount);
   };
 
@@ -344,11 +345,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 <h1 className="text-3xl font-bold tracking-[-0.02em] text-[#173F42]">
                   {targetRole === 'parent'
                     ? authMode === 'login'
-                      ? 'Parent Login'
-                      : 'Parent Sign-Up'
+                      ? 'Parent login'
+                      : 'Create a parent account'
                     : authMode === 'login'
-                    ? 'Centre Staff Login'
-                    : 'Centre Registration'}
+                    ? 'Centre staff login'
+                    : 'Create a centre account'}
                 </h1>
 
                 {/* Sub-toggle: Log In vs Sign Up as a small pill segmented control */}
@@ -365,7 +366,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         : 'text-[#5B6B66] hover:text-[#173F42] font-medium'
                     }`}
                   >
-                    Log In
+                    Log in
                   </button>
                   <button
                     type="button"
@@ -379,7 +380,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         : 'text-[#5B6B66] hover:text-[#173F42] font-medium'
                     }`}
                   >
-                    Sign Up
+                    Create an account
                   </button>
                 </div>
               </div>
@@ -388,21 +389,21 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 {targetRole === 'parent'
                   ? authMode === 'login'
                     ? 'Access your child care applications, checklists, and waitlist tracking.'
-                    : 'Register to find licensed child care, submit documents, and track positions.'
+                    : "Next you'll tell us about your child. Demo account, saved only in this browser."
                   : authMode === 'login'
                   ? 'Sign in to manage intake applications, verify documents, and report queue positions.'
-                  : 'Register your licensed child care facility for Ontario coordinated intake.'}
+                  : "Next you'll register your centre. Demo account, saved only in this browser."}
               </p>
             </div>
 
             {/* Error alerts */}
             {loginError && (
-              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+              <div role="alert" className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
                 {loginError}
               </div>
             )}
             {signupError && (
-              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+              <div role="alert" className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
                 {signupError}
               </div>
             )}
@@ -454,112 +455,54 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               </form>
             ) : (
               /* SIGN-UP FORM */
-              <form onSubmit={handleSignupSubmit} className="space-y-5">
-                {targetRole === 'parent' ? (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-[#3F5250] mb-2">
-                        Parent Full Name
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={signupName}
-                        onChange={(e) => setSignupName(e.target.value)}
-                        placeholder="e.g. Priya Patel"
-                        className="h-12 w-full rounded-xl border border-[#E8E4D6] bg-[#FBFAF3] px-4 text-sm text-[#1E3F42] placeholder:text-[#9AA59F] focus:border-[#45B5A5] focus:ring-2 focus:ring-[#45B5A5]/25 outline-none transition-all"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm font-medium text-[#3F5250] mb-2">
-                          Child's Name
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={signupChildName}
-                          onChange={(e) => setSignupChildName(e.target.value)}
-                          placeholder="e.g. Anya"
-                          className="h-12 w-full rounded-xl border border-[#E8E4D6] bg-[#FBFAF3] px-4 text-sm text-[#1E3F42] placeholder:text-[#9AA59F] focus:border-[#45B5A5] focus:ring-2 focus:ring-[#45B5A5]/25 outline-none transition-all"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-[#3F5250] mb-2">
-                          Age (Months)
-                        </label>
-                        <input
-                          type="number"
-                          required
-                          min={0}
-                          max={72}
-                          value={signupChildAgeMonths}
-                          onChange={(e) => setSignupChildAgeMonths(Number(e.target.value))}
-                          placeholder="24"
-                          className="h-12 w-full rounded-xl border border-[#E8E4D6] bg-[#FBFAF3] px-4 text-sm text-[#1E3F42] placeholder:text-[#9AA59F] focus:border-[#45B5A5] focus:ring-2 focus:ring-[#45B5A5]/25 outline-none transition-all"
-                        />
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-[#3F5250] mb-2">
-                        Licensed Centre Name
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={signupCentreName}
-                        onChange={(e) => setSignupCentreName(e.target.value)}
-                        placeholder="e.g. Maple Grove Early Learning"
-                        className="h-12 w-full rounded-xl border border-[#E8E4D6] bg-[#FBFAF3] px-4 text-sm text-[#1E3F42] placeholder:text-[#9AA59F] focus:border-[#45B5A5] focus:ring-2 focus:ring-[#45B5A5]/25 outline-none transition-all"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-[#3F5250] mb-2">
-                        Administrator / Director Name
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={signupName}
-                        onChange={(e) => setSignupName(e.target.value)}
-                        placeholder="e.g. Sarah Jenkins"
-                        className="h-12 w-full rounded-xl border border-[#E8E4D6] bg-[#FBFAF3] px-4 text-sm text-[#1E3F42] placeholder:text-[#9AA59F] focus:border-[#45B5A5] focus:ring-2 focus:ring-[#45B5A5]/25 outline-none transition-all"
-                      />
-                    </div>
-                  </>
-                )}
-
+              <form onSubmit={handleSignupSubmit} className="space-y-5" noValidate>
                 <div>
-                  <label className="block text-sm font-medium text-[#3F5250] mb-2">
-                    Email Address
+                  <label htmlFor="signup-name" className="block text-sm font-medium text-[#3F5250] mb-2">
+                    {targetRole === 'parent' ? 'Your name' : 'Your name (centre staff)'}
                   </label>
                   <input
-                    type="email"
-                    required
-                    value={signupEmail}
-                    onChange={(e) => setSignupEmail(e.target.value)}
-                    placeholder={targetRole === 'parent' ? 'priya@example.ca' : 'director@centre.ca'}
+                    id="signup-name"
+                    type="text"
+                    autoComplete="name"
+                    value={signupName}
+                    onChange={(e) => setSignupName(e.target.value)}
+                    placeholder={targetRole === 'parent' ? 'e.g. Alex Morgan' : 'e.g. Jordan Lee'}
                     className="h-12 w-full rounded-xl border border-[#E8E4D6] bg-[#FBFAF3] px-4 text-sm text-[#1E3F42] placeholder:text-[#9AA59F] focus:border-[#45B5A5] focus:ring-2 focus:ring-[#45B5A5]/25 outline-none transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#3F5250] mb-2">
-                    Create Password
+                  <label htmlFor="signup-email" className="block text-sm font-medium text-[#3F5250] mb-2">
+                    Email address
                   </label>
                   <input
+                    id="signup-email"
+                    type="email"
+                    autoComplete="email"
+                    value={signupEmail}
+                    onChange={(e) => setSignupEmail(e.target.value)}
+                    placeholder={targetRole === 'parent' ? 'you@example.ca' : 'you@yourcentre.ca'}
+                    className="h-12 w-full rounded-xl border border-[#E8E4D6] bg-[#FBFAF3] px-4 text-sm text-[#1E3F42] placeholder:text-[#9AA59F] focus:border-[#45B5A5] focus:ring-2 focus:ring-[#45B5A5]/25 outline-none transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="signup-password" className="block text-sm font-medium text-[#3F5250] mb-2">
+                    Create a password
+                  </label>
+                  <input
+                    id="signup-password"
                     type="password"
-                    required
+                    autoComplete="new-password"
+                    aria-describedby="signup-password-hint"
                     value={signupPassword}
                     onChange={(e) => setSignupPassword(e.target.value)}
                     placeholder="••••••••"
                     className="h-12 w-full rounded-xl border border-[#E8E4D6] bg-[#FBFAF3] px-4 text-sm text-[#1E3F42] placeholder:text-[#9AA59F] focus:border-[#45B5A5] focus:ring-2 focus:ring-[#45B5A5]/25 outline-none transition-all"
                   />
+                  <p id="signup-password-hint" className="mt-1.5 text-[11px] text-[#7A8A84]">
+                    At least {MIN_PASSWORD_LENGTH} characters. Demo only: stored as a hash in this browser and never shown again.
+                  </p>
                 </div>
 
                 {/* Mandatory one-time terms and AI checkbox */}
@@ -598,7 +541,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   }`}
                 >
                   <Check className="w-4 h-4" />
-                  <span>Create {targetRole === 'parent' ? 'Parent' : 'Centre'} Account</span>
+                  <span>Create {targetRole === 'parent' ? 'parent' : 'centre'} account</span>
                 </button>
               </form>
             )}
@@ -625,7 +568,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         <span>Test Parent: Priya Patel</span>
                       </div>
                       <div className="text-[11px] text-stone-500 mt-0.5">
-                        Email: <code className="text-[#0B4A52] font-semibold">priya@example.ca</code> • Child: Anya
+                        Email: <code className="text-[#0B4A52] font-semibold">priya@example.ca</code> • Password: <code className="text-[#0B4A52] font-semibold">password</code> • Child: Anya
                       </div>
                     </div>
                     <button
@@ -646,7 +589,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         <span>Test Centre: Riverdale Early Learning</span>
                       </div>
                       <div className="text-[11px] text-stone-500 mt-0.5">
-                        Email: <code className="text-[#0B4A52] font-semibold">centre@riverdale.ca</code> • CWELCC Admin
+                        Email: <code className="text-[#0B4A52] font-semibold">centre@riverdale.ca</code> • Password: <code className="text-[#0B4A52] font-semibold">password</code>
                       </div>
                     </div>
                     <button

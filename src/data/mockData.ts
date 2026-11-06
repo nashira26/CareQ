@@ -1,3 +1,5 @@
+import type { Child } from '../lib/family';
+
 export type AgeGroup = 'Infant' | 'Toddler' | 'Preschool';
 
 export type ApplicationStatus =
@@ -34,12 +36,31 @@ export interface Centre {
   programOptions?: string[];
   /** Simulated for the demo. */
   languages?: string[];
+  /** Present only for centres registered by their own staff in this browser (demo, not verified). */
+  registration?: CentreRegistration;
+}
+
+export interface CentreRegistration {
+  selfRegistered: true;
+  licenceNumber?: string; // self-reported, not verified
+  contactEmail: string;
+  capacity?: number;
+  /** lat/lng come from the neighbourhood or postal-code area, never from a geocoder */
+  locationApproximate: true;
+  locationSource: 'neighbourhood' | 'postal code';
+  photoDataUrl?: string; // resized in the browser, kept in this browser only
+  policyText?: string;
+  registeredAt: string;
 }
 
 export interface ParentProfile {
   name: string;
+  /** All children on the account; the FIRST is the active child for now. */
+  children: Child[];
   /** Active child (the first child for now). */
   childId: string;
+  /** Active child's home area (a torontoAreas name), used to pre-fill Find. */
+  homeArea?: string;
   childName: string;
   childAgeMonths: number;
   careType: string;
@@ -100,9 +121,24 @@ export const RIVERDALE_CENTRE_ID = 'c1';
 /** One conversation per centre and child. */
 export const conversationKey = (centreId: string, childId: string) => `${centreId}-${childId}`;
 
+/** Priya's child in the demo (fictional). Age is derived from the date of birth. */
+export const PRIYA_CHILDREN: Child[] = [
+  {
+    id: 'child-anya',
+    firstName: 'Anya',
+    dateOfBirth: '2025-01-05',
+    careType: 'Full day',
+    preferredStartDate: 'March 2027',
+    homeArea: 'Danforth & Pape',
+    notes: '',
+  },
+];
+
 export const PARENT_PROFILE: ParentProfile = {
   name: 'Priya',
+  children: PRIYA_CHILDREN,
   childId: 'child-anya',
+  homeArea: 'Danforth & Pape',
   childName: 'Anya',
   childAgeMonths: 22,
   careType: 'Full-time',
