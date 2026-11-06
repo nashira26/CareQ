@@ -10,6 +10,9 @@ import {
   INITIAL_CONVERSATIONS,
   INITIAL_NOTIFICATIONS,
   PARENT_PROFILE,
+  PRIYA_ACCOUNT_ID,
+  RIVERDALE_CENTRE_ID,
+  conversationKey,
   ParentProfile,
   Centre,
   Application,
@@ -56,7 +59,7 @@ import {
 
 const INITIAL_MOCK_ACCOUNTS: MockAccount[] = [
   {
-    id: 'parent-priya',
+    id: PRIYA_ACCOUNT_ID,
     role: 'parent',
     email: 'priya@example.ca',
     name: 'Priya Patel',
@@ -71,8 +74,11 @@ const INITIAL_MOCK_ACCOUNTS: MockAccount[] = [
     name: 'Sarah Jenkins',
     password: 'password',
     centreName: 'Riverdale Early Learning Centre',
+    centreId: RIVERDALE_CENTRE_ID,
   },
 ];
+
+const formatDate = (opts: Intl.DateTimeFormatOptions) => new Date().toLocaleDateString('en-US', opts);
 
 export default function App() {
   // Mock accounts stored in app state
@@ -126,28 +132,28 @@ export default function App() {
     );
   };
 
-  // Mark all notifications for a role as read
-  const handleMarkAllNotificationsAsRead = (role: 'parent' | 'centre') => {
+  // Mark all of the signed-in user's notifications as read
+  const handleMarkAllNotificationsAsRead = (_role: 'parent' | 'centre') => {
     setNotifications((prev) =>
-      prev.map((n) => (n.recipientRole === role ? { ...n, read: true } : n))
+      prev.map((n) => (n.recipientId === myRecipientId ? { ...n, read: true } : n))
     );
   };
 
   // Login handler
-  const handleLogin = (account: MockAccount) => {
-    setMockAccounts((prev) => {
-      if (prev.some((a) => a.email.toLowerCase() === account.email.toLowerCase())) {
-        return prev;
-      }
-      return [...prev, account];
-    });
+  const handleLogin = (incoming: MockAccount) => {
+    let account = incoming;
 
-    if (account.role === 'centre' && account.centreName) {
-      const exists = centres.some((c) => c.name.toLowerCase() === account.centreName!.toLowerCase());
-      if (!exists) {
+    // Centre staff are linked to their centre by id (created here if it doesn't exist yet)
+    if (account.role === 'centre' && !account.centreId) {
+      const byName = account.centreName
+        ? centres.find((c) => c.name.toLowerCase() === account.centreName!.toLowerCase())
+        : undefined;
+      if (byName) {
+        account = { ...account, centreId: byName.id };
+      } else {
         const newCentre: Centre = {
           id: `c-custom-${Date.now()}`,
-          name: account.centreName,
+          name: account.centreName || account.name,
           neighbourhood: 'Toronto & GTA',
           ageGroups: ['Toddler', 'Preschool'],
           hours: '7:30 AM - 6:00 PM',
@@ -156,8 +162,17 @@ export default function App() {
           address: 'Ontario Licensed Child Care Facility',
         };
         setCentres((prev) => [newCentre, ...prev]);
+        account = { ...account, centreId: newCentre.id };
       }
     }
+
+    setMockAccounts((prev) => {
+      const i = prev.findIndex((a) => a.email.toLowerCase() === account.email.toLowerCase());
+      if (i === -1) return [...prev, account];
+      const next = [...prev];
+      next[i] = { ...prev[i], ...account };
+      return next;
+    });
 
     setCurrentAccount(account);
     setIsTrustPageOpen(false);
@@ -171,21 +186,31 @@ export default function App() {
 
   const currentRole = currentAccount ? currentAccount.role : 'parent';
 
+  // The signed-in parent and their active child (Priya's seed child is Anya)
+  const myAccountId = currentAccount?.id ?? PRIYA_ACCOUNT_ID;
   const activeParentProfile: ParentProfile =
     currentAccount && currentAccount.role === 'parent'
-      ? {
-          name: currentAccount.name || PARENT_PROFILE.name,
-          childName: currentAccount.childName || PARENT_PROFILE.childName,
-          childAgeMonths: currentAccount.childAgeMonths || PARENT_PROFILE.childAgeMonths,
-          careType: PARENT_PROFILE.careType,
-          preferredStartDate: PARENT_PROFILE.preferredStartDate,
-        }
+      ? currentAccount.id === PRIYA_ACCOUNT_ID
+        ? { ...PARENT_PROFILE, name: currentAccount.name || PARENT_PROFILE.name }
+        : {
+            name: currentAccount.name,
+            childId: `child-${currentAccount.id}`,
+            childName: currentAccount.childName || 'Child',
+            childAgeMonths: currentAccount.childAgeMonths || 24,
+            careType: PARENT_PROFILE.careType,
+            preferredStartDate: PARENT_PROFILE.preferredStartDate,
+          }
       : PARENT_PROFILE;
 
+  // The signed-in centre (by id)
   const activeSingleCentre: Centre =
     currentAccount && currentAccount.role === 'centre'
-      ? centres.find((c) => c.name.toLowerCase() === (currentAccount.centreName || '').toLowerCase()) || singleCentre
+      ? centres.find((c) => c.id === currentAccount.centreId) || singleCentre
       : singleCentre;
+
+  // Notifications are addressed to a parent account or a centre
+  const myRecipientId = currentAccount?.role === 'centre' ? activeSingleCentre.id : myAccountId;
+  const myNotifications = notifications.filter((n) => n.recipientId === myRecipientId);
 
   // Support & concern requests state (for Help tab)
   const [supportRequests, setSupportRequests] = useState<SupportRequest[]>(
@@ -277,24 +302,31 @@ export default function App() {
     applicationId: string;
   } | null>(null);
 
+  // A new application (or an enquiry before applying) for the active child at a centre
+  const newApplicationFor = (centreId: string, id: string): Application => ({
+    id,
+    centreId,
+    parentAccountId: myAccountId,
+    childId: activeParentProfile.childId,
+    parentName: activeParentProfile.name,
+    childName: activeParentProfile.childName,
+    childAgeMonths: activeParentProfile.childAgeMonths,
+    careType: activeParentProfile.careType,
+    preferredStartDate: activeParentProfile.preferredStartDate,
+    status: 'Draft',
+    completedRequirements: [],
+    uploadedDocuments: {},
+  });
+  const myApplicationAt = (centreId: string) =>
+    applications.find(
+      (a) => a.centreId === centreId && a.parentAccountId === myAccountId && a.childId === activeParentProfile.childId
+    );
+
   // Add / select a centre for application from Parent Find tab
   const handleSelectCentre = (centreId: string) => {
-    const existing = applications.find(
-      (a) => a.centreId === centreId && a.parentName === PARENT_PROFILE.name
-    );
+    const existing = myApplicationAt(centreId);
     if (!existing) {
-      const newApp: Application = {
-        id: `app-${centreId}-anya-${Date.now()}`,
-        centreId,
-        parentName: PARENT_PROFILE.name,
-        childName: PARENT_PROFILE.childName,
-        childAgeMonths: PARENT_PROFILE.childAgeMonths,
-        careType: PARENT_PROFILE.careType,
-        preferredStartDate: PARENT_PROFILE.preferredStartDate,
-        status: 'Draft',
-        completedRequirements: [],
-        uploadedDocuments: {},
-      };
+      const newApp = newApplicationFor(centreId, `app-${centreId}-${activeParentProfile.childId}-${Date.now()}`);
       setApplications((prev) => [newApp, ...prev]);
     }
     // Switch to apply tab to view checklist
@@ -387,8 +419,8 @@ export default function App() {
     });
 
     const targetApp = applications.find((a) => a.id === applicationId);
-    const childName = targetApp ? targetApp.childName : PARENT_PROFILE.childName;
-    const parentName = targetApp ? targetApp.parentName : PARENT_PROFILE.name;
+    const childName = targetApp ? targetApp.childName : activeParentProfile.childName;
+    const parentName = targetApp ? targetApp.parentName : activeParentProfile.name;
 
     // The parent approved: attach the reviewed AI draft (if any) to what is sent
     const draft = preparedDrafts[applicationId];
@@ -429,6 +461,7 @@ export default function App() {
     const notif: InAppNotification = {
       id: `notif-centre-sub-${Date.now()}`,
       recipientRole: 'centre',
+      recipientId: targetApp?.centreId ?? RIVERDALE_CENTRE_ID,
       message: `${parentName} submitted an application for ${childName} on ${notifDate}`,
       timestamp: notifDate,
       createdAt: Date.now(),
@@ -449,18 +482,20 @@ export default function App() {
     });
 
     const targetApp = applications.find((a) => a.id === applicationId);
-    const childName = targetApp ? targetApp.childName : PARENT_PROFILE.childName;
-    const parentName = targetApp ? targetApp.parentName : PARENT_PROFILE.name;
+    const childName = targetApp ? targetApp.childName : activeParentProfile.childName;
+    const parentName = targetApp ? targetApp.parentName : activeParentProfile.name;
 
     setApplications((prev) =>
       prev.map((app) => {
         if (app.id === applicationId) {
           return { ...app, status: 'Accepted' as ApplicationStatus };
         }
-        // Only withdraw Priya's other applications
+        // Only withdraw this parent's other applications for the same child
         if (
           withdrawOthers &&
-          app.parentName === PARENT_PROFILE.name &&
+          targetApp &&
+          app.parentAccountId === targetApp.parentAccountId &&
+          app.childId === targetApp.childId &&
           app.status !== 'Withdrawn'
         ) {
           return { ...app, status: 'Withdrawn' as ApplicationStatus };
@@ -473,6 +508,7 @@ export default function App() {
     const notif: InAppNotification = {
       id: `notif-centre-acc-${Date.now()}`,
       recipientRole: 'centre',
+      recipientId: targetApp?.centreId ?? RIVERDALE_CENTRE_ID,
       message: `${parentName} accepted the offer for ${childName} on ${notifDate}`,
       timestamp: notifDate,
       createdAt: Date.now(),
@@ -490,8 +526,8 @@ export default function App() {
     });
 
     const targetApp = applications.find((a) => a.id === applicationId);
-    const childName = targetApp ? targetApp.childName : PARENT_PROFILE.childName;
-    const parentName = targetApp ? targetApp.parentName : PARENT_PROFILE.name;
+    const childName = targetApp ? targetApp.childName : activeParentProfile.childName;
+    const parentName = targetApp ? targetApp.parentName : activeParentProfile.name;
 
     setApplications((prev) =>
       prev.map((app) => {
@@ -506,6 +542,7 @@ export default function App() {
     const notif: InAppNotification = {
       id: `notif-centre-wd-${Date.now()}`,
       recipientRole: 'centre',
+      recipientId: targetApp?.centreId ?? RIVERDALE_CENTRE_ID,
       message: `${parentName} withdrew the application for ${childName} on ${notifDate}`,
       timestamp: notifDate,
       createdAt: Date.now(),
@@ -529,7 +566,8 @@ export default function App() {
 
     const targetApp = applications.find((a) => a.id === applicationId);
     const childName = targetApp ? targetApp.childName : 'your child';
-    const parentName = targetApp ? targetApp.parentName : PARENT_PROFILE.name;
+    const appCentre = (targetApp && centres.find((c) => c.id === targetApp.centreId)) || activeSingleCentre;
+    const parentName = targetApp ? targetApp.parentName : activeParentProfile.name;
 
     setApplications((prev) =>
       prev.map((app) => {
@@ -554,7 +592,7 @@ export default function App() {
           ...app,
           status: newStatus,
           waitlistPosition: isWaitlisted ? waitlistPosition : app.waitlistPosition,
-          waitlistReportedBy: isWaitlisted ? singleCentre.name : app.waitlistReportedBy,
+          waitlistReportedBy: isWaitlisted ? appCentre.name : app.waitlistReportedBy,
           waitlistReportedDate: isWaitlisted ? formattedDate : app.waitlistReportedDate,
           waitlistReportedTimestamp: isWaitlisted ? Date.now() : app.waitlistReportedTimestamp,
           waitlistEstimate: isWaitlisted
@@ -571,15 +609,15 @@ export default function App() {
     let notifType: 'status' | 'position' | 'offer' = 'status';
 
     if (newStatus === 'Waitlisted' && typeof waitlistPosition === 'number' && waitlistPosition > 0) {
-      parentMessage = `${singleCentre.name} updated your position to ${waitlistPosition} on ${formattedDate}`;
+      parentMessage = `${appCentre.name} updated your position to ${waitlistPosition} on ${formattedDate}`;
       centreMessage = `Updated ${childName}'s position to ${waitlistPosition} on ${formattedDate}`;
       notifType = 'position';
     } else if (newStatus === 'Offer') {
-      parentMessage = `${singleCentre.name} made an offer for ${childName} on ${formattedDate}`;
+      parentMessage = `${appCentre.name} made an offer for ${childName} on ${formattedDate}`;
       centreMessage = `Made an offer to ${parentName} for ${childName} on ${formattedDate}`;
       notifType = 'offer';
     } else {
-      parentMessage = `${singleCentre.name} updated your application status to ${newStatus} on ${formattedDate}`;
+      parentMessage = `${appCentre.name} updated your application status to ${newStatus} on ${formattedDate}`;
       centreMessage = `Updated ${childName}'s status to ${newStatus} on ${formattedDate}`;
       notifType = 'status';
     }
@@ -588,6 +626,7 @@ export default function App() {
       {
         id: `notif-parent-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         recipientRole: 'parent',
+        recipientId: targetApp?.parentAccountId ?? myAccountId,
         message: parentMessage,
         timestamp: formattedDate,
         createdAt: Date.now(),
@@ -597,6 +636,7 @@ export default function App() {
       {
         id: `notif-centre-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         recipientRole: 'centre',
+        recipientId: appCentre.id,
         message: centreMessage,
         timestamp: formattedDate,
         createdAt: Date.now() + 1,
@@ -629,23 +669,10 @@ export default function App() {
 
   // Open conversation from Parent View (clicking centre)
   const handleParentOpenConversation = (centreId: string) => {
-    // Find or locate Anya's application for this centre
-    let app = applications.find(
-      (a) => a.centreId === centreId && a.parentName === PARENT_PROFILE.name
-    );
-    if (!app) {
-      app = {
-        id: `app-${centreId}-anya-inquiry`,
-        centreId,
-        parentName: PARENT_PROFILE.name,
-        childName: PARENT_PROFILE.childName,
-        childAgeMonths: PARENT_PROFILE.childAgeMonths,
-        careType: PARENT_PROFILE.careType,
-        preferredStartDate: PARENT_PROFILE.preferredStartDate,
-        status: 'Draft',
-        completedRequirements: [],
-      };
-    }
+    // The parent's own application for the active child at this centre, or an enquiry
+    const app =
+      myApplicationAt(centreId) ??
+      newApplicationFor(centreId, `app-${centreId}-${activeParentProfile.childId}-inquiry`);
     setActiveChatModal({
       isOpen: true,
       centreId,
@@ -668,8 +695,7 @@ export default function App() {
 
     const app = applications.find((a) => a.id === activeChatModal.applicationId);
     const centre = centres.find((c) => c.id === activeChatModal.centreId) || singleCentre;
-    const childKey = app ? app.childName.toLowerCase() : 'anya';
-    const convKey = `${activeChatModal.centreId}-${childKey}`;
+    const convKey = conversationKey(activeChatModal.centreId, app ? app.childId : activeParentProfile.childId);
 
     const formattedTime = new Date().toLocaleTimeString('en-US', {
       hour: 'numeric',
@@ -679,7 +705,7 @@ export default function App() {
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       sender: currentRole,
-      senderName: currentRole === 'parent' ? PARENT_PROFILE.name : centre.name,
+      senderName: currentRole === 'parent' ? activeParentProfile.name : centre.name,
       text,
       timestamp: `Today • ${formattedTime}`,
       aiAssisted,
@@ -696,17 +722,8 @@ export default function App() {
 
   // Active chat modal resolved objects
   const activeChatApp = activeChatModal
-    ? applications.find((a) => a.id === activeChatModal.applicationId) || {
-        id: activeChatModal.applicationId,
-        centreId: activeChatModal.centreId,
-        parentName: PARENT_PROFILE.name,
-        childName: PARENT_PROFILE.childName,
-        childAgeMonths: PARENT_PROFILE.childAgeMonths,
-        careType: PARENT_PROFILE.careType,
-        preferredStartDate: PARENT_PROFILE.preferredStartDate,
-        status: 'Draft' as ApplicationStatus,
-        completedRequirements: [],
-      }
+    ? applications.find((a) => a.id === activeChatModal.applicationId) ||
+      newApplicationFor(activeChatModal.centreId, activeChatModal.applicationId)
     : null;
 
   const activeChatCentre = activeChatModal
@@ -715,15 +732,13 @@ export default function App() {
 
   const activeConvKey =
     activeChatModal && activeChatApp
-      ? `${activeChatModal.centreId}-${activeChatApp.childName.toLowerCase()}`
-      : 'c1-anya';
+      ? conversationKey(activeChatModal.centreId, activeChatApp.childId)
+      : '';
 
   const activeMessages = conversations[activeConvKey] || [];
 
-  // Filter Priya's applications for the Parent view
-  const priyaApplications = applications.filter(
-    (a) => a.parentName === PARENT_PROFILE.name
-  );
+  // The signed-in parent's applications only
+  const priyaApplications = applications.filter((a) => a.parentAccountId === myAccountId);
 
   // Tab badge counts
   const draftCount = priyaApplications.filter((a) => a.status === 'Draft').length;
@@ -842,7 +857,7 @@ export default function App() {
           currentRole={currentRole}
           parentProfile={activeParentProfile}
           singleCentre={activeSingleCentre}
-          notifications={notifications}
+          notifications={myNotifications}
           onMarkAsRead={handleMarkNotificationAsRead}
           onMarkAllAsRead={handleMarkAllNotificationsAsRead}
           onLogout={handleLogout}
@@ -865,7 +880,7 @@ export default function App() {
                 parentProfile={activeParentProfile}
                 applications={priyaApplications}
                 centres={centres}
-                notifications={notifications.filter((n) => n.recipientRole === 'parent')}
+                notifications={myNotifications}
                 onNavigate={setParentTab}
               />
             )}
@@ -875,7 +890,7 @@ export default function App() {
                 parentProfile={activeParentProfile}
                 applications={priyaApplications}
                 centres={centres}
-                notifications={notifications.filter((n) => n.recipientRole === 'parent')}
+                notifications={myNotifications}
                 onMarkAsRead={handleMarkNotificationAsRead}
                 onMarkAllAsRead={() => handleMarkAllNotificationsAsRead('parent')}
                 onNavigate={setParentTab}
@@ -939,7 +954,7 @@ export default function App() {
               <CentreOverview
                 singleCentre={activeSingleCentre}
                 applications={centreApplications}
-                notifications={notifications.filter((n) => n.recipientRole === 'centre')}
+                notifications={myNotifications}
                 onNavigate={setCentreTab}
               />
             )}

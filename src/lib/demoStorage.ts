@@ -12,11 +12,13 @@ import type { Application, Centre, ChatMessage, InAppNotification } from '../dat
 import type { SupportRequest } from '../data/helpData';
 import type { PreparedDraft } from './prepareApplication';
 
-export const DEMO_STORAGE_KEY = 'careq-demo-v1';
-export const DEMO_STORAGE_VERSION = 1;
+export const DEMO_STORAGE_KEY = 'careq-demo-v2';
+export const DEMO_STORAGE_VERSION = 2;
+/** Older saved demos (different data shape): deleted on start, never converted. */
+export const OLD_DEMO_KEYS = ['careq-demo-v1'];
 export const SHORTLIST_KEY = 'careq.shortlist.v1';
 /** Every key Reset demo clears. */
-export const DEMO_KEYS = [DEMO_STORAGE_KEY, SHORTLIST_KEY];
+export const DEMO_KEYS = [DEMO_STORAGE_KEY, SHORTLIST_KEY, ...OLD_DEMO_KEYS];
 
 /** Account as saved: never a plain-text password. */
 export interface SavedAccount {
@@ -28,6 +30,7 @@ export interface SavedAccount {
   childName?: string;
   childAgeMonths?: number;
   centreName?: string;
+  centreId?: string;
 }
 
 export interface CentreOverride {
@@ -77,6 +80,14 @@ const rec = <T,>(v: unknown, fallback: Record<string, T>): Record<string, T> => 
 /** Loads saved state, or null to use the mock data. Each section falls back on its own if malformed. */
 export function loadDemoState(storage: StorageLike | null = browserStorage()): DemoState | null {
   if (!storage) return null;
+  // Start fresh from older versions: remove them instead of converting
+  for (const key of OLD_DEMO_KEYS) {
+    try {
+      storage.removeItem(key);
+    } catch {
+      /* ignore */
+    }
+  }
   let raw: string | null;
   try {
     raw = storage.getItem(DEMO_STORAGE_KEY);
@@ -94,9 +105,11 @@ export function loadDemoState(storage: StorageLike | null = browserStorage()): D
   return {
     mockAccounts: arr<SavedAccount>(parsed.mockAccounts, []).filter((a) => isObj(a) && typeof a.id === 'string'),
     sessionAccountId: typeof parsed.sessionAccountId === 'string' ? parsed.sessionAccountId : null,
-    applications: arr<Application>(parsed.applications, []).filter((a) => isObj(a) && typeof a.id === 'string'),
+    applications: arr<Application>(parsed.applications, []).filter(
+      (a) => isObj(a) && typeof a.id === 'string' && typeof a.parentAccountId === 'string' && typeof a.childId === 'string'
+    ),
     conversations: rec<ChatMessage[]>(parsed.conversations, {}),
-    notifications: arr<InAppNotification>(parsed.notifications, []),
+    notifications: arr<InAppNotification>(parsed.notifications, []).filter((n) => isObj(n) && typeof n.recipientId === 'string'),
     supportRequests: arr<SupportRequest>(parsed.supportRequests, []),
     centreOverrides: arr<CentreOverride>(parsed.centreOverrides, []).filter(
       (c) => isObj(c) && typeof c.id === 'string' && Array.isArray(c.requirements)

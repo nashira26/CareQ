@@ -1,5 +1,5 @@
 import React from 'react';
-import { Centre, Application, ConversationsMap } from '../../data/mockData';
+import { Centre, Application, ConversationsMap, conversationKey } from '../../data/mockData';
 import {
   PageHeader,
   Card,
@@ -61,7 +61,7 @@ export const CentreMessages: React.FC<CentreMessagesProps> = ({
         ) : (
           <div className="divide-y divide-[#E7E4DA]">
             {centreApps.map((app) => {
-              const convKey = `${singleCentre.id}-${app.childName.toLowerCase()}`;
+              const convKey = conversationKey(singleCentre.id, app.childId);
               const thread = conversations[convKey] || [];
               const lastMessage = thread.length > 0 ? thread[thread.length - 1] : null;
 

@@ -24,6 +24,8 @@ export interface MockAccount {
   childName?: string;
   childAgeMonths?: number;
   centreName?: string;
+  /** Centre staff: the centre this account manages. */
+  centreId?: string;
 }
 
 interface AuthPageProps {

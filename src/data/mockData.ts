@@ -38,6 +38,8 @@ export interface Centre {
 
 export interface ParentProfile {
   name: string;
+  /** Active child (the first child for now). */
+  childId: string;
   childName: string;
   childAgeMonths: number;
   careType: string;
@@ -52,6 +54,10 @@ export interface PositionUpdate {
 export interface Application {
   id: string;
   centreId: string;
+  /** Account that owns this application (the parent). */
+  parentAccountId: string;
+  /** Child this application is for (childName is kept for display). */
+  childId: string;
   parentName: string;
   childName: string;
   childAgeMonths: number;
@@ -79,6 +85,8 @@ export interface Application {
 export interface InAppNotification {
   id: string;
   recipientRole: 'parent' | 'centre';
+  /** Parent account id or centre id: each user only sees their own notifications. */
+  recipientId: string;
   message: string;
   timestamp: string;
   createdAt: number;
@@ -86,8 +94,15 @@ export interface InAppNotification {
   type?: 'status' | 'position' | 'offer' | 'application';
 }
 
+export const PRIYA_ACCOUNT_ID = 'parent-priya';
+export const RIVERDALE_CENTRE_ID = 'c1';
+
+/** One conversation per centre and child. */
+export const conversationKey = (centreId: string, childId: string) => `${centreId}-${childId}`;
+
 export const PARENT_PROFILE: ParentProfile = {
   name: 'Priya',
+  childId: 'child-anya',
   childName: 'Anya',
   childAgeMonths: 22,
   careType: 'Full-time',
@@ -300,6 +315,8 @@ export const INITIAL_APPLICATIONS: Application[] = [
   {
     id: 'app-c1-anya',
     centreId: 'c1',
+    parentAccountId: 'parent-priya',
+    childId: 'child-anya',
     parentName: 'Priya',
     childName: 'Anya',
     childAgeMonths: 22,
@@ -340,6 +357,8 @@ export const INITIAL_APPLICATIONS: Application[] = [
   {
     id: 'app-c1-lucas',
     centreId: 'c1',
+    parentAccountId: 'seed-family-chen',
+    childId: 'child-lucas',
     parentName: 'Marcus Chen',
     childName: 'Lucas',
     childAgeMonths: 14,
@@ -374,6 +393,8 @@ export const INITIAL_APPLICATIONS: Application[] = [
   {
     id: 'app-c1-maya',
     centreId: 'c1',
+    parentAccountId: 'seed-family-rodriguez',
+    childId: 'child-maya',
     parentName: 'Sofia Rodriguez',
     childName: 'Maya',
     childAgeMonths: 34,
@@ -406,6 +427,8 @@ export const INITIAL_APPLICATIONS: Application[] = [
   {
     id: 'app-c1-leo',
     centreId: 'c1',
+    parentAccountId: 'seed-family-miller',
+    childId: 'child-leo',
     parentName: 'David Miller',
     childName: 'Leo',
     childAgeMonths: 9,
@@ -435,6 +458,8 @@ export const INITIAL_APPLICATIONS: Application[] = [
   {
     id: 'app-c1-chloe',
     centreId: 'c1',
+    parentAccountId: 'seed-family-tremblay',
+    childId: 'child-chloe',
     parentName: 'Jessica Tremblay',
     childName: 'Chloe',
     childAgeMonths: 28,
@@ -460,6 +485,8 @@ export const INITIAL_APPLICATIONS: Application[] = [
   {
     id: 'app-c1-noah',
     centreId: 'c1',
+    parentAccountId: 'seed-family-al-mansoor',
+    childId: 'child-noah',
     parentName: 'Tariq Al-Mansoor',
     childName: 'Noah',
     childAgeMonths: 20,
@@ -480,6 +507,8 @@ export const INITIAL_APPLICATIONS: Application[] = [
   {
     id: 'app-c2-anya',
     centreId: 'c2',
+    parentAccountId: 'parent-priya',
+    childId: 'child-anya',
     parentName: 'Priya',
     childName: 'Anya',
     childAgeMonths: 22,
@@ -497,6 +526,8 @@ export const INITIAL_APPLICATIONS: Application[] = [
   {
     id: 'app-c7-anya',
     centreId: 'c7',
+    parentAccountId: 'parent-priya',
+    childId: 'child-anya',
     parentName: 'Priya',
     childName: 'Anya',
     childAgeMonths: 22,
@@ -523,6 +554,8 @@ export const INITIAL_APPLICATIONS: Application[] = [
   {
     id: 'app-c3-anya',
     centreId: 'c3',
+    parentAccountId: 'parent-priya',
+    childId: 'child-anya',
     parentName: 'Priya',
     childName: 'Anya',
     childAgeMonths: 22,
@@ -550,6 +583,8 @@ export const INITIAL_APPLICATIONS: Application[] = [
   {
     id: 'app-c4-anya',
     centreId: 'c4',
+    parentAccountId: 'parent-priya',
+    childId: 'child-anya',
     parentName: 'Priya',
     childName: 'Anya',
     childAgeMonths: 22,
@@ -579,8 +614,8 @@ export interface ChatMessage {
 export type ConversationsMap = Record<string, ChatMessage[]>;
 
 export const INITIAL_CONVERSATIONS: ConversationsMap = {
-  // Keyed by `${centreId}-${childName.toLowerCase()}`
-  'c1-anya': [
+  // Keyed by conversationKey(centreId, childId)
+  'c1-child-anya': [
     {
       id: 'm1',
       sender: 'centre',
@@ -603,7 +638,7 @@ export const INITIAL_CONVERSATIONS: ConversationsMap = {
       timestamp: 'Oct 17, 2026 • 11:05 AM',
     },
   ],
-  'c2-anya': [
+  'c2-child-anya': [
     {
       id: 'm-c2-1',
       sender: 'parent',
@@ -619,7 +654,7 @@ export const INITIAL_CONVERSATIONS: ConversationsMap = {
       timestamp: 'Oct 03, 2026 • 3:45 PM',
     },
   ],
-  'c3-anya': [
+  'c3-child-anya': [
     {
       id: 'm-c3-1',
       sender: 'centre',
@@ -628,7 +663,7 @@ export const INITIAL_CONVERSATIONS: ConversationsMap = {
       timestamp: 'Sep 19, 2026 • 1:15 PM',
     },
   ],
-  'c1-lucas': [
+  'c1-child-lucas': [
     {
       id: 'm-lucas-1',
       sender: 'parent',
@@ -644,7 +679,7 @@ export const INITIAL_CONVERSATIONS: ConversationsMap = {
       timestamp: 'Oct 19, 2026 • 9:00 AM',
     },
   ],
-  'c1-maya': [
+  'c1-child-maya': [
     {
       id: 'm-maya-1',
       sender: 'centre',
@@ -653,7 +688,7 @@ export const INITIAL_CONVERSATIONS: ConversationsMap = {
       timestamp: 'Sep 24, 2026 • 2:10 PM',
     },
   ],
-  'c1-chloe': [
+  'c1-child-chloe': [
     {
       id: 'm-chloe-1',
       sender: 'centre',
@@ -668,6 +703,7 @@ export const INITIAL_NOTIFICATIONS: InAppNotification[] = [
   {
     id: 'notif-1',
     recipientRole: 'parent',
+    recipientId: 'parent-priya',
     message: 'Maple Grove updated your position to 14 on Nov 3',
     timestamp: 'Nov 3',
     createdAt: Date.now() - 86400000,
@@ -677,6 +713,7 @@ export const INITIAL_NOTIFICATIONS: InAppNotification[] = [
   {
     id: 'notif-2',
     recipientRole: 'parent',
+    recipientId: 'parent-priya',
     message: 'Riverdale Early Learning Centre updated your application status to Under review on Oct 28',
     timestamp: 'Oct 28',
     createdAt: Date.now() - 86400000 * 7,
@@ -686,6 +723,7 @@ export const INITIAL_NOTIFICATIONS: InAppNotification[] = [
   {
     id: 'notif-3',
     recipientRole: 'centre',
+    recipientId: 'c1',
     message: 'Priya submitted an application for Anya on Oct 25',
     timestamp: 'Oct 25',
     createdAt: Date.now() - 86400000 * 10,
@@ -695,6 +733,7 @@ export const INITIAL_NOTIFICATIONS: InAppNotification[] = [
   {
     id: 'notif-4',
     recipientRole: 'centre',
+    recipientId: 'c1',
     message: 'Marcus Chen submitted an application for Lucas on Oct 18',
     timestamp: 'Oct 18',
     createdAt: Date.now() - 86400000 * 17,

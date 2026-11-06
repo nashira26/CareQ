@@ -51,9 +51,16 @@ test('missing, invalid JSON or other version -> null (use mock data)', () => {
   assert.equal(loadDemoState(s), null);
   s.setItem(DEMO_STORAGE_KEY, '{not json');
   assert.equal(loadDemoState(s), null);
-  s.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 2, applications: [] }));
+  s.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 99, applications: [] }));
   assert.equal(loadDemoState(s), null);
   assert.equal(loadDemoState(null), null);
+});
+
+test('an old careq-demo-v1 save is deleted, not converted', () => {
+  const s = memory();
+  s.setItem('careq-demo-v1', JSON.stringify({ version: 1, applications: [{ id: 'old' }] }));
+  assert.equal(loadDemoState(s), null);
+  assert.equal(s.getItem('careq-demo-v1'), null);
 });
 
 test('round trip keeps state; malformed sections fall back individually', () => {
