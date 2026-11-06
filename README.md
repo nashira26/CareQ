@@ -54,17 +54,20 @@ The login page has one-click demo buttons. Accounts are mock, nothing is stored 
 
 ## Where AI is used
 
-Five Gemini tools run on the server (`server.ts`). The API key never reaches the browser.
+Six Gemini tools run on the server (`server.ts`). The API key never reaches the browser.
 
 | Tool            | Endpoint                           | Guardrail                                                                        |
 | --------------- | ---------------------------------- | -------------------------------------------------------------------------------- |
 | Policy reader   | `/api/extract-policy-requirements` | Quotes the exact source sentence; centre confirms before parents see it          |
-| Centre matcher  | `/api/match-centres`               | Only explains why a centre fits                                                  |
+| Search parser   | `/api/parse-search`                | Turns the parent's words into criteria only; never infers anything about the family |
+| Result explainer| `/api/explain-results`             | Restates the ranking facts for the top 10; adds no new claims                    |
 | Message drafter | `/api/generate-message`            | Sender edits and approves                                                        |
 | Tone check      | `/api/check-tone`                  | Suggests only                                                                    |
 | Ask CareQ       | `/api/ask-careq`                   | Answers only from confirmed info; says "I don't have that information" otherwise |
 
 If Gemini is unavailable, each tool falls back to a basic non-AI version.
+
+Centre search ranking is plain code, not AI: `src/lib/rankCentres.ts` (distance 50, age/program fit 30, languages and checkable extras 20; partner centres get no bonus). Run its unit tests with `npm test`.
 
 ## Responsible AI rules
 

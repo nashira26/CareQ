@@ -326,6 +326,7 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
               </a>{' '}
               (Nominatim), used only for centres without City of Toronto coordinates.
             </p>
+            <p>Area locations are approximate centre points used only to sort by distance.</p>
             <p>
               <span className="font-bold text-stone-900">How the datasets were joined: </span>
               {joinStats.namePostal + joinStats.postalDistinctiveWord + joinStats.licence} centres
@@ -334,9 +335,11 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
               with OpenStreetMap; {joinStats.withoutMapLocation} without a map location.
             </p>
             <p className="text-stone-500">
-              CareQ shows no availability, waitlist or fee information for these real centres. The
-              demo centres used for applications, waitlists and offers are simulated and labelled
-              "Simulated demo centre".
+              CareQ shows no availability, waitlist or fee information for these real centres
+              ("Not on CareQ yet · Ontario open data").
+            </p>
+            <p className="font-semibold text-stone-900">
+              Partner centres, their waitlists, offers and messages are simulated for this demo.
             </p>
           </div>
         </div>

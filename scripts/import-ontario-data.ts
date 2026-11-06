@@ -21,6 +21,7 @@ const ONTARIO_CSV = path.join(ROOT, 'ontario_childcare.csv');
 const TORONTO_CSV = path.join(ROOT, 'toronto_childcare.csv');
 const OUT_JSON = path.join(ROOT, 'src', 'data', 'ontarioCentres.json');
 const OUT_META_JSON = path.join(ROOT, 'src', 'data', 'ontarioCentres.meta.json');
+const OUT_FSA_JSON = path.join(ROOT, 'src', 'data', 'fsaCentroids.json');
 const GEOCODE_CACHE = path.join(ROOT, 'scripts', 'geocode-cache.json');
 const JOIN_AUDIT_CSV = path.join(ROOT, 'scripts', 'join-audit.csv');
 
@@ -429,6 +430,26 @@ async function main() {
   fs.writeFileSync(OUT_JSON, JSON.stringify(out));
   // Small metadata-only copy so pages like Trust & transparency don't load all centres.
   fs.writeFileSync(OUT_META_JSON, JSON.stringify(out.metadata, null, 2));
+
+  // Postal-code area (FSA, first 3 characters) centroids: the average location of the centres
+  // in that FSA, so searches like "near M4K" work without any extra geocoding.
+  const fsaSums = new Map<string, { lat: number; lng: number; count: number }>();
+  for (const c of centres) {
+    if (c.lat === null || c.lng === null) continue;
+    const fsa = normPostal(c.postalCode).slice(0, 3);
+    if (!/^M\d[A-Z]$/.test(fsa)) continue;
+    const s = fsaSums.get(fsa) ?? { lat: 0, lng: 0, count: 0 };
+    fsaSums.set(fsa, { lat: s.lat + c.lat, lng: s.lng + c.lng, count: s.count + 1 });
+  }
+  const fsaCentroids = Object.fromEntries(
+    [...fsaSums.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([fsa, s]) => [
+        fsa,
+        { lat: +(s.lat / s.count).toFixed(5), lng: +(s.lng / s.count).toFixed(5), centres: s.count },
+      ])
+  );
+  fs.writeFileSync(OUT_FSA_JSON, JSON.stringify(fsaCentroids, null, 1));
 
   // ---------- Report ----------
   const matched = matchedByLicence + matchedByPostalName + matchedBySimilarName;

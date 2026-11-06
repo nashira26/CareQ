@@ -10,6 +10,8 @@ import {
   GenerateContentParameters,
   GenerateContentResponse,
 } from '@google/genai';
+import { sanitizeCriteria, parseSearchFallback } from './src/lib/searchCriteria';
+import { factsSentence } from './src/lib/rankCentres';
 
 dotenv.config();
 
@@ -245,125 +247,143 @@ ${policyText}
     }
   });
 
-  // API 2: Agent matching - Parent natural language description + comments -> prioritized centre list
-  app.post('/api/match-centres', async (req: Request, res: Response) => {
-    const {
-      parentPrompt,
-      childName = 'Anya',
-      childAgeMonths = 22,
-      preferredStartDate = 'March 2027',
-      centres = [],
-    } = req.body;
+  // API 2a: Parse a parent's description into search criteria (no ranking, no scores).
+  // Ranking happens in plain code in the browser (src/lib/rankCentres.ts).
+  app.post('/api/parse-search', async (req: Request, res: Response) => {
+    const { text } = req.body;
+    if (!text || typeof text !== 'string' || !text.trim()) {
+      return res.status(400).json({ error: 'Search text is required.' });
+    }
+    const description = text.trim().slice(0, 500);
 
     try {
-      const prompt = `You are CareQ's intelligent Ontario child-care placement agent.
-A parent has provided the following requirements and description of what they need for child care:
-Parent Description / Chatbot Message: "${parentPrompt || 'Looking for high quality care with flexible hours and toddler program.'}"
-Child: ${childName}, Age: ${childAgeMonths} months (Toddler room intake).
-Desired Start: ${preferredStartDate}.
+      const { response, modelUsed } = await generateWithTimeout('parse-search', {
+        contents: `Extract child care search criteria from this parent's description.
 
-Here are the licensed child-care centres available:
-${JSON.stringify(
-  centres.map((c: any) => ({
-    id: c.id,
-    name: c.name,
-    neighbourhood: c.neighbourhood,
-    ageGroups: c.ageGroups,
-    hours: c.hours,
-    feeNote: c.feeNote,
-    requirementsCount: c.requirements?.length,
-  })),
-  null,
-  2
-)}
+Rules:
+- Use ONLY what the parent wrote. Never infer or guess anything about the family, the child, income, culture or needs.
+- Anything not stated: null (or [] for lists).
+- areaText: the place exactly as written (neighbourhood, intersection, street, landmark or postal code), else null.
+- maxDistanceKm: only if a distance is stated.
+- childAgeMonths: only if an age is stated (e.g. "2-year-old" = 24, "18 months" = 18).
+- ageGroup: only if the words infant, toddler or preschool(er) are used.
+- careType: "Full day" for full-time/full day, "Part day" for part-time/half day, "Before school", "After school", else null.
+- startDate: the start time as written (e.g. "March", "September 2027"), else null.
+- languages: languages of care the parent asked for.
+- mustHaves: other requirements stated as needed (e.g. "near subway", "CWELCC", "outdoor space"), short phrases.
+- niceToHaves: things stated as preferred or optional.
 
-Analyze the parent's specific comments and priorities (neighbourhood proximity, age fit, CWELCC subsidy, hours, focus).
-Rank and prioritize all the centres from highest match to lowest match.
-Provide a priority rank (1, 2, 3...), a match score (between 65 and 99), a compelling 1-2 sentence matchReason explaining why it suits the parent's criteria, and a short 3-5 word keyHighlight.
-Also provide a 2-sentence agentSummary introducing the recommendation.`;
-
-      const { response, modelUsed } = await generateWithTimeout('match-centres', {
-        contents: prompt,
+Parent's description:
+"""
+${description}
+"""`,
         config: {
           systemInstruction:
-            'You are a compassionate, knowledgeable Ontario child care navigator who gives actionable recommendations.',
+            'You convert a parent\'s words into structured search criteria. You never rank, score or recommend centres and never infer anything about the family.',
+          temperature: 0,
           responseMimeType: 'application/json',
           responseSchema: {
             type: Type.OBJECT,
             properties: {
-              agentSummary: {
+              areaText: { type: Type.STRING, nullable: true },
+              maxDistanceKm: { type: Type.NUMBER, nullable: true },
+              ageGroup: { type: Type.STRING, nullable: true, enum: ['Infant', 'Toddler', 'Preschool'] },
+              childAgeMonths: { type: Type.INTEGER, nullable: true },
+              careType: {
                 type: Type.STRING,
-                description: '2-sentence summary explaining how the parent criteria were analyzed.',
+                nullable: true,
+                enum: ['Full day', 'Part day', 'Before school', 'After school'],
               },
-              rankedCentres: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    centreId: { type: Type.STRING },
-                    priorityRank: { type: Type.INTEGER },
-                    matchScore: { type: Type.INTEGER },
-                    matchReason: { type: Type.STRING },
-                    keyHighlight: { type: Type.STRING },
-                  },
-                  required: ['centreId', 'priorityRank', 'matchScore', 'matchReason', 'keyHighlight'],
-                },
-              },
+              startDate: { type: Type.STRING, nullable: true },
+              languages: { type: Type.ARRAY, items: { type: Type.STRING } },
+              mustHaves: { type: Type.ARRAY, items: { type: Type.STRING } },
+              niceToHaves: { type: Type.ARRAY, items: { type: Type.STRING } },
             },
-            required: ['agentSummary', 'rankedCentres'],
+            required: [
+              'areaText', 'maxDistanceKm', 'ageGroup', 'childAgeMonths', 'careType', 'startDate',
+              'languages', 'mustHaves', 'niceToHaves',
+            ],
           },
         },
       });
-
-      const parsed = JSON.parse(response.text || '{}');
-      return res.json({ success: true, aiMode: 'gemini', modelUsed, data: parsed });
+      // sanitizeCriteria validates every field and derives ageGroup from childAgeMonths.
+      const criteria = sanitizeCriteria(JSON.parse(response.text || '{}'));
+      return res.json({ success: true, aiMode: 'gemini', modelUsed, criteria });
     } catch (err: unknown) {
-      console.warn('Gemini match error or missing key; using fallback ranking:', err);
-
-      // Rule-based ranking fallback
-      const query = (parentPrompt || '').toLowerCase();
-      const rankedCentres = centres.map((c: any, idx: number) => {
-        let score = 75;
-        let reason = `Good fit for ${childName} (22 mos) in the Toddler room.`;
-        let highlight = 'Licensed Provider';
-
-        if (c.neighbourhood.toLowerCase().includes('riverdale') && query.includes('riverdale')) {
-          score += 20;
-          reason = 'Direct match for your preferred Riverdale neighbourhood and CWELCC $10/day fee subsidy.';
-          highlight = 'Top Neighbourhood Match';
-        } else if (c.ageGroups.includes('Toddler')) {
-          score += 12;
-          reason = `Active Toddler intake with operating hours from ${c.hours}.`;
-          highlight = 'Strong Age Group Fit';
-        }
-
-        if (c.feeNote && query.includes('cwelcc')) {
-          score += 8;
-        }
-
-        return {
-          centreId: c.id,
-          priorityRank: idx + 1,
-          matchScore: Math.min(score, 98),
-          matchReason: reason,
-          keyHighlight: highlight,
-        };
-      });
-
-      rankedCentres.sort((a: any, b: any) => b.matchScore - a.matchScore);
-      rankedCentres.forEach((item: any, i: number) => {
-        item.priorityRank = i + 1;
-      });
-
+      console.warn('Gemini parse-search error; using keyword parser:', err);
       return res.json({
+        success: true,
         aiMode: 'fallback',
         modelUsed: null,
         fallbackReason: fallbackReasonFor(err),
-        success: true,
-        data: {
-          agentSummary: `Based on your request, our agent analyzed available licensed centres in Toronto prioritizing age-eligibility for Anya (22 months) and neighbourhood accessibility.`,
-          rankedCentres,
+        criteria: parseSearchFallback(description),
+      });
+    }
+  });
+
+  // API 2b: One plain sentence per top result, restating ONLY the facts computed by rankCentres.
+  app.post('/api/explain-results', async (req: Request, res: Response) => {
+    const raw = Array.isArray(req.body?.results) ? req.body.results : null;
+    if (!raw || raw.length === 0) {
+      return res.status(400).json({ error: 'results are required.' });
+    }
+    const strings = (v: unknown) =>
+      Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string').map((x) => x.slice(0, 120)).slice(0, 12) : [];
+    // Top 10 only; nothing but ids, names and facts is sent to the model.
+    type ExplainInput = { id: string; name: string; matchedFacts: string[]; unknownFacts: string[] };
+    const results: ExplainInput[] = raw.slice(0, 10).map((r: any) => ({
+      id: String(r?.id ?? '').slice(0, 40),
+      name: String(r?.name ?? '').slice(0, 120),
+      matchedFacts: strings(r?.matchedFacts),
+      unknownFacts: strings(r?.unknownFacts),
+    }));
+    const fallbackFor = (r: ExplainInput) => factsSentence(r.matchedFacts, r.unknownFacts);
+
+    try {
+      const { response, modelUsed } = await generateWithTimeout('explain-results', {
+        contents: `For each child care centre below, write ONE short, plain sentence for a parent that restates its facts.
+
+Rules:
+- Use ONLY the listed facts. Do not add any claim, adjective or detail that is not in the facts.
+- Never mention availability, open spaces, waitlists, quality, cost (other than CWELCC if listed) or a recommendation.
+- Never compare centres or say which is best.
+- Mention unknown facts plainly (e.g. "ages are not reported").
+
+Centres (JSON):
+${JSON.stringify(results)}`,
+        config: {
+          systemInstruction: 'You restate given facts in plain language. You never add information.',
+          temperature: 0,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: { id: { type: Type.STRING }, sentence: { type: Type.STRING } },
+              required: ['id', 'sentence'],
+            },
+          },
         },
+      });
+      const parsed = JSON.parse(response.text || '[]');
+      const byId = new Map<string, string>(
+        Array.isArray(parsed)
+          ? parsed
+              .filter((p: any) => typeof p?.id === 'string' && typeof p?.sentence === 'string')
+              .map((p: any) => [p.id, p.sentence.trim().slice(0, 300)])
+          : []
+      );
+      // Any centre the model skipped gets the plain facts sentence.
+      const explanations = Object.fromEntries(results.map((r) => [r.id, byId.get(r.id) || fallbackFor(r)]));
+      return res.json({ success: true, aiMode: 'gemini', modelUsed, explanations });
+    } catch (err: unknown) {
+      console.warn('Gemini explain-results error; using facts sentences:', err);
+      return res.json({
+        success: true,
+        aiMode: 'fallback',
+        modelUsed: null,
+        fallbackReason: fallbackReasonFor(err),
+        explanations: Object.fromEntries(results.map((r) => [r.id, fallbackFor(r)])),
       });
     }
   });

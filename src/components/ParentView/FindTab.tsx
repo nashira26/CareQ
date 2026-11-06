@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { Centre, AgeGroup, Application, ParentProfile } from '../../data/mockData';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Centre, Application, ApplicationStatus, ParentProfile } from '../../data/mockData';
+import { OntarioCentre } from '../../data/ontarioTypes';
 import {
   MapPin,
   Clock,
@@ -10,10 +11,11 @@ import {
   RotateCcw,
   LayoutList,
   Map as MapIcon,
+  Navigation,
 } from 'lucide-react';
-import { StatusBadge } from '../StatusBadge';
 import { DaycareMap } from './DaycareMap';
-import { useOntarioCentres, OntarioCentresSection } from './OntarioCentres';
+import { useOntarioData, useShortlist, OntarioCentreCard, HeartButton, Chip, ResultInfo } from './OntarioCentres';
+import { SearchChips } from './SearchChips';
 import {
   PageHeader,
   Eyebrow,
@@ -24,14 +26,26 @@ import {
   AiFallbackNote,
   AiMode,
 } from '../ui/CareUI';
+import { EMPTY_CRITERIA, SearchCriteria, hasAnyCriteria, sanitizeCriteria, parseSearchFallback } from '../../lib/searchCriteria';
+import {
+  Area,
+  FsaCentroids,
+  RankableCentre,
+  RankedCentre,
+  factsSentence,
+  knownLanguagesOf,
+  rankCentres,
+  resolveArea,
+} from '../../lib/rankCentres';
+import torontoAreas from '../../data/torontoAreas.json';
+import fsaCentroids from '../../data/fsaCentroids.json';
 
-interface PrioritizedMatch {
-  centreId: string;
-  priorityRank: number;
-  matchScore: number;
-  matchReason: string;
-  keyHighlight: string;
-}
+// Approximate centre points, used only to sort by distance (see metadata.approximate).
+const AREAS = (torontoAreas as { areas: Area[] }).areas;
+const FSA = fsaCentroids as FsaCentroids;
+const TONES: HouseIllustrationTone[] = ['sage', 'lilac', 'sky'];
+const PAGE_SIZE = 24;
+const EXPLAIN_TOP_N = 10;
 
 interface FindTabProps {
   centres: Centre[];
@@ -42,259 +56,494 @@ interface FindTabProps {
   onOpenConversation: (centreId: string) => void;
 }
 
-const TONES: HouseIllustrationTone[] = ['sage', 'lilac', 'sky'];
+type Entry =
+  | { kind: 'partner'; id: string; name: string; centre: Centre; rankable: RankableCentre }
+  | { kind: 'open-data'; id: string; name: string; centre: OntarioCentre; rankable: RankableCentre };
+
+const partnerToRankable = (c: Centre): RankableCentre => ({
+  id: c.id,
+  name: c.name,
+  kind: 'partner',
+  lat: c.lat ?? null,
+  lng: c.lng ?? null,
+  ageGroups: c.ageGroups,
+  programOptions: c.programOptions ?? [],
+  languages: c.languages ?? [],
+  cwelcc: c.feeNote ? /cwelcc/i.test(c.feeNote) : null,
+});
+
+const openDataToRankable = (c: OntarioCentre): RankableCentre => ({
+  id: c.id,
+  name: c.name,
+  kind: 'open-data',
+  lat: c.lat,
+  lng: c.lng,
+  ageGroups: c.ageGroups,
+  programOptions: c.programOptions,
+  languages: c.languages,
+  cwelcc: c.cwelcc,
+});
+
+/** Key for an AI explanation: reused only while the centre's facts are unchanged. */
+const explainKey = (r: RankedCentre) => `${r.id}|${r.matchedFacts.join(';')}|${r.unknownFacts.join(';')}`;
+
+const appliedLabel = (status: ApplicationStatus) => (status === 'Draft' ? 'Draft application' : `Applied · ${status}`);
+
+/** Queue position exactly as the centre reported it, with the date when known. */
+const positionLabel = (app: Application) =>
+  app.waitlistPosition
+    ? `#${app.waitlistPosition} · reported by centre${app.waitlistReportedDate ? ` on ${app.waitlistReportedDate}` : ''}`
+    : null;
 
 export const FindTab: React.FC<FindTabProps> = ({
   centres,
   applications,
-  parentProfile,
+  parentProfile: _parentProfile,
   onSelectCentre,
   onNavigateToApply,
   onOpenConversation,
 }) => {
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>('Toddler');
-  const [selectedNeighbourhood, setSelectedNeighbourhood] = useState<string>('All');
+  const [searchText, setSearchText] = useState('');
+  const [criteria, setCriteria] = useState<SearchCriteria>(EMPTY_CRITERIA);
+  const [isParsing, setIsParsing] = useState(false);
+  const [parseAiMode, setParseAiMode] = useState<AiMode | null>(null);
+  const [explainAiMode, setExplainAiMode] = useState<AiMode | null>(null);
+  const [explanations, setExplanations] = useState<Record<string, string>>({});
+  const [explainRequest, setExplainRequest] = useState(0);
+  const [includeSchoolAgeOnly, setIncludeSchoolAgeOnly] = useState(false);
+  const [shortlistOnly, setShortlistOnly] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [visible, setVisible] = useState(PAGE_SIZE);
 
-  // Agent Chatbot / Matching state
-  const [isAgentMatching, setIsAgentMatching] = useState<boolean>(false);
-  const [agentSummary, setAgentSummary] = useState<string | null>(null);
-  const [rankedMatches, setRankedMatches] = useState<PrioritizedMatch[] | null>(null);
-  const [matchAiMode, setMatchAiMode] = useState<AiMode | null>(null);
+  const { file: ontarioFile, loadError } = useOntarioData();
+  const { shortlist, toggle: toggleShortlist } = useShortlist();
 
-  // Real licensed centres from Ontario / City of Toronto open data (separate from demo centres)
-  const ontario = useOntarioCentres(searchQuery, selectedAgeGroup);
-
-  // Extract unique neighbourhoods
-  const neighbourhoods = useMemo(() => {
-    const list = Array.from(new Set(centres.map((c) => c.neighbourhood))).sort();
-    return ['All', ...list];
-  }, [centres]);
-
-  const ageGroupOptions: (string | AgeGroup)[] = ['All', 'Infant', 'Toddler', 'Preschool'];
-
-  // Map centreId to existing application if any
-  const applicationByCentreId = useMemo(() => {
-    const map = new Map<string, Application>();
-    applications.forEach((app) => map.set(app.centreId, app));
-    return map;
+  // Applications by centre (the parent's own applications only are passed in)
+  const appByCentre = useMemo(() => {
+    const m = new Map<string, Application>();
+    applications.filter((a) => a.status !== 'Withdrawn').forEach((a) => m.set(a.centreId, a));
+    return m;
   }, [applications]);
 
-  // Handle agent prioritization call
-  const handleAgentPrioritize = async (customPrompt?: string) => {
-    const promptToSend =
-      customPrompt && customPrompt.trim().length > 0
-        ? customPrompt
-        : `Looking for licensed child care in Toronto for ${parentProfile.childName} (${parentProfile.childAgeMonths} months). Near ${selectedNeighbourhood !== 'All' ? selectedNeighbourhood : 'Riverdale'}, starting ${parentProfile.preferredStartDate}.`;
+  // One list of all centres: partner centres first, then open-data centres A–Z
+  const allEntries: Entry[] = useMemo(() => {
+    const partner: Entry[] = centres.map((c) => ({ kind: 'partner', id: c.id, name: c.name, centre: c, rankable: partnerToRankable(c) }));
+    const open: Entry[] = (ontarioFile?.centres ?? []).map((c) => ({
+      kind: 'open-data',
+      id: c.id,
+      name: c.name,
+      centre: c,
+      rankable: openDataToRankable(c),
+    }));
+    return [...partner, ...open];
+  }, [centres, ontarioFile]);
+  const entryById = useMemo(() => new Map(allEntries.map((e) => [e.id, e])), [allEntries]);
 
-    setIsAgentMatching(true);
+  const languageOptions = useMemo(
+    () => Array.from(new Set(allEntries.flatMap((e) => e.rankable.languages))).sort((a, b) => a.localeCompare(b)),
+    [allEntries]
+  );
+  // Languages found in ANY centre's data; others can't be checked (taken from all centres, not the filtered pool)
+  const knownLanguages = useMemo(() => knownLanguagesOf(allEntries.map((e) => e.rankable)), [allEntries]);
+
+  // Checkbox filters, applied before ranking
+  const { pool, hiddenSchoolAgeOnly } = useMemo(() => {
+    let hidden = 0;
+    const list = allEntries.filter((e) => {
+      if (shortlistOnly && !shortlist.includes(e.id)) return false;
+      const schoolAgeOnly = e.rankable.ageGroups !== null && e.rankable.ageGroups.length === 0;
+      if (schoolAgeOnly && !includeSchoolAgeOnly) {
+        hidden++;
+        return false;
+      }
+      return true;
+    });
+    return { pool: list, hiddenSchoolAgeOnly: hidden };
+  }, [allEntries, shortlistOnly, shortlist, includeSchoolAgeOnly]);
+
+  const searching = hasAnyCriteria(criteria);
+  const origin = useMemo(() => resolveArea(criteria.areaText, AREAS, FSA), [criteria.areaText]);
+  const areaUnplaced = Boolean(criteria.areaText) && !origin;
+
+  // Ranking is plain code (src/lib/rankCentres.ts) and re-runs instantly when chips change.
+  const ranked: RankedCentre[] | null = useMemo(
+    () => (searching ? rankCentres(criteria, pool.map((e) => e.rankable), origin, knownLanguages) : null),
+    [searching, criteria, pool, origin, knownLanguages]
+  );
+  const results: { entry: Entry; rank: RankedCentre | null }[] = useMemo(
+    () =>
+      ranked
+        ? ranked.map((r) => ({ entry: entryById.get(r.id)!, rank: r }))
+        : pool.map((entry) => ({ entry, rank: null })),
+    [ranked, pool, entryById]
+  );
+
+  useEffect(() => setVisible(PAGE_SIZE), [results]);
+
+  // AI explanations for the top 10, only after a typed search (chip edits never call Gemini).
+  useEffect(() => {
+    if (!explainRequest || !ranked || ranked.length === 0) return;
+    const top = ranked.slice(0, EXPLAIN_TOP_N);
+    let cancelled = false;
+    fetch('/api/explain-results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        results: top.map((r) => ({
+          id: r.id,
+          name: entryById.get(r.id)?.name ?? '',
+          matchedFacts: r.matchedFacts,
+          unknownFacts: r.unknownFacts,
+        })),
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled || !data?.explanations) return;
+        setExplainAiMode(data.aiMode ?? null);
+        setExplanations((prev) => {
+          const next = { ...prev };
+          top.forEach((r) => {
+            if (typeof data.explanations[r.id] === 'string') next[explainKey(r)] = data.explanations[r.id];
+          });
+          return next;
+        });
+      })
+      .catch(() => !cancelled && setExplainAiMode('fallback'));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [explainRequest]);
+
+  const reasonFor = (r: RankedCentre) => explanations[explainKey(r)] ?? factsSentence(r.matchedFacts, r.unknownFacts);
+
+  const handleSearch = async () => {
+    const text = searchText.trim();
+    if (!text) {
+      handleClear();
+      return;
+    }
+    setIsParsing(true);
+    setExplainAiMode(null);
     try {
-      const res = await fetch('/api/match-centres', {
+      const res = await fetch('/api/parse-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          parentPrompt: promptToSend,
-          childName: parentProfile.childName,
-          childAgeMonths: parentProfile.childAgeMonths,
-          preferredStartDate: parentProfile.preferredStartDate,
-          centres,
-        }),
+        body: JSON.stringify({ text }),
       });
-
-      const json = await res.json();
-      if (json.success && json.data) {
-        setAgentSummary(json.data.agentSummary);
-        setRankedMatches(json.data.rankedCentres);
-        setMatchAiMode(json.aiMode ?? null);
-      }
-    } catch (err) {
-      console.error('Failed to run agent matching:', err);
+      const data = await res.json();
+      setCriteria(sanitizeCriteria(data.criteria));
+      setParseAiMode(data.aiMode ?? null);
+    } catch {
+      // Server unreachable: same keyword parser, in the browser
+      setCriteria(parseSearchFallback(text));
+      setParseAiMode('fallback');
     } finally {
-      setIsAgentMatching(false);
+      setIsParsing(false);
+      setExplainRequest((n) => n + 1);
     }
   };
 
-  // Filter & sort centres based on whether agent ranking is active
-  const displayedCentres = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    let list = centres.filter((centre) => {
-      const matchesAge =
-        selectedAgeGroup === 'All' ||
-        centre.ageGroups.includes(selectedAgeGroup as AgeGroup);
-      const matchesNeighbourhood =
-        selectedNeighbourhood === 'All' ||
-        centre.neighbourhood === selectedNeighbourhood;
-      const matchesQuery =
-        !query ||
-        centre.name.toLowerCase().includes(query) ||
-        centre.neighbourhood.toLowerCase().includes(query) ||
-        (centre.address && centre.address.toLowerCase().includes(query)) ||
-        centre.requirements.some((r) => r.toLowerCase().includes(query));
+  const handleClear = () => {
+    setSearchText('');
+    setCriteria(EMPTY_CRITERIA);
+    setParseAiMode(null);
+    setExplainAiMode(null);
+  };
 
-      return matchesAge && matchesNeighbourhood && matchesQuery;
-    });
+  // "Your centres": applications in progress + shortlisted centres (both groups), no duplicates
+  const yourCentreIds = useMemo(
+    () => Array.from(new Set([...appByCentre.keys(), ...shortlist])).filter((id) => entryById.has(id)),
+    [appByCentre, shortlist, entryById]
+  );
 
-    // If agent has ranked them, sort by priorityRank
-    if (rankedMatches && rankedMatches.length > 0) {
-      const rankMap = new Map(rankedMatches.map((m) => [m.centreId, m]));
-      list = [...list].sort((a, b) => {
-        const rankA = rankMap.get(a.id)?.priorityRank ?? 999;
-        const rankB = rankMap.get(b.id)?.priorityRank ?? 999;
-        return rankA - rankB;
-      });
+  // Map shows the same filtered results
+  const mapPartner = useMemo(
+    () => results.filter((r) => r.entry.kind === 'partner').map((r) => r.entry.centre as Centre),
+    [results]
+  );
+  const mapOpenData = useMemo(
+    () => results.filter((r) => r.entry.kind === 'open-data').map((r) => r.entry.centre as OntarioCentre),
+    [results]
+  );
+
+  // One status label per centre: "Applied · {status}" (+ reported position), or "Shortlisted"
+  const statusPill = (id: string) => {
+    const app = appByCentre.get(id);
+    if (app) {
+      const pos = positionLabel(app);
+      return (
+        <span className="inline-flex flex-wrap items-center gap-1.5">
+          <Chip tone="sage">{appliedLabel(app.status)}</Chip>
+          {pos && <span className="text-[10px] text-[#5B6B66]">{pos}</span>}
+        </span>
+      );
     }
+    if (shortlist.includes(id)) return <Chip tone="peach">Shortlisted</Chip>;
+    return null;
+  };
 
-    return list;
-  }, [centres, selectedAgeGroup, selectedNeighbourhood, searchQuery, rankedMatches]);
+  const renderPartnerCard = (centre: Centre, index: number, result?: ResultInfo) => {
+    const existingApp = appByCentre.get(centre.id);
+    const tone = TONES[index % TONES.length];
+    return (
+      <div
+        key={centre.id}
+        className="bg-white rounded-2xl border border-[#E7E4DA] overflow-hidden hover:shadow-[0_12px_30px_-18px_rgba(23,63,66,0.35)] transition flex flex-col justify-between"
+      >
+        <div>
+          <div className="relative h-[150px] overflow-hidden bg-[#FAF9F4] flex items-center justify-center">
+            <HouseIllustration tone={tone} className="w-full h-full object-cover" />
+            <span className="absolute bottom-2.5 left-3 text-[10px] bg-white/80 backdrop-blur-xs text-[#5B6B66] font-medium rounded px-1.5 py-0.5 border border-[#E7E4DA]">
+              Illustration · not a site photo
+            </span>
+          </div>
+
+          <div className="p-5">
+            <div className="flex items-start justify-between gap-2">
+              <span className="inline-block rounded px-1.5 py-0.5 bg-[#0B4A52]/10 text-[#0B4A52] text-[10px] font-semibold">
+                CareQ partner centre · Simulated
+              </span>
+              <HeartButton name={centre.name} active={shortlist.includes(centre.id)} onToggle={() => toggleShortlist(centre.id)} />
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] text-[#7A8A84] mt-1">
+              <MapPin className="w-3 h-3 shrink-0" />
+              <span>{centre.neighbourhood}</span>
+              {result?.distanceKm != null && (
+                <span className="font-semibold text-[#173F42] flex items-center gap-1 ml-1">
+                  <Navigation className="w-3 h-3" />
+                  {result.distanceKm.toFixed(1)} km
+                </span>
+              )}
+            </div>
+            <h3 className="text-[17px] font-bold text-[#173F42] mt-1 leading-snug">{centre.name}</h3>
+            <div className="mt-1.5">{statusPill(centre.id)}</div>
+            {centre.address && <p className="text-xs text-[#5B6B66] mt-2">{centre.address}</p>}
+
+            {result?.reason && (
+              <p className="mt-3 text-xs text-[#5B6B66] bg-[#F3EEE3]/60 border border-[#E7E4DA] rounded-lg p-2.5">
+                {result.reason}
+              </p>
+            )}
+
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {centre.ageGroups.map((age) => (
+                <span key={age} className="rounded-md border border-[#D9E4D3] bg-[#F4F6F1] px-2 py-0.5 text-[10px] text-[#4E7A5A] font-medium">
+                  {age}
+                </span>
+              ))}
+              {centre.hours && (
+                <span className="rounded-md border border-[#D9E4D3] bg-[#F4F6F1] px-2 py-0.5 text-[10px] text-[#4E7A5A] font-medium flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-[#4E7A5A]" />
+                  {centre.hours}
+                </span>
+              )}
+              {centre.feeNote && (
+                <span className="rounded-md border border-[#E7D6A8] bg-[#FBF6EA] px-2 py-0.5 text-[10px] text-[#8A6A3B] font-medium">
+                  CWELCC ($10/day)
+                </span>
+              )}
+            </div>
+            {centre.programOptions && centre.programOptions.length > 0 && (
+              <p className="text-[11px] text-[#5B6B66] mt-2">
+                <span className="font-semibold">Programs:</span> {centre.programOptions.join(', ')}
+              </p>
+            )}
+            {centre.languages && centre.languages.length > 0 && (
+              <p className="text-[11px] text-[#5B6B66] mt-0.5">
+                <span className="font-semibold">Language:</span> {centre.languages.join(', ')}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="px-5 pb-5 pt-4 border-t border-[#E7E4DA] flex items-center justify-between gap-2">
+          <span className="text-[11px] text-[#7A8A84]">Availability reported by centre only</span>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => onOpenConversation(centre.id)}
+              className="text-xs font-semibold text-[#5B6B66] hover:text-[#173F42] hover:underline cursor-pointer"
+            >
+              Message
+            </button>
+            {existingApp ? (
+              <button
+                type="button"
+                onClick={onNavigateToApply}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[#173F42] hover:text-[#0B4A52] hover:underline cursor-pointer"
+              >
+                <span>Manage ({existingApp.status})</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onSelectCentre(centre.id)}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[#173F42] hover:text-[#0B4A52] hover:underline cursor-pointer"
+              >
+                <span>Apply</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const shown = results.slice(0, visible);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <PageHeader
         eyebrow="Find centres"
         title="A good fit starts here."
         subtitle="Search licensed centres near you. Availability and waitlists only appear when a centre reports them."
       />
 
-      {/* Map view: In a Card below the header row when active */}
-      {viewMode === 'map' && (
-        <Card className="p-4 sm:p-6 overflow-hidden">
-          <DaycareMap
-            centres={displayedCentres}
-            applications={applications}
-            parentProfile={parentProfile}
-            rankedMatches={rankedMatches}
-            realCentres={ontario.filtered}
-            onSelectCentre={onSelectCentre}
-            onOpenConversation={onOpenConversation}
-            onNavigateToApply={onNavigateToApply}
-          />
-        </Card>
+      {/* A) Your centres */}
+      {yourCentreIds.length > 0 && (
+        <section aria-label="Your centres">
+          <Eyebrow>Your centres</Eyebrow>
+          <div className="mt-2 flex overflow-x-auto pb-1 gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:overflow-visible">
+            {yourCentreIds.map((id) => {
+              const e = entryById.get(id)!;
+              const app = appByCentre.get(id);
+              return (
+                <div key={id} className="shrink-0 w-[230px] sm:w-auto rounded-xl border border-[#E7E4DA] bg-white p-3 space-y-1.5">
+                  <p className="text-[10px] font-semibold text-[#7A8A84]">
+                    {e.kind === 'partner' ? 'CareQ partner centre · Simulated' : 'Not on CareQ yet · Ontario open data'}
+                  </p>
+                  <p className="text-sm font-bold text-[#173F42] leading-snug line-clamp-2">{e.name}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    {statusPill(id)}
+                    {app && (
+                      <button type="button" onClick={onNavigateToApply} className="text-[11px] font-semibold text-[#0B4A52] hover:underline cursor-pointer">
+                        Manage
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
       )}
 
-      {/* Search + filters in ONE white bar */}
-      <div className="rounded-2xl border border-[#E7E4DA] bg-white flex flex-col md:flex-row md:divide-x divide-[#E7E4DA] shadow-2xs">
-        {/* First section: Search icon + borderless input */}
-        <div className="flex-1 flex items-center gap-3 px-4 py-3 min-w-0">
-          <Search className="w-4 h-4 text-[#7A8A84] shrink-0" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleAgentPrioritize(searchQuery);
-              }
-            }}
-            placeholder="Search by name, neighbourhood or need"
-            className="w-full bg-transparent border-none text-sm text-[#173F42] placeholder-[#7A8A84] focus:outline-hidden"
-          />
-          {searchQuery && (
+      {/* B) Describe what you need */}
+      <div className="rounded-2xl border border-[#E7E4DA] bg-white shadow-2xs p-4 space-y-3">
+        <label htmlFor="describe-need" className="block">
+          <Eyebrow>Describe what you need</Eyebrow>
+        </label>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex-1 flex items-center gap-3 px-3 rounded-xl border border-[#E7E4DA] focus-within:border-[#0B4A52] min-w-0">
+            <Search className="w-4 h-4 text-[#7A8A84] shrink-0" />
+            <input
+              id="describe-need"
+              type="text"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              placeholder="Full-time care for my 2-year-old near Danforth and Pape, from March"
+              className="w-full py-2.5 bg-transparent border-none text-sm text-[#173F42] placeholder-[#7A8A84] focus:outline-hidden"
+            />
+          </div>
+          <div className="flex gap-2 shrink-0">
             <button
               type="button"
-              onClick={() => setSearchQuery('')}
-              className="text-[#7A8A84] hover:text-[#173F42] text-xs p-1"
-              aria-label="Clear search text"
+              onClick={handleSearch}
+              disabled={isParsing}
+              className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-[#0B4A52] hover:bg-[#08383E] text-white text-sm font-semibold disabled:opacity-50 cursor-pointer"
             >
-              ✕
+              {isParsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              Search
             </button>
-          )}
-          <button
-            type="button"
-            onClick={() => handleAgentPrioritize(searchQuery)}
-            disabled={isAgentMatching}
-            title="Prioritize matches with CareQ Agent"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-[#0B4A52] hover:bg-[#FAF9F4] transition-colors shrink-0 cursor-pointer disabled:opacity-50"
-          >
-            {isAgentMatching ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Sparkles className="w-3.5 h-3.5 text-[#C9B98A]" />
+            {(searching || searchText) && (
+              <GhostButton onClick={handleClear} className="h-11">
+                <RotateCcw className="w-3.5 h-3.5" /> Clear
+              </GhostButton>
             )}
-            <span className="hidden sm:inline">Prioritize</span>
-          </button>
+          </div>
         </div>
 
-        {/* Section 2: Age Group Filter */}
-        <div className="px-4 py-2.5 flex flex-col justify-center min-w-[150px] border-t md:border-t-0 border-[#E7E4DA]">
-          <Eyebrow className="text-[10px]">Age group</Eyebrow>
-          <select
-            value={selectedAgeGroup}
-            onChange={(e) => setSelectedAgeGroup(e.target.value)}
-            aria-label="Filter by age group"
-            className="bg-transparent border-none text-xs font-semibold text-[#173F42] focus:outline-hidden cursor-pointer mt-0.5 p-0"
-          >
-            {ageGroupOptions.map((age) => (
-              <option key={age} value={age} className="text-stone-800">
-                {age === 'All' ? 'All ages' : age}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* E) Editable criteria chips + "+ Add filter" */}
+        <SearchChips
+          criteria={criteria}
+          onChange={setCriteria}
+          origin={origin}
+          areas={AREAS}
+          languageOptions={languageOptions}
+          knownLanguages={knownLanguages}
+        />
+        <AiFallbackNote aiMode={parseAiMode} />
 
-        {/* Section 3: Neighbourhood Filter */}
-        <div className="px-4 py-2.5 flex flex-col justify-center min-w-[170px] border-t md:border-t-0 border-[#E7E4DA]">
-          <Eyebrow className="text-[10px]">Neighbourhood</Eyebrow>
-          <select
-            value={selectedNeighbourhood}
-            onChange={(e) => setSelectedNeighbourhood(e.target.value)}
-            aria-label="Filter by neighbourhood"
-            className="bg-transparent border-none text-xs font-semibold text-[#173F42] focus:outline-hidden cursor-pointer mt-0.5 p-0"
-          >
-            {neighbourhoods.map((n) => (
-              <option key={n} value={n} className="text-stone-800">
-                {n === 'All' ? 'All neighbourhoods' : n}
-              </option>
-            ))}
-          </select>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1 text-xs text-[#173F42]">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={includeSchoolAgeOnly} onChange={(e) => setIncludeSchoolAgeOnly(e.target.checked)} />
+            <span>
+              Include school-age-only programs
+              {!includeSchoolAgeOnly && ontarioFile && <span className="text-[#7A8A84]"> ({hiddenSchoolAgeOnly} hidden)</span>}
+            </span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={shortlistOnly} onChange={(e) => setShortlistOnly(e.target.checked)} />
+            <span>Shortlist only ({shortlist.length})</span>
+          </label>
         </div>
       </div>
 
-      {/* Agent Recommendation Banner if active */}
-      {agentSummary && (
-        <div className="rounded-2xl bg-[#EEF3EA] border border-[#D9E4D3] p-4 text-xs text-[#173F42] flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <span className="font-bold flex items-center gap-1.5 text-[#4E7A5A]">
-              <Sparkles className="w-3.5 h-3.5" />
-              Agent Recommendation Analysis:
-            </span>
-            <p className="text-[#5B6B66] leading-relaxed">{agentSummary}</p>
-            <AiFallbackNote aiMode={matchAiMode} />
+      {/* Area given but not placed: ask for an area before anything looks "ranked" by distance */}
+      {areaUnplaced && (
+        <div className="rounded-2xl border-2 border-[#E7D6A8] bg-[#FBF6EA] p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+          <MapPin className="w-5 h-5 text-[#8A6A3B] shrink-0" />
+          <div className="flex-1 text-sm text-[#5B4A2E]">
+            <span className="font-bold">We couldn&apos;t place &lsquo;{criteria.areaText}&rsquo;.</span> Pick an area to
+            sort centres by distance.
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setRankedMatches(null);
-              setAgentSummary(null);
-            }}
-            className="text-[11px] font-semibold text-[#4E7A5A] hover:underline shrink-0 flex items-center gap-1 mt-0.5 cursor-pointer"
+          <select
+            aria-label="Pick an area to sort by distance"
+            value=""
+            onChange={(e) => e.target.value && setCriteria({ ...criteria, areaText: e.target.value })}
+            className="rounded-xl border border-[#E7D6A8] bg-white px-3 py-2 text-sm text-[#173F42] sm:w-64"
           >
-            <RotateCcw className="w-3 h-3" />
-            Reset ranking
-          </button>
+            <option value="">Pick an area…</option>
+            {AREAS.map((a) => (
+              <option key={a.name} value={a.name}>
+                {a.name}
+              </option>
+            ))}
+          </select>
         </div>
       )}
 
-      {/* Results Line */}
-      <div className="flex items-center justify-between pt-1">
-        <div className="flex items-baseline gap-2">
-          <span className="text-sm font-bold text-[#173F42]">
-            {displayedCentres.length} simulated demo centres
-          </span>
-          <span className="text-xs text-[#7A8A84]">· used for the Apply and Track demo</span>
-          {rankedMatches && (
-            <span className="text-xs font-semibold text-[#4E7A5A] ml-1">
-              · Ordered by match score
+      {/* Results line */}
+      <div className="flex items-center justify-between gap-3 pt-1">
+        <div className="text-sm font-bold text-[#173F42]">
+          {searching && areaUnplaced ? (
+            <>
+              Pick an area to sort by distance — showing centres that fit your other criteria
+              <span className="ml-2 text-xs font-normal text-[#7A8A84]">({results.length} centres)</span>
+            </>
+          ) : searching ? (
+            <>
+              {results.length} centres match your description{origin ? ', closest first' : ''}
+            </>
+          ) : (
+            <>
+              {results.length} centres
+              <span className="ml-2 text-xs font-normal text-[#7A8A84]">CareQ partner centres first, then licensed centres A–Z</span>
+            </>
+          )}
+          {!ontarioFile && !loadError && (
+            <span className="ml-2 text-xs font-normal text-[#7A8A84] inline-flex items-center gap-1">
+              <Loader2 className="w-3 h-3 animate-spin" /> loading licensed centres…
             </span>
           )}
+          {loadError && <span className="ml-2 text-xs font-normal text-[#A4543A]">Could not load licensed centres.</span>}
         </div>
-
-        {/* Existing List/Map Toggle styled as GhostButton */}
-        <GhostButton
-          onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')}
-          className="h-9 px-3 text-xs"
-        >
+        <GhostButton onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="h-9 px-3 text-xs shrink-0">
           {viewMode === 'list' ? (
             <>
               <MapIcon className="w-3.5 h-3.5" />
@@ -309,163 +558,63 @@ export const FindTab: React.FC<FindTabProps> = ({
         </GhostButton>
       </div>
 
-      {/* Centre cards: grid sm:grid-cols-2 xl:grid-cols-3 gap-5 */}
-      {viewMode === 'list' && (
-        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
-          {displayedCentres.map((centre, index) => {
-            const existingApp = applicationByCentreId.get(centre.id);
-            const matchInfo = rankedMatches?.find((m) => m.centreId === centre.id);
-            const tone = TONES[index % TONES.length];
-
-            return (
-              <div
-                key={centre.id}
-                className="bg-white rounded-2xl border border-[#E7E4DA] overflow-hidden hover:shadow-[0_12px_30px_-18px_rgba(23,63,66,0.35)] transition flex flex-col justify-between"
-              >
-                <div>
-                  {/* Top: HouseIllustration h-[170px], tone rotates by index */}
-                  <div className="relative h-[170px] overflow-hidden bg-[#FAF9F4] flex items-center justify-center">
-                    <HouseIllustration
-                      tone={tone}
-                      className="w-full h-full object-cover"
-                    />
-                    <span className="absolute bottom-2.5 left-3 text-[10px] bg-white/80 backdrop-blur-xs text-[#5B6B66] font-medium rounded px-1.5 py-0.5 border border-[#E7E4DA]">
-                      Illustration · not a site photo
-                    </span>
-
-                    {existingApp && (
-                      <div className="absolute top-2.5 right-3">
-                        <StatusBadge
-                          status={existingApp.status}
-                          waitlistPosition={existingApp.waitlistPosition}
-                          size="sm"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Body p-5 */}
-                  <div className="p-5">
-                    {/* Row with MapPin icon + neighbourhood */}
-                    <div className="flex items-center justify-between gap-2 text-[11px] text-[#7A8A84]">
-                      <span className="flex items-center gap-1.5">
-                        <MapPin className="w-3 h-3 text-[#7A8A84] shrink-0" />
-                        <span>{centre.neighbourhood}</span>
-                      </span>
-                      <span className="rounded px-1.5 py-0.5 bg-[#F3EBDD] text-[#5B4A2E] text-[10px] font-semibold">
-                        Simulated demo centre
-                      </span>
-                    </div>
-
-                    {/* Centre Name */}
-                    <h3 className="text-[17px] font-bold text-[#173F42] mt-1 leading-snug">
-                      {centre.name}
-                    </h3>
-
-                    {/* Address */}
-                    {centre.address && (
-                      <p className="text-xs text-[#5B6B66] mt-3">
-                        {centre.address}
-                      </p>
-                    )}
-
-                    {/* Chips for age groups and hours */}
-                    <div className="flex flex-wrap gap-1.5 mt-3">
-                      {centre.ageGroups.map((age) => (
-                        <span
-                          key={age}
-                          className="rounded-md border border-[#D9E4D3] bg-[#F4F6F1] px-2 py-0.5 text-[10px] text-[#4E7A5A] font-medium"
-                        >
-                          {age}
-                        </span>
-                      ))}
-                      {centre.hours && (
-                        <span className="rounded-md border border-[#D9E4D3] bg-[#F4F6F1] px-2 py-0.5 text-[10px] text-[#4E7A5A] font-medium flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-[#4E7A5A]" />
-                          {centre.hours}
-                        </span>
-                      )}
-                      {centre.feeNote && (
-                        <span className="rounded-md border border-[#E7D6A8] bg-[#FBF6EA] px-2 py-0.5 text-[10px] text-[#8A6A3B] font-medium">
-                          CWELCC ($10/day)
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Existing match reason if present */}
-                    {matchInfo && (
-                      <div className="mt-3 text-xs text-[#5B6B66] bg-[#F3EEE3]/60 border border-[#E7E4DA] rounded-lg p-2.5">
-                        <span className="font-semibold text-[#173F42]">
-                          Why this fits:{' '}
-                        </span>
-                        {matchInfo.matchReason}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Footer border-t border-[#E7E4DA] mt-4 pt-4 flex justify-between */}
-                <div className="px-5 pb-5 pt-4 border-t border-[#E7E4DA] flex items-center justify-between gap-2">
-                  <span className="text-[11px] text-[#7A8A84]">
-                    Availability reported by centre only
-                  </span>
-
-                  <div className="flex items-center gap-3 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => onOpenConversation(centre.id)}
-                      className="text-xs font-semibold text-[#5B6B66] hover:text-[#173F42] hover:underline cursor-pointer"
-                    >
-                      Message
-                    </button>
-
-                    {existingApp ? (
-                      <button
-                        type="button"
-                        onClick={onNavigateToApply}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-[#173F42] hover:text-[#0B4A52] hover:underline cursor-pointer"
-                      >
-                        <span>Manage ({existingApp.status})</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => onSelectCentre(centre.id)}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-[#173F42] hover:text-[#0B4A52] hover:underline cursor-pointer"
-                      >
-                        <span>Apply</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {displayedCentres.length === 0 && (
-        <Card className="text-center py-12">
-          <p className="text-[#5B6B66] text-sm">
-            No child care centres match your selected search or filters.
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              setSearchQuery('');
-              setSelectedAgeGroup('All');
-              setSelectedNeighbourhood('All');
-            }}
-            className="mt-2 text-xs font-semibold text-[#0B4A52] hover:underline cursor-pointer"
-          >
-            Clear filters
-          </button>
+      {viewMode === 'map' && (
+        <Card className="p-4 sm:p-6 overflow-hidden">
+          <DaycareMap
+            centres={mapPartner}
+            applications={applications}
+            parentProfile={_parentProfile}
+            realCentres={mapOpenData}
+            onSelectCentre={onSelectCentre}
+            onOpenConversation={onOpenConversation}
+            onNavigateToApply={onNavigateToApply}
+          />
         </Card>
       )}
 
-      <OntarioCentresSection state={ontario} />
+      {viewMode === 'list' && (
+        <>
+          {results.length === 0 ? (
+            <Card className="text-center py-12">
+              <p className="text-[#5B6B66] text-sm">No centres match. Try removing a filter or widening the distance.</p>
+            </Card>
+          ) : (
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              {shown.map(({ entry, rank }, i) => {
+                const result: ResultInfo | undefined = rank ? { distanceKm: rank.distanceKm, reason: reasonFor(rank) } : undefined;
+                return entry.kind === 'partner' ? (
+                  renderPartnerCard(entry.centre, i, result)
+                ) : (
+                  <OntarioCentreCard
+                    key={entry.id}
+                    centre={entry.centre}
+                    file={ontarioFile!}
+                    isShortlisted={shortlist.includes(entry.id)}
+                    onToggleShortlist={() => toggleShortlist(entry.id)}
+                    result={result}
+                  />
+                );
+              })}
+            </div>
+          )}
+          {visible < results.length && (
+            <div className="text-center">
+              <GhostButton onClick={() => setVisible((v) => v + PAGE_SIZE)}>Show more ({results.length - visible} left)</GhostButton>
+            </div>
+          )}
+        </>
+      )}
+
+      {searching && (
+        <div className="space-y-1">
+          <p className="text-[11px] text-[#7A8A84]">
+            {areaUnplaced
+              ? 'Ordered by fit with what you asked for, then by name. CareQ never knows availability unless a partner centre reports it.'
+              : 'Ranked by distance and fit with what you asked for. CareQ never knows availability unless a partner centre reports it.'}
+          </p>
+          <AiFallbackNote aiMode={explainAiMode} />
+        </div>
+      )}
     </div>
   );
 };

@@ -23,7 +23,6 @@ interface DaycareMapProps {
   centres: Centre[];
   applications: Application[];
   parentProfile: ParentProfile;
-  rankedMatches?: { centreId: string; priorityRank: number; matchReason: string }[] | null;
   /** Real open-data centres: shown as small dots; centres without lat/lng are skipped. */
   realCentres?: OntarioCentre[];
   onSelectCentre: (centreId: string) => void;
@@ -35,7 +34,6 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
   centres,
   applications,
   parentProfile,
-  rankedMatches,
   realCentres = NO_REAL_CENTRES,
   onSelectCentre,
   onOpenConversation,
@@ -97,13 +95,9 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
       bounds.extend(latLng);
 
       const isSelected = applicationByCentreId.has(centre.id);
-      const match = rankedMatches?.find((m) => m.centreId === centre.id);
-      const isTopRanked = match?.priorityRank === 1;
 
       // Custom div icon with modern pin design
-      const pinColorClass = isTopRanked
-        ? 'bg-amber-500 border-white text-stone-950'
-        : isSelected
+      const pinColorClass = isSelected
         ? 'bg-emerald-600 border-white text-white'
         : 'bg-teal-700 border-white text-white';
 
@@ -115,11 +109,7 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
         html: `
           <div class="relative flex flex-col items-center group cursor-pointer transition-transform duration-200 hover:scale-110">
             <div class="w-9 h-9 rounded-full ${pinColorClass} border-2 shadow-lg flex items-center justify-center font-bold text-xs">
-              ${
-                match
-                  ? `#${match.priorityRank}`
-                  : `<svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/></svg>`
-              }
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/></svg>
             </div>
             <div class="w-2.5 h-2.5 bg-stone-800 rotate-45 -mt-1 shadow-md"></div>
             ${
@@ -167,7 +157,7 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
     }, 200);
 
     return () => clearTimeout(timeout);
-  }, [centres, rankedMatches, applications]);
+  }, [centres, applications]);
 
   // Real open-data centres on their own layer (canvas dots, fast for ~1,100 points).
   // Runs after the effect above has created the map.
@@ -224,9 +214,6 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
 
   const isSelected = activeCentre ? applicationByCentreId.has(activeCentre.id) : false;
   const currentApp = activeCentre ? applicationByCentreId.get(activeCentre.id) : undefined;
-  const matchInfo = activeCentre
-    ? rankedMatches?.find((m) => m.centreId === activeCentre.id)
-    : undefined;
 
   return (
     <div className="space-y-4">
@@ -245,7 +232,7 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
             <div className="text-[11px] text-stone-500 flex items-center gap-2">
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-teal-700 inline-block"></span>
-                <span>Simulated demo centre</span>
+                <span>CareQ partner centre (simulated)</span>
               </span>
               {realCentresOnMap.length > 0 && (
                 <span className="flex items-center gap-1">
@@ -262,7 +249,7 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
 
           {/* Bottom helper pill */}
           <div className="absolute bottom-3 left-3 z-1000 bg-stone-900/80 backdrop-blur-xs text-white text-[11px] px-3 py-1 rounded-full shadow-sm pointer-events-none">
-            Powered by OpenStreetMap • {centres.length} simulated demo + {realCentresOnMap.length} licensed centres
+            Powered by OpenStreetMap • {centres.length} partner (simulated) + {realCentresOnMap.length} licensed centres
           </div>
         </div>
 
@@ -299,12 +286,6 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
                   <h3 className="font-bold text-base text-stone-900 leading-snug">
                     {activeCentre.name}
                   </h3>
-                  {matchInfo && (
-                    <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-900 border border-teal-300 flex items-center gap-1">
-                      <Sparkles className="w-2.5 h-2.5 text-teal-600" />
-                      Rank #{matchInfo.priorityRank}
-                    </span>
-                  )}
                 </div>
                 {activeCentre.address && (
                   <p className="text-xs text-stone-500 mt-1 flex items-center gap-1">
@@ -318,18 +299,6 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
                 </p>
               </div>
 
-              {/* Agent recommendation reason if available */}
-              {matchInfo && (
-                <div className="bg-teal-50 border border-teal-200 rounded-lg p-2.5 text-xs text-teal-900">
-                  <div className="font-semibold flex items-center gap-1 mb-0.5">
-                    <Sparkles className="w-3 h-3 text-teal-600" />
-                    Agent Match Rationale:
-                  </div>
-                  <p className="text-teal-800 leading-relaxed text-[11px]">
-                    {matchInfo.matchReason}
-                  </p>
-                </div>
-              )}
 
               {/* Age groups & program availability */}
               <div>

@@ -28,6 +28,10 @@ export interface Centre {
   imageUrl?: string;
   lat?: number;
   lng?: number;
+  /** Simulated for the demo; same values as the Ontario open data (e.g. 'Full day'). */
+  programOptions?: string[];
+  /** Simulated for the demo. */
+  languages?: string[];
 }
 
 export interface ParentProfile {
@@ -85,6 +89,8 @@ export const PARENT_PROFILE: ParentProfile = {
 export const INITIAL_CENTRES: Centre[] = [
   {
     id: 'c1',
+    programOptions: ['Full day', 'Before school', 'After school'],
+    languages: ['English'],
     name: 'Riverdale Early Learning Centre',
     neighbourhood: 'Riverdale',
     ageGroups: ['Infant', 'Toddler', 'Preschool'],
@@ -105,6 +111,8 @@ export const INITIAL_CENTRES: Centre[] = [
   },
   {
     id: 'c2',
+    programOptions: ['Full day', 'Half day'],
+    languages: ['English'],
     name: "Bloor West Children's Village",
     neighbourhood: 'Bloor West Village',
     ageGroups: ['Toddler', 'Preschool'],
@@ -123,6 +131,8 @@ export const INITIAL_CENTRES: Centre[] = [
   },
   {
     id: 'c3',
+    programOptions: ['Full day', 'Half day'],
+    languages: ['English'],
     name: 'High Park Forest Care & Preschool',
     neighbourhood: 'High Park',
     ageGroups: ['Infant', 'Toddler', 'Preschool'],
@@ -141,6 +151,8 @@ export const INITIAL_CENTRES: Centre[] = [
   },
   {
     id: 'c4',
+    programOptions: ['Full day'],
+    languages: ['English', 'Greek'],
     name: 'Danforth Sprouts Daycare',
     neighbourhood: 'The Danforth',
     ageGroups: ['Infant', 'Toddler'],
@@ -159,6 +171,8 @@ export const INITIAL_CENTRES: Centre[] = [
   },
   {
     id: 'c5',
+    programOptions: ['Half day', 'Before school', 'After school'],
+    languages: ['English', 'French'],
     name: 'Annex Community Child Care',
     neighbourhood: 'The Annex',
     ageGroups: ['Toddler', 'Preschool'],
@@ -177,6 +191,8 @@ export const INITIAL_CENTRES: Centre[] = [
   },
   {
     id: 'c6',
+    programOptions: ['Full day', 'Extended hours'],
+    languages: ['English'],
     name: 'Leslieville Little Stars Child Care',
     neighbourhood: 'Leslieville',
     ageGroups: ['Infant', 'Toddler', 'Preschool'],
@@ -195,6 +211,8 @@ export const INITIAL_CENTRES: Centre[] = [
   },
   {
     id: 'c7',
+    programOptions: ['Full day', 'Before school', 'After school'],
+    languages: ['English', 'French'],
     name: 'Maple Grove Children’s Centre',
     neighbourhood: 'High Park',
     ageGroups: ['Infant', 'Toddler', 'Preschool'],
