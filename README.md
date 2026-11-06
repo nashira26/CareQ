@@ -22,7 +22,7 @@ GEMINI_API_KEY=your_own_key_here
 GEMINI_MODEL=gemini-3.5-flash
 ```
 
-`.env` is in `.gitignore`; never commit it. Optional: `GEMINI_TIMEOUT_MS` (default 15000) sets how long to wait for Gemini before the basic fallback is used.
+`.env` is in `.gitignore`; never commit it. Optional: `GEMINI_TIMEOUT_MS` (default 15000) sets how long to wait for Gemini. If the main model times out or is overloaded, CareQ retries once with `GEMINI_FALLBACK_MODEL` (default `gemini-3.5-flash-lite`, 10s timeout) before using the basic fallback. Successful AI answers are cached in memory for 30 minutes.
 
 Then run:
 

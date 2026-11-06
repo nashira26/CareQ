@@ -3,7 +3,13 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import { GoogleGenAI, Type, GenerateContentParameters } from '@google/genai';
+import {
+  GoogleGenAI,
+  Type,
+  ApiError,
+  GenerateContentParameters,
+  GenerateContentResponse,
+} from '@google/genai';
 
 dotenv.config();
 
@@ -14,7 +20,21 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 // Max time to wait for Gemini before using the non-AI fallback. Override with GEMINI_TIMEOUT_MS.
 const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 15000;
 
+// Backup model, tried once when the main model times out or is overloaded (429/503).
+// gemini-3.5-flash-lite was the fastest reliable other flash model in testing on 2026-11-05.
+const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite';
+const GEMINI_FALLBACK_TIMEOUT_MS = Number(process.env.GEMINI_FALLBACK_TIMEOUT_MS) || 10000;
+
+// In-memory cache of successful Gemini answers, so repeated demo inputs answer instantly.
+const CACHE_TTL_MS = 30 * 60 * 1000;
+const CACHE_MAX_ENTRIES = 200;
+
 class GeminiTimeoutError extends Error {}
+
+/** Errors worth retrying on the backup model: our timeout, rate limit, or overload. */
+const isRetryable = (err: unknown): boolean =>
+  err instanceof GeminiTimeoutError ||
+  (err instanceof ApiError && (err.status === 429 || err.status === 503));
 
 /** Why an endpoint used its fallback: 'timeout' if Gemini took too long, otherwise 'error'. */
 const fallbackReasonFor = (err: unknown): 'timeout' | 'error' =>
@@ -39,21 +59,32 @@ async function startServer() {
     },
   });
 
-  // Every Gemini call goes through here so it is cut off after GEMINI_TIMEOUT_MS.
-  const generateWithTimeout = async (label: string, params: GenerateContentParameters) => {
+  type GeminiParams = Omit<GenerateContentParameters, 'model'>;
+  type GeminiResult = { response: GenerateContentResponse; modelUsed: string };
+
+  const geminiCache = new Map<string, GeminiResult & { expiresAt: number }>();
+
+  // One call to one model, cut off after timeoutMs.
+  const callModel = async (
+    label: string,
+    model: string,
+    params: GeminiParams,
+    timeoutMs: number
+  ): Promise<GenerateContentResponse> => {
     const controller = new AbortController();
     let timer: NodeJS.Timeout | undefined;
     const timeout = new Promise<never>((_, reject) => {
       timer = setTimeout(() => {
         controller.abort();
-        console.warn(`[gemini] ${label}: timed out after ${GEMINI_TIMEOUT_MS}ms; using fallback`);
-        reject(new GeminiTimeoutError(`Gemini timed out after ${GEMINI_TIMEOUT_MS}ms`));
-      }, GEMINI_TIMEOUT_MS);
+        console.warn(`[gemini] ${label}: ${model} timed out after ${timeoutMs}ms`);
+        reject(new GeminiTimeoutError(`${model} timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
     });
     try {
       return await Promise.race([
         ai.models.generateContent({
           ...params,
+          model,
           config: { ...params.config, abortSignal: controller.signal },
         }),
         timeout,
@@ -61,6 +92,39 @@ async function startServer() {
     } finally {
       clearTimeout(timer);
     }
+  };
+
+  // Every Gemini call goes through here: cache -> main model -> backup model (once) -> throw.
+  // When this throws, the endpoint uses its non-AI fallback.
+  const generateWithTimeout = async (label: string, params: GeminiParams): Promise<GeminiResult> => {
+    const cacheKey = `${label}|${JSON.stringify(params)}`;
+    const cached = geminiCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      console.log(`[gemini] ${label}: cache hit (answered earlier by ${cached.modelUsed})`);
+      return { response: cached.response, modelUsed: cached.modelUsed };
+    }
+    geminiCache.delete(cacheKey);
+
+    const started = Date.now();
+    let response: GenerateContentResponse;
+    let modelUsed = GEMINI_MODEL;
+    try {
+      response = await callModel(label, GEMINI_MODEL, params, GEMINI_TIMEOUT_MS);
+    } catch (err) {
+      if (!isRetryable(err)) throw err;
+      const status = err instanceof ApiError ? `HTTP ${err.status}` : 'timeout';
+      console.warn(`[gemini] ${label}: ${GEMINI_MODEL} failed (${status}); retrying with ${GEMINI_FALLBACK_MODEL}`);
+      modelUsed = GEMINI_FALLBACK_MODEL;
+      response = await callModel(label, GEMINI_FALLBACK_MODEL, params, GEMINI_FALLBACK_TIMEOUT_MS);
+    }
+    console.log(`[gemini] ${label}: answered by ${modelUsed} in ${Date.now() - started}ms`);
+
+    if (geminiCache.size >= CACHE_MAX_ENTRIES) {
+      const oldestKey = geminiCache.keys().next().value;
+      if (oldestKey !== undefined) geminiCache.delete(oldestKey);
+    }
+    geminiCache.set(cacheKey, { response, modelUsed, expiresAt: Date.now() + CACHE_TTL_MS });
+    return { response, modelUsed };
   };
 
   // API 1: Extract policy requirements from pasted text using Gemini
@@ -72,8 +136,7 @@ async function startServer() {
     }
 
     try {
-      const response = await generateWithTimeout('extract-policy-requirements', {
-        model: GEMINI_MODEL,
+      const { response, modelUsed } = await generateWithTimeout('extract-policy-requirements', {
         contents: `You are an expert Ontario child care licensing and intake policy analyst. Read the following child care centre intake policy text carefully.
 Extract every specific prerequisite document, certificate, immunization, proof of address, medical form, or parental consent that a parent must submit as part of the application or enrolment package.
 For every extracted requirement:
@@ -111,7 +174,7 @@ ${policyText}
 
       const rawText = response.text || '[]';
       const extracted = JSON.parse(rawText);
-      return res.json({ success: true, aiMode: 'gemini', requirements: extracted });
+      return res.json({ success: true, aiMode: 'gemini', modelUsed, requirements: extracted });
     } catch (err: unknown) {
       console.warn('Gemini extraction error or missing key; using fallback parser:', err);
 
@@ -173,6 +236,7 @@ ${policyText}
 
       return res.json({
         aiMode: 'fallback',
+        modelUsed: null,
         fallbackReason: fallbackReasonFor(err),
         success: true,
         requirements: fallbackList,
@@ -218,8 +282,7 @@ Rank and prioritize all the centres from highest match to lowest match.
 Provide a priority rank (1, 2, 3...), a match score (between 65 and 99), a compelling 1-2 sentence matchReason explaining why it suits the parent's criteria, and a short 3-5 word keyHighlight.
 Also provide a 2-sentence agentSummary introducing the recommendation.`;
 
-      const response = await generateWithTimeout('match-centres', {
-        model: GEMINI_MODEL,
+      const { response, modelUsed } = await generateWithTimeout('match-centres', {
         contents: prompt,
         config: {
           systemInstruction:
@@ -253,7 +316,7 @@ Also provide a 2-sentence agentSummary introducing the recommendation.`;
       });
 
       const parsed = JSON.parse(response.text || '{}');
-      return res.json({ success: true, aiMode: 'gemini', data: parsed });
+      return res.json({ success: true, aiMode: 'gemini', modelUsed, data: parsed });
     } catch (err: unknown) {
       console.warn('Gemini match error or missing key; using fallback ranking:', err);
 
@@ -294,6 +357,7 @@ Also provide a 2-sentence agentSummary introducing the recommendation.`;
 
       return res.json({
         aiMode: 'fallback',
+        modelUsed: null,
         fallbackReason: fallbackReasonFor(err),
         success: true,
         data: {
@@ -337,8 +401,7 @@ ${customNote ? `Centre staff note: "${customNote}"` : ''}
 Draft a clear, courteous, and official message (2-4 sentences) on behalf of the centre that staff can review, edit, and approve before sending to the parent.
 Return only the message text without quotes.`;
 
-      const response = await generateWithTimeout('generate-message', {
-        model: GEMINI_MODEL,
+      const { response, modelUsed } = await generateWithTimeout('generate-message', {
         contents: prompt,
         config: {
           systemInstruction:
@@ -347,7 +410,7 @@ Return only the message text without quotes.`;
       });
 
       const draftMessage = (response.text || '').trim();
-      return res.json({ success: true, aiMode: 'gemini', draftMessage });
+      return res.json({ success: true, aiMode: 'gemini', modelUsed, draftMessage });
     } catch (err: unknown) {
       console.warn('Gemini message generation error; using template fallback:', err);
 
@@ -375,6 +438,7 @@ Return only the message text without quotes.`;
       return res.json({
         success: true,
         aiMode: 'fallback',
+        modelUsed: null,
         fallbackReason: fallbackReasonFor(err),
         draftMessage: fallbackMessage,
       });
@@ -390,8 +454,7 @@ Return only the message text without quotes.`;
     }
 
     try {
-      const response = await generateWithTimeout('check-tone', {
-        model: GEMINI_MODEL,
+      const { response, modelUsed } = await generateWithTimeout('check-tone', {
         contents: `You are a professional child-care communication mediator for Ontario families and licensed centres.
 Analyze the tone of the following message being sent by a ${role === 'parent' ? 'parent to a child care centre' : 'child care centre to a parent'}:
 
@@ -437,6 +500,7 @@ If it is respectful, calm, neutral, professional, or standard:
       const parsed = JSON.parse(response.text || '{}');
       return res.json({
         aiMode: 'gemini',
+        modelUsed,
         success: true,
         isHarsh: Boolean(parsed.isHarsh),
         suggestedCalmerVersion: parsed.suggestedCalmerVersion || '',
@@ -478,6 +542,7 @@ If it is respectful, calm, neutral, professional, or standard:
 
       return res.json({
         aiMode: 'fallback',
+        modelUsed: null,
         fallbackReason: fallbackReasonFor(err),
         success: true,
         isHarsh,
@@ -567,8 +632,7 @@ USER'S QUESTION:
 ${question}
 """`;
 
-      const response = await generateWithTimeout('ask-careq', {
-        model: GEMINI_MODEL,
+      const { response, modelUsed } = await generateWithTimeout('ask-careq', {
         contents: prompt,
         config: {
           temperature: 0.1,
@@ -584,6 +648,7 @@ ${question}
 
       return res.json({
         aiMode: 'gemini',
+        modelUsed,
         success: true,
         answer: text,
       });
@@ -607,6 +672,7 @@ ${question}
 
       return res.json({
         aiMode: 'fallback',
+        modelUsed: null,
         fallbackReason: fallbackReasonFor(err),
         success: true,
         answer,
