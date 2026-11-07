@@ -262,7 +262,7 @@ export function verifiedQuote(quote: string, text: string): string | null {
   return `${words.slice(0, MAX_QUOTE_WORDS).join(' ').replace(/[,;:—–-]+$/, '')}…`;
 }
 
-const pageOf = (p: AskPassage) => {
+export const pageOf = (p: Pick<AskPassage, "page" | "heading" | "operatorId">) => {
   const page = p.page != null ? `PDF p.${p.page}` : p.heading;
   return p.operatorId === BF_TORONTO_OPERATOR_ID ? `${page} ${BF_TORONTO_SOURCE_NOTE}` : page;
 };

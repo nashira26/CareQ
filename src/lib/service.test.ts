@@ -6,6 +6,7 @@ import { buildSeedWorld, actorOf, PasswordHasher, Actor } from './world';
 import * as svc from './service';
 import { AccessError, InputError } from './access';
 import { DEMO_CENTRE_ID, HARMONY_ID, JESSE_KETCHUM_ID } from '../data/demoCentres';
+import { conversationKey } from '../data/mockData';
 
 const hasher: PasswordHasher = {
   hash: async (p) => createHash('sha256').update(p).digest('hex'),
@@ -168,4 +169,76 @@ test('seeded conversations keep the right centre and child for ids with "-"', as
   assert.equal(jk.key, `${JESSE_KETCHUM_ID}-child-anya`);
   assert.equal(jk.parentAccountId, 'parent-priya');
   assert.ok(world.conversations.every((c) => c.parentAccountId !== 'unknown'));
+});
+
+test('policy reader: confirmed requirements replace the old ones with their quotes, citations and links (no stale citations)', async () => {
+  const { repo, jesseKetchum } = await setup();
+  const before = (await repo.getCentre(JESSE_KETCHUM_ID))!;
+  assert.ok(Object.keys(before.requirementCitations ?? {}).length > 0);
+
+  await svc.updateRequirements(
+    repo,
+    jesseKetchum,
+    JESSE_KETCHUM_ID,
+    ['Child Admission Package', 'Immunization record'],
+    { 'Child Admission Package': 'the Centre Supervisor will review the Child Admission Package', 'Immunization record': 'collect and retain up-to-date immunization' },
+    {
+      'Child Admission Package': { citation: 'Parent Handbook (March 2026), PDF p.13', sourceUrl: 'https://www.toronto.ca/handbook.pdf' },
+      'Immunization record': { citation: 'Parent Handbook (March 2026), PDF p.14', sourceUrl: 'https://www.toronto.ca/handbook.pdf' },
+    },
+    { docTitle: 'Parent Handbook (March 2026)', sourceUrl: 'https://www.toronto.ca/handbook.pdf', sourceNote: 'Exact file' }
+  );
+  const after = (await repo.getCentre(JESSE_KETCHUM_ID))!;
+  assert.deepEqual(after.requirements, ['Child Admission Package', 'Immunization record']);
+  assert.deepEqual(Object.keys(after.requirementCitations!), ['Child Admission Package', 'Immunization record']);
+  assert.equal(after.requirementCitations!['Immunization record'], 'Parent Handbook (March 2026), PDF p.14');
+  assert.equal(after.requirementSourceUrls!['Child Admission Package'], 'https://www.toronto.ca/handbook.pdf');
+  assert.equal(after.requirementsExtractedFrom!.docTitle, 'Parent Handbook (March 2026)');
+
+  // Pasted policy (no citations): the old citations and source document are removed, not left stale
+  await svc.updateRequirements(repo, jesseKetchum, JESSE_KETCHUM_ID, ['Birth certificate'], { 'Birth certificate': 'Bring a birth certificate.' });
+  const pasted = (await repo.getCentre(JESSE_KETCHUM_ID))!;
+  assert.equal(pasted.requirementCitations, undefined);
+  assert.equal(pasted.requirementSourceUrls, undefined);
+  assert.equal(pasted.requirementsExtractedFrom, undefined);
+});
+
+test('uploads are recorded for self-registered centres only, and only by their own staff', async () => {
+  const { repo, sunny, sunnyId, jesseKetchum } = await setup();
+  const doc = { docKey: `self-${sunnyId}/handbook.pdf`, docTitle: 'Handbook', fileName: 'handbook.pdf', chunks: 4, keywordOnly: 4 };
+  await svc.recordCentreDocument(repo, sunny, sunnyId, doc);
+  await svc.recordCentreDocument(repo, sunny, sunnyId, { ...doc, chunks: 5 }); // re-upload replaces
+  const docs = (await repo.getCentre(sunnyId))!.registration!.documents!;
+  assert.equal(docs.length, 1);
+  assert.equal(docs[0].chunks, 5);
+  await rejects403(svc.recordCentreDocument(repo, jesseKetchum, sunnyId, doc)); // another centre
+  await rejects403(svc.recordCentreDocument(repo, jesseKetchum, JESSE_KETCHUM_ID, doc)); // real demo centre: no uploads
+});
+
+test('a licence check result from the server is stored on the registration', async () => {
+  const repo = new MemoryRepo(await buildSeedWorld(hasher));
+  const acc = await svc.signUp(repo, hasher, { role: 'centre', name: 'Sam', email: 'sam@x.example', password: 'sampass12' });
+  const id = await svc.registerCentre(
+    repo,
+    actorOf(acc),
+    {
+      name: 'Licensed Place', street: '1 Main St', postalCode: 'M4K 3S3', neighbourhood: 'Danforth & Pape', licenceNumber: '00576',
+      ageGroups: ['Toddler'], programOptions: ['Full day'], languages: ['English'], hours: '8 – 6', capacity: '', contactEmail: 'sam@x.example', policyText: '',
+    },
+    undefined,
+    [{ name: 'Danforth & Pape', aliases: [], lat: 43.68, lng: -79.34 }],
+    {},
+    { source: 'Ontario open data', openDataId: 'on-00576', matchedName: 'Jesse Ketchum', matchedBy: 'licence number and postal code', dataDate: null }
+  );
+  assert.equal((await repo.getCentre(id))!.registration!.licenceVerified!.openDataId, 'on-00576');
+});
+
+test('a message sent from a simulated-data AI draft is tagged for both sides (demo centres only)', async () => {
+  const { repo, priya, sunny, sunnyId, alex } = await setup();
+  await svc.sendMessage(repo, priya, { centreId: JESSE_KETCHUM_ID, childId: 'child-anya' }, 'Thank you for the update.', true, new Date(), true);
+  await svc.sendMessage(repo, priya, { centreId: JESSE_KETCHUM_ID, childId: 'child-anya' }, 'Typed myself.', false, new Date(), true);
+  const msgs = (await repo.getConversation(conversationKey(JESSE_KETCHUM_ID, 'child-anya')))!.messages;
+  assert.equal(msgs.at(-2)!.basedOnSimulatedData, true);
+  assert.equal(msgs.at(-1)!.basedOnSimulatedData, undefined); // not AI-assisted: no tag
+  void sunny; void sunnyId; void alex;
 });

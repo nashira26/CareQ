@@ -8,6 +8,7 @@ import {
   ApplicationStatus,
   ChatMessage,
   InAppNotification,
+  LicenceVerification,
   conversationKey,
 } from '../data/mockData';
 import type { ConcernStep, SupportRequest } from '../data/helpData';
@@ -177,25 +178,85 @@ export async function registerCentre(
   input: CentreFormInput,
   photoDataUrl: string | undefined,
   areas: Area[],
-  fsa: FsaCentroids
+  fsa: FsaCentroids,
+  /** From the server's open-data check (server/licence.ts); never from the browser. */
+  licenceVerified?: LicenceVerification
 ): Promise<string> {
   assertAllowed(actor.role === 'centre' && !actor.centreId, 'This account already manages a centre.');
   const errors = validateCentre(input, areas);
   const first = Object.values(errors)[0];
   if (first) throw new InputError(first);
   if (photoDataUrl && !/^data:image\/(jpeg|png|webp);base64,/.test(photoDataUrl)) throw new InputError('The photo must be an image.');
-  const centre = buildRegisteredCentre(input, photoDataUrl, areas, fsa, rid('c-self'));
+  const built = buildRegisteredCentre(input, photoDataUrl, areas, fsa, rid('c-self'));
+  const centre = licenceVerified ? { ...built, registration: { ...built.registration!, licenceVerified } } : built;
   await repo.insertCentre(centre);
   await repo.updateAccount(actor.accountId, { centreId: centre.id, centreName: centre.name });
   return centre.id;
 }
 
-export async function updateRequirements(repo: Repo, actor: Actor, centreId: string, requirements: string[], sources: Record<string, string>) {
+/** Where a confirmed requirement came from in a published document (policy reader "Load a published document"). */
+export interface RequirementCitationInput {
+  /** "Parent Handbook (March 2026), PDF p.13" */
+  citation: string;
+  sourceUrl?: string | null;
+}
+export interface ExtractedFromInput {
+  docTitle: string;
+  sourceUrl?: string | null;
+  sourceNote?: string | null;
+  retrieved?: string | null;
+}
+
+/**
+ * Confirmed requirements REPLACE the old ones together with their quotes, citations, links and the
+ * document they came from, so nothing stale is left (pasted text: no citations).
+ */
+export async function updateRequirements(
+  repo: Repo,
+  actor: Actor,
+  centreId: string,
+  requirements: string[],
+  sources: Record<string, string>,
+  citations: Record<string, RequirementCitationInput> = {},
+  extractedFrom?: ExtractedFromInput
+) {
   assertAllowed(canUpdateCentre(actor, centreId), 'You can only change your own centre.');
   const clean = Array.from(new Set(requirements.map((r) => r.trim()).filter(Boolean)));
+  const cited = clean.filter((r) => citations[r]?.citation?.trim());
   await repo.updateCentre(centreId, {
     requirements: clean,
     requirementSources: Object.fromEntries(clean.map((r) => [r, (sources[r] ?? '').trim()])),
+    requirementCitations: cited.length ? Object.fromEntries(cited.map((r) => [r, citations[r].citation.trim()])) : undefined,
+    requirementSourceUrls: cited.some((r) => citations[r].sourceUrl)
+      ? Object.fromEntries(cited.filter((r) => citations[r].sourceUrl).map((r) => [r, String(citations[r].sourceUrl)]))
+      : undefined,
+    requirementsExtractedFrom:
+      cited.length && extractedFrom?.docTitle
+        ? {
+            docTitle: extractedFrom.docTitle,
+            ...(extractedFrom.sourceUrl ? { sourceUrl: extractedFrom.sourceUrl } : {}),
+            ...(extractedFrom.sourceNote ? { sourceNote: extractedFrom.sourceNote } : {}),
+            retrieved: extractedFrom.retrieved || new Date().toISOString().slice(0, 10),
+          }
+        : undefined,
+  });
+}
+
+/** An uploaded document is recorded on the centre (self-registered centres only; the file itself is not kept). */
+export async function recordCentreDocument(
+  repo: Repo,
+  actor: Actor,
+  centreId: string,
+  doc: { docKey: string; docTitle: string; fileName: string; chunks: number; keywordOnly: number },
+  now = new Date()
+) {
+  assertAllowed(canUpdateCentre(actor, centreId), 'You can only change your own centre.');
+  const centre = await repo.getCentre(centreId);
+  if (!centre) throw new NotFoundError('Centre not found.');
+  assertAllowed(Boolean(centre.registration), 'Only self-registered centres can upload documents.');
+  const others = (centre.registration!.documents ?? []).filter((d) => d.docKey !== doc.docKey);
+  await repo.updateCentre(centreId, {
+    registration: { ...centre.registration!, documents: [...others, { ...doc, uploadedAt: now.toISOString() }] },
   });
 }
 
@@ -381,7 +442,9 @@ export async function sendMessage(
   target: { centreId: string; childId: string },
   text: string,
   aiAssisted: boolean,
-  now = new Date()
+  now = new Date(),
+  /** The AI draft used simulated application facts; kept only for demo (simulated) centres. */
+  fromSimulatedDraft = false
 ) {
   const body = text.trim().slice(0, 2000);
   if (!body) throw new InputError('Please write a message.');
@@ -410,6 +473,8 @@ export async function sendMessage(
     text: body,
     timestamp: `${longDate(now)} • ${now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`,
     aiAssisted,
+    // Demo centres' applications are simulated; a self-registered centre's are not
+    ...(aiAssisted && fromSimulatedDraft && !centre.registration ? { basedOnSimulatedData: true } : {}),
   };
   await repo.upsertConversation({
     key,

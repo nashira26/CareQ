@@ -15,8 +15,8 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { MongoClient } from 'mongodb';
 import { GoogleGenAI } from '@google/genai';
-import { PDFParse } from 'pdf-parse';
-import { PageText, TextChunk, chunkPages, cleanPages, htmlToText, selectSections, tooLittleText } from '../server/policyText';
+import { PageText, chunkPages, cleanPages, selectSections, tooLittleText } from '../server/policyText';
+import { embedInput, extractPages } from '../server/ingest';
 import { EMBED_DIMENSIONS, EMBED_MODEL, POLICY_CHUNKS, PolicyChunk, VECTOR_INDEX_NAME, normalise } from '../server/policyIndexConfig';
 
 const ROOT = process.cwd();
@@ -68,21 +68,9 @@ interface SummaryRow {
   skipped: string[];
 }
 
-// ---------------- Extraction ----------------
+// ---------------- Extraction (server/ingest.ts, shared with centre uploads) ----------------
 
-async function extract(filePath: string): Promise<PageText[]> {
-  if (/\.pdf$/i.test(filePath)) {
-    const parser = new PDFParse({ data: fs.readFileSync(filePath) });
-    try {
-      const result = await parser.getText();
-      return result.pages.map((p) => ({ page: p.num, text: p.text }));
-    } finally {
-      await parser.destroy();
-    }
-  }
-  if (/\.html?$/i.test(filePath)) return [{ page: null, text: htmlToText(fs.readFileSync(filePath, 'utf8')) }];
-  throw new Error(`Unsupported file type: ${path.basename(filePath)}`);
-}
+const extract = (filePath: string): Promise<PageText[]> => extractPages(path.basename(filePath), fs.readFileSync(filePath));
 
 // ---------------- Embeddings ----------------
 
@@ -170,8 +158,6 @@ async function embedBatch(ai: GoogleGenAI, texts: string[]): Promise<number[][]>
   }
 }
 
-/** What gets embedded: the document title and heading give the passage its context. Stored text stays as extracted. */
-const embedInput = (docTitle: string, c: TextChunk) => `${docTitle}\n${c.heading}\n\n${c.text}`;
 
 // ---------------- Vector index ----------------
 
@@ -273,7 +259,7 @@ async function main() {
       .toArray();
     const fresh: { k: string; v: number[] }[] = [];
     for (const c of stored) {
-      const k = cacheKey(embedInput(c.docTitle, { index: 0, heading: c.heading, page: c.page, text: c.text }));
+      const k = cacheKey(embedInput(c.docTitle, { heading: c.heading, text: c.text }));
       if (!cache.has(k) && c.embedding?.length === EMBED_DIMENSIONS) {
         cache.set(k, c.embedding);
         fresh.push({ k, v: c.embedding });

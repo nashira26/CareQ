@@ -59,7 +59,10 @@ export class MemoryRepo implements Repo {
   private patch<T extends { id: string }>(list: T[], id: string, patch: Partial<T>) {
     const i = list.findIndex((x) => x.id === id);
     if (i >= 0) {
-      list[i] = { ...list[i], ...copy(patch) };
+      const next = { ...list[i], ...copy(patch) };
+      // undefined removes the field, as $unset does in MongoRepo (e.g. stale requirement citations)
+      for (const [k, v] of Object.entries(patch)) if (v === undefined) delete (next as Record<string, unknown>)[k];
+      list[i] = next;
       this.onChange();
     }
   }

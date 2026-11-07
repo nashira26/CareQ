@@ -150,3 +150,23 @@ test('centre labels show who set each status', () => {
   assert.equal(centreStatusLabel({ ...base, status: 'missing', setBy: 'rules' }), 'Missing');
   assert.equal(centreStatusLabel({ ...base, status: 'needs parent check', setBy: 'rules', parentConfirmed: true }), 'Needs parent check · confirmed by parent');
 });
+
+test('Prepare with AI keeps each requirement\'s quote, citation and link from the centre (never from the model)', () => {
+  const cited = sanitizePrepareInput({
+    ...input,
+    requirements: [
+      { requirement: 'Child Admission Package', sourceSentence: 'review the Child Admission Package', citation: 'Parent Handbook (March 2026), PDF p.13', sourceUrl: 'https://www.toronto.ca/h.pdf' },
+      { requirement: 'Immunization record', sourceSentence: 'up-to-date immunization', citation: 'Parent Handbook (March 2026), PDF p.14', sourceUrl: 'javascript:alert(1)' },
+    ],
+  })!;
+  assert.equal(cited.requirements[1].sourceUrl, undefined); // only http(s) links
+  for (const result of [
+    prepareFallback(cited),
+    finalizePrepared(cited, { checklist: [{ requirement: 'Child Admission Package', status: 'missing', citation: 'Invented p.99', sourceUrl: 'https://evil.example' }] }),
+  ]) {
+    assert.equal(result.checklist[0].citation, 'Parent Handbook (March 2026), PDF p.13');
+    assert.equal(result.checklist[0].sourceUrl, 'https://www.toronto.ca/h.pdf');
+    assert.equal(result.checklist[0].sourceSentence, 'review the Child Admission Package');
+    assert.equal(result.checklist[1].citation, 'Parent Handbook (March 2026), PDF p.14');
+  }
+});

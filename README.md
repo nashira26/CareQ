@@ -111,13 +111,22 @@ Six Gemini tools run on the server (`server.ts`). The API key never reaches the 
 | Tool            | Endpoint                           | Guardrail                                                                        |
 | --------------- | ---------------------------------- | -------------------------------------------------------------------------------- |
 | Policy reader   | `/api/extract-policy-requirements` | Quotes the exact source sentence; centre confirms before parents see it          |
+| Policy reader (documents) | `/api/centres/:id/extract-from-documents` | Reads the centre's own indexed documents; every quote verified verbatim, with page and title; centre confirms |
 | Search parser   | `/api/parse-search`                | Turns the parent's words into criteria only; never infers anything about the family |
 | Result explainer| `/api/explain-results`             | Restates the ranking facts for the top 10; adds no new claims                    |
-| Message drafter | `/api/generate-message`            | Sender edits and approves                                                        |
+| Message drafter | `/api/generate-message`            | Facts from the application itself; handbook quote verified; sender edits and approves; tone check before sending |
 | Tone check      | `/api/check-tone`                  | Suggests only                                                                    |
 | Ask CareQ       | `/api/ask-careq`                   | Agent with two tools; cites a verified quote for every fact; says "I don't have that information" otherwise |
 
 If Gemini is unavailable, each tool falls back to a basic non-AI version.
+
+**Requirements from documents.** In the centre portal, *Policy & requirements → Load a published document* lists the documents indexed for that centre (its operator's handbook, or its own uploads) and suggests requirements (registration, admission, documents, waitlist rules) from the retrieved passages, each with a verbatim quote (checked like Ask CareQ's), page and document title. The centre edits and confirms; confirmed requirements replace the old ones together with their quotes, citations and links. Prepare with AI shows them on each checklist item ("From {document}, {page}" + link); the citations come from the centre's confirmed data, never from the model.
+
+**Centre sign-up.** A self-registered centre can upload its handbook or policy (PDF, HTML or Word .docx, up to 6 MB; `server/ingest.ts`, the same chunking as `npm run build:index`). Its passages are stored for that centre only (embedded if the Gemini quota allows, otherwise found by keyword search); the file itself is not kept. The real demo centres' simulated accounts can't upload. A centre is shown as "Licensed · verified against Ontario open data" only when its licence number **and** postal code (or a close name match) match the open data (`server/licence.ts`); otherwise "Self-registered · not verified".
+
+**Follow-up messages.** The draft uses the selected application's facts, loaded by the server (status, position and who reported it, the centre's estimate, dates), and a line from the centre's own handbook when retrieval finds one (e.g. next steps after an offer). A "Facts used" panel under the draft labels simulated values; the word never appears in the message. A message sent from such a draft shows "Based on simulated application data" to both sides.
+
+Live check: `npm run eval:docs -- http://localhost:3000` (Prepare with AI at two demo centres, a follow-up about Priya's Macaulay offer, and a new centre uploading a small fictional sample PDF; cleans up after itself).
 
 **Ask CareQ** (`server/askAgent.ts`) is a Gemini function-calling agent with exactly two tools: `search_documents(query)` (the published handbooks, the Ontario licensing manual and the Help FAQ; the centre filter is set by the server from the page the user is on, never by the model) and `get_my_application()` (a signed-in parent's own application at that centre; nothing for anonymous users or centre accounts). At most 2 tool calls and 15 s per question.
 

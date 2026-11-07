@@ -18,7 +18,14 @@ import { createDataApi } from './server/api';
 import { connectMongo, ensureIndexes, isEmpty, reseed, mongo, pingMongo, MongoRepo } from './server/db';
 import { AskCache, AskModelCall, AskUser, AppFact, askCacheKey, runAskAgent } from './server/askAgent';
 import { MemoryQueryStore, MongoQueryStore, RetrieverDeps, StoredChunk, geminiQueryEmbedder, memoryChunkSource, mongoChunkSource } from './server/retrieval';
-import type { AccountRecord } from './src/lib/world';
+import { actorOf, type AccountRecord } from './src/lib/world';
+import type { Centre } from './src/data/mockData';
+import { canReadApplication } from './src/lib/access';
+import { recordCentreDocument } from './src/lib/service';
+import { FollowUpContext, FOLLOW_UP_SCHEMA, buildFollowUpContext, fallbackFollowUp, finaliseFollowUp, findHandbookPassages, followUpPrompt } from './server/followUp';
+import { geminiDocEmbedder, ingestUpload } from './server/ingest';
+import { EXTRACT_SCHEMA, extractPrompt, fallbackCandidates, gatherRequirementChunks, verifyCandidates } from './server/requirementsFromDocs';
+import { POLICY_CHUNKS, PolicyChunk } from './server/policyIndexConfig';
 import { sessionAccount } from './server/auth';
 import { rateLimit, AI_LIMIT_PER_SESSION, AI_LIMIT_ANON_ASK, RATE_LIMIT_MESSAGE } from './server/rateLimit';
 import torontoAreas from './src/data/torontoAreas.json';
@@ -57,7 +64,7 @@ const modelsFor = (endpoint: string) => {
     backup: process.env[`GEMINI_BACKUP_MODEL_${key}`] || d.backup,
   };
 };
-const AI_ENDPOINTS = ['extract-policy-requirements', 'parse-search', 'explain-results', 'prepare-application', 'generate-message', 'check-tone', 'ask-careq'];
+const AI_ENDPOINTS = ['extract-policy-requirements', 'extract-from-documents', 'parse-search', 'explain-results', 'prepare-application', 'generate-message', 'check-tone', 'ask-careq'];
 
 // In-memory cache of successful Gemini answers, so repeated demo inputs answer instantly.
 const CACHE_TTL_MS = 30 * 60 * 1000;
@@ -592,79 +599,191 @@ ${JSON.stringify(input)}`,
     }
   });
 
-  // API 3: AI Message Drafting for Parent & Centre communication
+  // API 3: Follow-up message drafts (server/followUp.ts). Facts come from the application itself
+  // (mongo mode: loaded and access-checked here); a relevant handbook line is quoted and verified.
+  // The sender edits and approves; nothing is sent automatically. The tone check runs before sending.
   app.post('/api/generate-message', aiGuard('generate-message'), async (req: Request, res: Response) => {
-    const {
-      role = 'parent', // 'parent' | 'centre'
-      childName = 'Anya',
-      childAgeMonths = 22,
-      centreName = 'the centre',
-      applicationStatus = 'Submitted',
-      intent = 'general inquiry',
-      waitlistPosition,
-      customNote,
-    } = req.body;
+    const b = req.body ?? {};
+    const role: 'parent' | 'centre' = b.role === 'centre' ? 'centre' : 'parent';
+    const intent = typeof b.intent === 'string' && b.intent.trim() ? b.intent.trim().slice(0, 200) : 'general follow-up';
+    const account = res.locals.account as AccountRecord | undefined;
 
+    let ctx: FollowUpContext | null = null;
+    if (DATA_MODE === 'mongo' && mongo.db) {
+      const applicationId = typeof b.applicationId === 'string' ? b.applicationId.slice(0, 120) : '';
+      const repo = new MongoRepo(mongo.db);
+      const app = applicationId ? await repo.getApplication(applicationId) : null;
+      // Same rule as the data API: a parent only their own applications, a centre only its own
+      if (!app || !account || !canReadApplication(actorOf(account), app)) {
+        return res.status(404).json({ error: 'Application not found.' });
+      }
+      const centre = await repo.getCentre(app.centreId);
+      if (!centre) return res.status(404).json({ error: 'Centre not found.' });
+      ctx = buildFollowUpContext(app, centre, account.role === 'centre' ? 'centre' : 'parent', account.role === 'centre' ? centre.name : account.name, intent);
+    } else {
+      // Local mode: the browser holds the demo data, so the facts come from the request (bounded)
+      const s = (v: unknown, max = 120) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+      const position = Number(b.waitlistPosition);
+      ctx = buildFollowUpContext(
+        {
+          childName: s(b.childName, 60) || 'your child',
+          status: (s(b.applicationStatus, 30) || 'Submitted') as any,
+          waitlistPosition: Number.isFinite(position) && position > 0 ? position : undefined,
+          waitlistReportedBy: s(b.waitlistReportedBy) || undefined,
+          waitlistReportedDate: s(b.waitlistReportedDate, 40) || undefined,
+          waitlistEstimate: s(b.waitlistEstimate, 80) || undefined,
+          preferredStartDate: s(b.preferredStartDate, 40),
+          submittedAt: s(b.submittedAt, 40) || undefined,
+          careType: s(b.careType, 40),
+        },
+        { id: s(b.centreId, 80), name: s(b.centreName) || 'the centre', registration: b.selfRegistered ? ({} as any) : undefined },
+        role,
+        s(b.senderName, 60) || (role === 'centre' ? s(b.centreName) : 'Parent'),
+        intent
+      );
+    }
+
+    const passages = await findHandbookPassages(ctx, getRetrieverDeps());
     try {
-      const isParent = role === 'parent';
-      const prompt = isParent
-        ? `You are an AI communication assistant for Priya, mother of ${childName} (${childAgeMonths} months old).
-Priya is messaging the child care administration at "${centreName}".
-The current application status is "${applicationStatus}".
-Intent of message: "${intent}".
-${customNote ? `Additional parent note: "${customNote}"` : ''}
-
-Draft a warm, polite, professional message (2-4 sentences) that Priya can review, edit, and approve before sending to the centre.
-Return only the message text without quotes.`
-        : `You are an AI communication assistant for the administrative staff at "${centreName}" (licensed Ontario child care).
-The centre is messaging the parent of ${childName} (${childAgeMonths} months old).
-The child's application status is "${applicationStatus}"${waitlistPosition ? ` (Waitlist position #${waitlistPosition})` : ''}.
-Intent / message purpose: "${intent}".
-${customNote ? `Centre staff note: "${customNote}"` : ''}
-
-Draft a clear, courteous, and official message (2-4 sentences) on behalf of the centre that staff can review, edit, and approve before sending to the parent.
-Return only the message text without quotes.`;
-
       const { response, modelUsed } = await generateWithTimeout('generate-message', {
-        contents: prompt,
+        contents: followUpPrompt(ctx, passages),
         config: {
           systemInstruction:
-            'You are an expert communicator for Ontario child care admissions. Write clear, friendly, and practical messages.',
+            'You draft clear, friendly, practical messages for Ontario child care admissions. You only use the facts and passages given, and the sender approves everything.',
+          temperature: 0.2,
+          responseMimeType: 'application/json',
+          responseSchema: FOLLOW_UP_SCHEMA,
         },
       });
-
-      const draftMessage = (response.text || '').trim();
-      return res.json({ success: true, aiMode: 'gemini', modelUsed, draftMessage });
+      const result = finaliseFollowUp(ctx, passages, JSON.parse(response.text || '{}'));
+      if (!result) throw new Error('draft rejected: empty message or unverified handbook quote');
+      return res.json({ success: true, aiMode: 'gemini', modelUsed, ...result });
     } catch (err: unknown) {
-      console.warn('Gemini message generation error; using template fallback:', err);
-
-      let fallbackMessage = '';
-      if (role === 'parent') {
-        if (intent.toLowerCase().includes('waitlist')) {
-          fallbackMessage = `Hello, I am checking in regarding Anya's application for the Toddler room starting March 2027. Could you share an update on our current queue position and estimated timeline? Thank you!`;
-        } else if (intent.toLowerCase().includes('tour')) {
-          fallbackMessage = `Hello ${centreName} team, we would love to schedule a brief morning tour of the toddler classroom facilities ahead of our desired March 2027 start date. Please let us know when tours are available.`;
-        } else {
-          fallbackMessage = `Hello ${centreName} team, I am following up on Anya's toddler application. Please let us know if any additional documentation or health verification is required at this stage.`;
-        }
-      } else {
-        if (applicationStatus === 'Waitlisted') {
-          fallbackMessage = `Dear ${childName}'s family, thank you for your patience. Your child is currently #${waitlistPosition || 5} on our active Toddler intake waitlist. We will notify you immediately once a placement spot becomes available.`;
-        } else if (applicationStatus === 'Offer') {
-          fallbackMessage = `Dear ${childName}'s family, we are pleased to offer you a licensed Toddler placement at ${centreName}! Please review the offer in your CareQ portal within 48 hours to confirm enrolment.`;
-        } else if (applicationStatus === 'Under review') {
-          fallbackMessage = `Hello, our intake committee is currently reviewing ${childName}'s application and verification documents. We will update you shortly regarding placement availability.`;
-        } else {
-          fallbackMessage = `Hello, thank you for submitting ${childName}'s application to ${centreName}. We have received your documentation and your application is active in our intake queue.`;
-        }
-      }
-
+      console.warn('Gemini generate-message error; using template fallback:', (err as Error)?.message ?? err);
       return res.json({
         success: true,
         aiMode: 'fallback',
         modelUsed: null,
         fallbackReason: fallbackReasonFor(err),
-        draftMessage: fallbackMessage,
+        ...fallbackFollowUp(ctx, passages),
+      });
+    }
+  });
+
+  // ---------------- Centre documents: list, upload (self-registered centres), requirements from documents ----------------
+
+  /** The signed-in centre account for this centre, or a 403/400 already sent. */
+  const ownCentre = async (req: Request, res: Response): Promise<{ account: AccountRecord; centre: Centre } | null> => {
+    const account = res.locals.account as AccountRecord | undefined;
+    if (DATA_MODE !== 'mongo' || !mongo.db) {
+      res.status(400).json({ error: 'Documents are available with the shared database (DATA_MODE=mongo).' });
+      return null;
+    }
+    if (!account || account.role !== 'centre' || account.centreId !== req.params.id) {
+      res.status(403).json({ error: 'You can only manage your own centre.' });
+      return null;
+    }
+    const centre = await new MongoRepo(mongo.db).getCentre(req.params.id);
+    if (!centre) {
+      res.status(404).json({ error: 'Centre not found.' });
+      return null;
+    }
+    return { account, centre };
+  };
+
+  // The documents indexed for this centre (its operator's published handbook, or its own uploads)
+  app.get('/api/centres/:id/documents', aiGuard('centre-documents'), async (req: Request, res: Response) => {
+    const own = await ownCentre(req, res);
+    if (!own) return;
+    const chunks = (await getRetrieverDeps().source.all().catch(() => [] as StoredChunk[])).filter(
+      (c) => c.scope === 'operator' && c.appliesToCentreIds.includes(own.centre.id)
+    );
+    const docs = new Map<string, { docKey: string; docTitle: string; operatorName: string; sourceUrl: string | null; sourceNote: string | null; pages: Set<number>; chunks: number; uploaded: boolean }>();
+    for (const c of chunks) {
+      const d =
+        docs.get(c.docKey) ??
+        { docKey: c.docKey, docTitle: c.docTitle, operatorName: c.operatorName, sourceUrl: c.sourceUrl, sourceNote: c.sourceNote, pages: new Set<number>(), chunks: 0, uploaded: c.operatorId.startsWith('self-') };
+      if (c.page != null) d.pages.add(c.page);
+      d.chunks++;
+      docs.set(c.docKey, d);
+    }
+    res.json({
+      documents: [...docs.values()].map(({ pages, ...d }) => ({ ...d, pages: pages.size })),
+      canUpload: Boolean(own.centre.registration),
+    });
+  });
+
+  // Upload a document (self-registered centres only): extract, chunk, embed if the quota allows, store
+  app.post('/api/centres/:id/documents', aiGuard('upload-document'), async (req: Request, res: Response) => {
+    const own = await ownCentre(req, res);
+    if (!own) return;
+    if (!own.centre.registration) {
+      return res.status(403).json({ error: "Only self-registered centres can upload documents. This centre's published handbook is already indexed." });
+    }
+    const { fileName, title, dataBase64 } = req.body ?? {};
+    if (typeof fileName !== 'string' || typeof dataBase64 !== 'string' || !fileName.trim()) {
+      return res.status(400).json({ error: 'Please choose a file.' });
+    }
+    const started = Date.now();
+    try {
+      const result = await ingestUpload(
+        {
+          centreId: own.centre.id,
+          centreName: own.centre.name,
+          fileName: fileName.slice(0, 160),
+          title: typeof title === 'string' ? title : '',
+          data: Buffer.from(dataBase64, 'base64'),
+        },
+        mongo.db!.collection<PolicyChunk>(POLICY_CHUNKS),
+        process.env.GEMINI_API_KEY ? geminiDocEmbedder(ai) : undefined
+      );
+      getRetrieverDeps().source.invalidate?.();
+      await recordCentreDocument(new MongoRepo(mongo.db!), actorOf(own.account), own.centre.id, {
+        docKey: result.docKey,
+        docTitle: result.docTitle,
+        fileName: fileName.slice(0, 160),
+        chunks: result.chunks,
+        keywordOnly: result.keywordOnly,
+      });
+      console.log(`[upload] ${own.centre.id}: ${result.docKey} · ${result.chunks} chunks (${result.keywordOnly} keyword-only) · ${Date.now() - started}ms`);
+      return res.status(201).json({ success: true, ...result });
+    } catch (e) {
+      return res.status(400).json({ error: (e as Error).message });
+    }
+  });
+
+  // Requirements from the centre's documents (retrieved chunks), each with a verified verbatim quote.
+  // The centre reviews, edits and confirms before anything is published.
+  app.post('/api/centres/:id/extract-from-documents', aiGuard('extract-from-documents'), async (req: Request, res: Response) => {
+    const own = await ownCentre(req, res);
+    if (!own) return;
+    const docKey = typeof req.body?.docKey === 'string' ? req.body.docKey.slice(0, 200) : undefined;
+    const chunks = await gatherRequirementChunks(own.centre.id, getRetrieverDeps(), docKey);
+    if (!chunks.length) {
+      return res.json({ success: true, aiMode: 'fallback', modelUsed: null, requirements: [], chunksRead: 0, notice: 'No published documents for this centre yet.' });
+    }
+    try {
+      const { response, modelUsed } = await generateWithTimeout('extract-from-documents', {
+        contents: extractPrompt(chunks),
+        config: {
+          systemInstruction: 'You extract admission requirements from published child care documents. You copy quotes exactly and never invent requirements.',
+          temperature: 0,
+          responseMimeType: 'application/json',
+          responseSchema: EXTRACT_SCHEMA,
+        },
+      });
+      const requirements = verifyCandidates(JSON.parse(response.text || '[]'), chunks);
+      if (!requirements.length) throw new Error('no requirement with a verified quote');
+      return res.json({ success: true, aiMode: 'gemini', modelUsed, requirements, chunksRead: chunks.length });
+    } catch (err) {
+      console.warn('extract-from-documents: using the sentence fallback:', (err as Error)?.message ?? err);
+      return res.json({
+        success: true,
+        aiMode: 'fallback',
+        modelUsed: null,
+        fallbackReason: fallbackReasonFor(err),
+        requirements: fallbackCandidates(chunks),
+        chunksRead: chunks.length,
       });
     }
   });

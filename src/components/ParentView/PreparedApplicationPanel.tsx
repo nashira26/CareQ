@@ -36,9 +36,12 @@ export function buildPrepareInput(app: Application, centre: Centre, profile: Par
     preferredStartDate: app.preferredStartDate,
     parentNotes: app.parentNotes ?? '',
     documents: Object.entries(app.uploadedDocuments ?? {}).map(([attachedTo, d]) => ({ fileName: d.fileName, attachedTo })),
+    // Confirmed requirements with their quotes, page and link (the checklist shows where each comes from)
     requirements: centre.requirements.map((requirement) => ({
       requirement,
       sourceSentence: centre.requirementSources?.[requirement] ?? 'No source sentence recorded by the centre.',
+      citation: centre.requirementCitations?.[requirement],
+      sourceUrl: centre.requirementSourceUrls?.[requirement] ?? (centre.requirementCitations?.[requirement] ? centre.requirementsExtractedFrom?.sourceUrl : undefined),
     })),
   })!;
 }
@@ -213,9 +216,17 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
                   <blockquote className="flex gap-2 border-l-2 border-[#D9E4D3] pl-2.5 text-[11px] italic text-[#5B6B66]">
                     <Quote className="w-3 h-3 shrink-0 mt-0.5 text-[#9DBB86]" />
                     <span>
-                      {c.sourceSentence}
-                      {centre.requirementCitations?.[c.requirement] && (
-                        <span className="not-italic text-[#7A8A84]"> ({centre.requirementCitations[c.requirement]})</span>
+                      “{c.sourceSentence}”
+                      {(c.citation || centre.requirementCitations?.[c.requirement]) && (
+                        <span className="not-italic text-[#7A8A84]"> From {c.citation || centre.requirementCitations![c.requirement]}</span>
+                      )}
+                      {c.sourceUrl && (
+                        <>
+                          {' · '}
+                          <a href={c.sourceUrl} target="_blank" rel="noreferrer" className="not-italic font-semibold text-[#0B4A52] hover:underline">
+                            Source
+                          </a>
+                        </>
                       )}
                     </span>
                   </blockquote>

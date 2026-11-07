@@ -178,6 +178,13 @@ export function approximateLocation(
  * Builds a self-registered centre from the registration form. Location is recomputed here
  * (neighbourhood or postal-code area, never a geocoder), so the server never trusts client coordinates.
  */
+/**
+ * Label for a self-registered centre: "Licensed · verified against Ontario open data" only when the
+ * server matched its licence number AND postal code (or a close name) to the open data.
+ */
+export const licenceLabel = (c: { registration?: { licenceVerified?: unknown } }) =>
+  c.registration?.licenceVerified ? 'Licensed · verified against Ontario open data' : 'Self-registered · not verified';
+
 export function buildRegisteredCentre(
   input: CentreFormInput,
   photoDataUrl: string | undefined,

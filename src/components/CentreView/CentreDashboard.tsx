@@ -43,6 +43,24 @@ import {
 interface ExtractedRequirement {
   requirement: string;
   sourceSentence: string;
+  /** Set when the requirement comes from a published document (verified verbatim quote). */
+  docKey?: string;
+  docTitle?: string;
+  page?: string;
+  sourceUrl?: string | null;
+  sourceNote?: string | null;
+}
+
+/** A document indexed for this centre (GET /api/centres/:id/documents). */
+interface CentreDocument {
+  docKey: string;
+  docTitle: string;
+  operatorName: string;
+  sourceUrl: string | null;
+  sourceNote: string | null;
+  pages: number;
+  chunks: number;
+  uploaded: boolean;
 }
 
 interface CentreDashboardProps {
@@ -57,7 +75,9 @@ interface CentreDashboardProps {
   onUpdateCentreRequirements: (
     centreId: string,
     newRequirements: string[],
-    requirementSources?: Record<string, string>
+    requirementSources?: Record<string, string>,
+    citations?: Record<string, { citation: string; sourceUrl?: string | null }>,
+    extractedFrom?: { docTitle: string; sourceUrl?: string | null; sourceNote?: string | null }
   ) => void;
   onOpenConversation: (application: Application) => void;
   requests: SupportRequest[];
@@ -68,6 +88,9 @@ interface CentreDashboardProps {
   /** Policy text to read with AI as soon as the policy tab opens (after centre registration). */
   autoReadPolicyText?: string | null;
   onAutoReadPolicyStarted?: () => void;
+  /** A document to read with AI as soon as the policy tab opens (after a centre uploads one at sign-up). */
+  autoReadDocKey?: string | null;
+  onAutoReadDocStarted?: () => void;
 }
 
 export const CentreDashboard: React.FC<CentreDashboardProps> = ({
@@ -83,6 +106,8 @@ export const CentreDashboard: React.FC<CentreDashboardProps> = ({
   onTabChange,
   autoReadPolicyText,
   onAutoReadPolicyStarted,
+  autoReadDocKey,
+  onAutoReadDocStarted,
 }) => {
   // Centre View internal tabs: 'applications' | 'policy' | 'help'
   const [internalCentreTab, setInternalCentreTab] = useState<'applications' | 'policy' | 'help'>('applications');
@@ -126,6 +151,27 @@ A signed Photography & Media Consent Form is required for classroom developmenta
   const [policyUpdateSuccess, setPolicyUpdateSuccess] = useState<boolean>(false);
   const [extractAiMode, setExtractAiMode] = useState<AiMode | null>(null);
   const [aiNotice, setAiNotice] = useState<string | null>(null);
+
+  // "Load a published document": documents indexed for this centre (shared database only; null = unavailable)
+  const [centreDocs, setCentreDocs] = useState<CentreDocument[] | null>(null);
+  const [selectedDocKey, setSelectedDocKey] = useState<string>('');
+  const [docsReloadKey, setDocsReloadKey] = useState(0);
+  useEffect(() => {
+    if (centreTab !== 'policy') return;
+    let cancelled = false;
+    fetch(`/api/centres/${encodeURIComponent(singleCentre.id)}/documents`, { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { documents?: CentreDocument[] } | null) => {
+        if (cancelled) return;
+        const docs = data?.documents ?? null;
+        setCentreDocs(docs);
+        if (docs?.length) setSelectedDocKey((k) => (docs.some((d) => d.docKey === k) ? k : docs[0].docKey));
+      })
+      .catch(() => !cancelled && setCentreDocs(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [centreTab, singleCentre.id, docsReloadKey]);
 
   // Applications specifically for this single centre
   // Only applications the parent has sent: drafts are never visible to the centre
@@ -181,6 +227,49 @@ A signed Photography & Media Consent Form is required for classroom developmenta
     setIsExtracting(false);
   };
 
+  // Requirements from a published document: retrieved passages, each with a verified quote, page and title
+  const handleExtractFromDocument = async (docKey: string) => {
+    if (!docKey) return;
+    setIsExtracting(true);
+    setPolicyUpdateSuccess(false);
+    setAiNotice(null);
+    const result = await aiPost<{
+      success?: boolean;
+      aiMode?: AiMode;
+      notice?: string;
+      requirements?: { requirement: string; quote: string; docKey: string; docTitle: string; page: string; sourceUrl: string | null; sourceNote: string | null }[];
+    }>(`/api/centres/${encodeURIComponent(singleCentre.id)}/extract-from-documents`, { docKey });
+    if (result.ok && result.data.success) {
+      const reqs = result.data.requirements ?? [];
+      setExtractedRequirements(
+        reqs.map((r) => ({
+          requirement: r.requirement,
+          sourceSentence: r.quote,
+          docKey: r.docKey,
+          docTitle: r.docTitle,
+          page: r.page,
+          sourceUrl: r.sourceUrl,
+          sourceNote: r.sourceNote,
+        }))
+      );
+      setExtractAiMode(result.data.aiMode ?? null);
+      if (!reqs.length) setAiNotice(result.data.notice ?? 'No requirements with a quote were found in this document. You can paste your policy instead.');
+    } else if (!result.ok) {
+      setAiNotice(isUserFacingAiError(result.status) ? result.message : 'Could not read this document right now.');
+    }
+    setIsExtracting(false);
+  };
+
+  // After a document upload at sign-up: read it with AI once (the centre still confirms)
+  useEffect(() => {
+    if (!autoReadDocKey) return;
+    setSelectedDocKey(autoReadDocKey);
+    setDocsReloadKey((n) => n + 1);
+    onAutoReadDocStarted?.();
+    handleExtractFromDocument(autoReadDocKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoReadDocKey]);
+
   // After registration: fill in the centre's own policy and read it with AI once (the centre still confirms)
   useEffect(() => {
     if (!autoReadPolicyText) return;
@@ -201,7 +290,15 @@ A signed Photography & Media Consent Form is required for classroom developmenta
         .filter((r) => r.requirement.trim())
         .map((r) => [r.requirement.trim(), r.sourceSentence.trim()])
     );
-    onUpdateCentreRequirements(singleCentre.id, requirementTitles, requirementSources);
+    // Requirements from a published document keep their page, document title and link
+    const cited = extractedRequirements.filter((r) => r.requirement.trim() && r.docTitle);
+    const citations = Object.fromEntries(
+      cited.map((r) => [r.requirement.trim(), { citation: `${r.docTitle}, ${r.page}`, sourceUrl: r.sourceUrl ?? null }])
+    );
+    const extractedFrom = cited[0]
+      ? { docTitle: cited[0].docTitle!, sourceUrl: cited[0].sourceUrl ?? null, sourceNote: cited[0].sourceNote ?? null }
+      : undefined;
+    onUpdateCentreRequirements(singleCentre.id, requirementTitles, requirementSources, citations, extractedFrom);
     setPolicyUpdateSuccess(true);
     setLastActionMessage(
       `Successfully updated ${singleCentre.name}'s active requirements to ${requirementTitles.length} items.`
@@ -698,8 +795,55 @@ A signed Photography & Media Consent Form is required for classroom developmenta
           <PageHeader
             eyebrow="Policy & requirements"
             title="One policy. One checklist parents can trust."
-            subtitle="Paste your admission policy. AI finds each requirement and quotes the sentence it came from. Nothing reaches parents until you confirm."
+            subtitle="Load a published document or paste your admission policy. AI finds each requirement and quotes the sentence it came from. Nothing reaches parents until you confirm."
           />
+
+          {/* Load a published document (documents indexed for this centre) */}
+          {centreDocs && (
+            <Card className="p-6 sm:p-7 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-lg font-bold text-[#173F42]">Load a published document</h3>
+                <span className="text-[11px] text-[#7A8A84]">Each requirement keeps its exact quote, page and document</span>
+              </div>
+              {centreDocs.length === 0 ? (
+                <p className="text-xs text-[#7A8A84]">
+                  No published documents for this centre yet.
+                  {singleCentre.registration ? ' Upload your handbook when you register, or paste your policy below.' : ' Paste your policy below.'}
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {centreDocs.map((d) => (
+                    <label key={d.docKey} className="flex items-start gap-2.5 rounded-xl border border-[#E7E4DA] p-3 cursor-pointer hover:bg-[#FAF9F4]">
+                      <input
+                        type="radio"
+                        name="centre-doc"
+                        className="mt-1 accent-[#0B4A52]"
+                        checked={selectedDocKey === d.docKey}
+                        onChange={() => setSelectedDocKey(d.docKey)}
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-[#173F42]">{d.docTitle}</span>
+                        <span className="block text-[11px] text-[#7A8A84]">
+                          {d.operatorName} · {d.pages ? `${d.pages} pages` : 'web page'} · {d.chunks} passages
+                          {d.uploaded ? ' · uploaded by your centre, not verified' : ''}
+                          {d.sourceNote && !d.uploaded && d.sourceNote !== 'Exact file' ? ` · ${d.sourceNote}` : ''}
+                        </span>
+                        {d.sourceUrl && (
+                          <a href={d.sourceUrl} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-[#0B4A52] hover:underline">
+                            Source
+                          </a>
+                        )}
+                      </span>
+                    </label>
+                  ))}
+                  <PrimaryButton onClick={() => handleExtractFromDocument(selectedDocKey)} disabled={isExtracting || !selectedDocKey} className="h-11">
+                    <Sparkles className="w-4 h-4 mr-1.5" />
+                    <span>{isExtracting ? 'Reading the document…' : 'Find requirements in this document'}</span>
+                  </PrimaryButton>
+                </div>
+              )}
+            </Card>
+          )}
 
           {/* 2. Grid lg:grid-cols-2 gap-6 */}
           <div className="grid lg:grid-cols-2 gap-6 items-start">
@@ -839,9 +983,19 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                           {/* Source sentence quote block */}
                           <div className="border-l-2 border-[#C9DCC2] pl-3 text-xs italic text-[#5B6B66] mt-2">
                             <Eyebrow className="text-[10px] not-italic mb-0.5">
-                              From your policy
+                              {item.docTitle ? `From ${item.docTitle}, ${item.page}` : 'From your policy'}
                             </Eyebrow>
                             <span>"{item.sourceSentence}"</span>
+                            {item.docTitle && (item.sourceUrl || item.sourceNote) && (
+                              <span className="block not-italic text-[10px] text-[#7A8A84] mt-0.5">
+                                {item.sourceUrl && (
+                                  <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="font-semibold text-[#0B4A52] hover:underline">
+                                    Source
+                                  </a>
+                                )}
+                                {item.sourceNote && item.sourceNote !== 'Exact file' && <span>{item.sourceUrl ? ' · ' : ''}{item.sourceNote}</span>}
+                              </span>
+                            )}
                           </div>
                         </div>
                       );

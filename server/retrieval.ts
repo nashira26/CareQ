@@ -176,6 +176,8 @@ export interface ChunkSource {
   all(): Promise<StoredChunk[]>;
   /** Atlas Vector Search; throws when unavailable (local mode, index missing). */
   vectorSearch?(queryVector: number[], filter: object | undefined, limit: number): Promise<(StoredChunk & { score: number })[]>;
+  /** Forget cached chunks (after a centre uploads a document). */
+  invalidate?(): void;
 }
 
 /** Chunks from MongoDB, cached in memory for a few minutes; Atlas Vector Search when the index exists. */
@@ -188,6 +190,9 @@ export function mongoChunkSource(db: Db, ttlMs = 10 * 60_000): ChunkSource {
       const chunks = (await coll.find({}, { projection: { _id: 0 } }).toArray()) as StoredChunk[];
       cache = { at: Date.now(), chunks };
       return chunks;
+    },
+    invalidate() {
+      cache = null;
     },
     async vectorSearch(queryVector, filter, limit) {
       return (await coll

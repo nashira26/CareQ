@@ -12,6 +12,7 @@ import * as svc from '../src/lib/service';
 import { actorOf, AccountRecord, Actor } from '../src/lib/world';
 import { CHILD_CARE_TYPES } from '../src/lib/family';
 import type { Area, FsaCentroids } from '../src/lib/rankCentres';
+import { verifyLicence } from './licence';
 
 // ---------------- Schemas ----------------
 
@@ -54,6 +55,8 @@ const preparedDraftSchema = z.object({
         sourceSentence: str(400),
         status: z.enum(['ready', 'missing', 'needs parent check']),
         matchedDocument: str(120).optional(),
+        citation: str(240).optional(),
+        sourceUrl: str(500).optional(),
         setBy: z.enum(['ai', 'rules', 'parent']),
         parentConfirmed: z.boolean().optional(),
       })
@@ -79,7 +82,14 @@ export const schemas = {
   login: z.object({ role, email: str(200), password: str(200) }),
   onboarding: z.object({ children: z.array(childSchema).min(1).max(8) }),
   registerCentre: z.object({ form: centreFormSchema, photoDataUrl: z.string().max(1_500_000).optional() }),
-  requirements: z.object({ requirements: z.array(str(120)).max(30), sources: z.record(z.string(), str(400)) }),
+  requirements: z.object({
+    requirements: z.array(str(120)).max(30),
+    sources: z.record(z.string(), str(400)),
+    citations: z.record(z.string(), z.object({ citation: str(240), sourceUrl: str(500).nullable().optional() })).optional(),
+    extractedFrom: z
+      .object({ docTitle: str(200), sourceUrl: str(500).nullable().optional(), sourceNote: str(300).nullable().optional(), retrieved: str(20).nullable().optional() })
+      .optional(),
+  }),
   createDraft: z.object({ centreId: str(80) }),
   draftChange: z.object({ change: draftChangeSchema }),
   accept: z.object({ withdrawOthers: z.boolean() }),
@@ -88,7 +98,7 @@ export const schemas = {
     waitlistPosition: z.number().int().min(1).max(10000).optional(),
     waitlistEstimate: str(80).optional(),
   }),
-  message: z.object({ centreId: str(80), childId: str(80), text: str(2000).min(1), aiAssisted: z.boolean() }),
+  message: z.object({ centreId: str(80), childId: str(80), text: str(2000).min(1), aiAssisted: z.boolean(), fromSimulatedDraft: z.boolean().optional() }),
   markRead: z.object({ ids: z.union([z.literal('all'), z.array(str(120)).max(500)]) }),
   supportRequest: z.object({
     type: z.enum(['contact', 'tech_support', 'concern']),
@@ -208,13 +218,14 @@ export function createDataApi(ctx: Ctx): Router {
   r.post('/centres/register', ...act(async (req, res) => {
     const b = body(schemas.registerCentre, req, res);
     if (!b) return;
-    await svc.registerCentre(repo(), req.actor!, b.form, b.photoDataUrl, ctx.areas, ctx.fsa);
+    const licenceVerified = verifyLicence({ licenceNumber: b.form.licenceNumber, postalCode: b.form.postalCode, name: b.form.name });
+    await svc.registerCentre(repo(), req.actor!, b.form, b.photoDataUrl, ctx.areas, ctx.fsa, licenceVerified);
     res.status(201).json(await snapshotFor(req));
   }));
   r.put('/centres/:id/requirements', ...act(async (req, res) => {
     const b = body(schemas.requirements, req, res);
     if (!b) return;
-    await svc.updateRequirements(repo(), req.actor!, req.params.id, b.requirements, b.sources);
+    await svc.updateRequirements(repo(), req.actor!, req.params.id, b.requirements, b.sources, b.citations ?? {}, b.extractedFrom);
     res.json(await snapshotFor(req));
   }));
 
@@ -254,7 +265,7 @@ export function createDataApi(ctx: Ctx): Router {
   r.post('/messages', ...act(async (req, res) => {
     const b = body(schemas.message, req, res);
     if (!b) return;
-    await svc.sendMessage(repo(), req.actor!, { centreId: b.centreId, childId: b.childId }, b.text, b.aiAssisted);
+    await svc.sendMessage(repo(), req.actor!, { centreId: b.centreId, childId: b.childId }, b.text, b.aiAssisted, new Date(), b.fromSimulatedDraft ?? false);
     res.json(await snapshotFor(req));
   }));
   r.post('/notifications/read', ...act(async (req, res) => {

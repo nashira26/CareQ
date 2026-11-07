@@ -7,7 +7,7 @@
 import type { ApplicationStatus } from '../data/mockData';
 import type { SupportRequest } from '../data/helpData';
 import type { CentreFormInput, Child } from './family';
-import type { DraftChange } from './service';
+import type { DraftChange, ExtractedFromInput, RequirementCitationInput } from './service';
 import * as svc from './service';
 import { MemoryRepo } from './repo';
 import { AccountRecord, Snapshot, actorOf, buildSeedWorld } from './world';
@@ -36,14 +36,20 @@ export interface DemoStore {
   logOut(): Promise<Snapshot>;
   completeOnboarding(children: Child[]): Promise<Snapshot>;
   registerCentre(form: CentreFormInput, photoDataUrl?: string): Promise<Snapshot>;
-  updateRequirements(centreId: string, requirements: string[], sources: Record<string, string>): Promise<Snapshot>;
+  updateRequirements(
+    centreId: string,
+    requirements: string[],
+    sources: Record<string, string>,
+    citations?: Record<string, RequirementCitationInput>,
+    extractedFrom?: ExtractedFromInput
+  ): Promise<Snapshot>;
   createDraft(centreId: string): Promise<{ id: string; snapshot: Snapshot }>;
   updateDraft(id: string, change: DraftChange): Promise<Snapshot>;
   submit(id: string): Promise<Snapshot>;
   withdraw(id: string): Promise<Snapshot>;
   acceptOffer(id: string, withdrawOthers: boolean): Promise<Snapshot>;
   setStatus(id: string, status: CentreStatus, waitlistPosition?: number, waitlistEstimate?: string): Promise<Snapshot>;
-  sendMessage(target: { centreId: string; childId: string }, text: string, aiAssisted: boolean): Promise<Snapshot>;
+  sendMessage(target: { centreId: string; childId: string }, text: string, aiAssisted: boolean, fromSimulatedDraft?: boolean): Promise<Snapshot>;
   markRead(ids: string[] | 'all'): Promise<Snapshot>;
   createSupportRequest(input: SupportInput): Promise<Snapshot>;
   advanceConcern(id: string): Promise<Snapshot>;
@@ -76,8 +82,13 @@ export class ApiStore implements DemoStore {
   logOut = () => call<Snapshot>('POST', '/auth/logout');
   completeOnboarding = (children: Child[]) => call<Snapshot>('POST', '/onboarding', { children });
   registerCentre = (form: CentreFormInput, photoDataUrl?: string) => call<Snapshot>('POST', '/centres/register', { form, photoDataUrl });
-  updateRequirements = (centreId: string, requirements: string[], sources: Record<string, string>) =>
-    call<Snapshot>('PUT', `/centres/${encodeURIComponent(centreId)}/requirements`, { requirements, sources });
+  updateRequirements = (
+    centreId: string,
+    requirements: string[],
+    sources: Record<string, string>,
+    citations?: Record<string, RequirementCitationInput>,
+    extractedFrom?: ExtractedFromInput
+  ) => call<Snapshot>('PUT', `/centres/${encodeURIComponent(centreId)}/requirements`, { requirements, sources, citations, extractedFrom });
   createDraft = (centreId: string) => call<{ id: string; snapshot: Snapshot }>('POST', '/applications', { centreId });
   updateDraft = (id: string, change: DraftChange) => call<Snapshot>('PATCH', `/applications/${encodeURIComponent(id)}/draft`, { change });
   submit = (id: string) => call<Snapshot>('POST', `/applications/${encodeURIComponent(id)}/submit`);
@@ -85,8 +96,8 @@ export class ApiStore implements DemoStore {
   acceptOffer = (id: string, withdrawOthers: boolean) => call<Snapshot>('POST', `/applications/${encodeURIComponent(id)}/accept`, { withdrawOthers });
   setStatus = (id: string, status: CentreStatus, waitlistPosition?: number, waitlistEstimate?: string) =>
     call<Snapshot>('POST', `/applications/${encodeURIComponent(id)}/status`, { status, waitlistPosition, waitlistEstimate });
-  sendMessage = (target: { centreId: string; childId: string }, text: string, aiAssisted: boolean) =>
-    call<Snapshot>('POST', '/messages', { ...target, text, aiAssisted });
+  sendMessage = (target: { centreId: string; childId: string }, text: string, aiAssisted: boolean, fromSimulatedDraft = false) =>
+    call<Snapshot>('POST', '/messages', { ...target, text, aiAssisted, fromSimulatedDraft });
   markRead = (ids: string[] | 'all') => call<Snapshot>('POST', '/notifications/read', { ids });
   createSupportRequest = (input: SupportInput) => call<Snapshot>('POST', '/support-requests', input);
   advanceConcern = (id: string) => call<Snapshot>('POST', `/support-requests/${encodeURIComponent(id)}/advance`);
@@ -181,8 +192,13 @@ export class LocalStore implements DemoStore {
   completeOnboarding = (children: Child[]) => this.run((r, a) => svc.completeOnboarding(r, actorOf(a), children));
   registerCentre = (form: CentreFormInput, photoDataUrl?: string) =>
     this.run((r, a) => svc.registerCentre(r, actorOf(a), form, photoDataUrl, AREAS, FSA));
-  updateRequirements = (centreId: string, requirements: string[], sources: Record<string, string>) =>
-    this.run((r, a) => svc.updateRequirements(r, actorOf(a), centreId, requirements, sources));
+  updateRequirements = (
+    centreId: string,
+    requirements: string[],
+    sources: Record<string, string>,
+    citations?: Record<string, RequirementCitationInput>,
+    extractedFrom?: ExtractedFromInput
+  ) => this.run((r, a) => svc.updateRequirements(r, actorOf(a), centreId, requirements, sources, citations, extractedFrom));
   async createDraft(centreId: string) {
     let id = '';
     const snapshot = await this.run(async (r, a) => {
@@ -196,8 +212,8 @@ export class LocalStore implements DemoStore {
   acceptOffer = (id: string, withdrawOthers: boolean) => this.run((r, a) => svc.acceptOffer(r, actorOf(a), id, withdrawOthers));
   setStatus = (id: string, status: CentreStatus, pos?: number, est?: string) =>
     this.run((r, a) => svc.setStatus(r, actorOf(a), id, status, pos, est));
-  sendMessage = (target: { centreId: string; childId: string }, text: string, aiAssisted: boolean) =>
-    this.run((r, a) => svc.sendMessage(r, actorOf(a), target, text, aiAssisted));
+  sendMessage = (target: { centreId: string; childId: string }, text: string, aiAssisted: boolean, fromSimulatedDraft = false) =>
+    this.run((r, a) => svc.sendMessage(r, actorOf(a), target, text, aiAssisted, new Date(), fromSimulatedDraft));
   markRead = (ids: string[] | 'all') => this.run((r, a) => svc.markNotificationsRead(r, actorOf(a), ids));
   createSupportRequest = (input: SupportInput) => this.run((r, a) => svc.createSupportRequest(r, actorOf(a), input));
   advanceConcern = (id: string) => this.run((r, a) => svc.advanceConcern(r, actorOf(a), id));

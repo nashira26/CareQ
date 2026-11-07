@@ -32,6 +32,8 @@ export interface Centre {
   requirementSources?: Record<string, string>;
   /** Requirement title -> citation, e.g. "Parent Handbook (March 2026), p.14". Real demo centres only. */
   requirementCitations?: Record<string, string>;
+  /** Requirement title -> link to the source document (when it has one; uploaded documents don't). */
+  requirementSourceUrls?: Record<string, string>;
   /** The published document the requirements were extracted from (real demo centres only). */
   requirementsExtractedFrom?: {
     docTitle: string;
@@ -75,6 +77,18 @@ export interface CentreRegistration {
   photoDataUrl?: string; // resized in the browser, kept in this browser only
   policyText?: string;
   registeredAt: string;
+  /** Set by the server when the licence number AND postal code (or a close name) match the Ontario open data. */
+  licenceVerified?: LicenceVerification;
+  /** Documents the centre uploaded (chunks are in policyChunks; files are not kept). */
+  documents?: { docKey: string; docTitle: string; fileName: string; uploadedAt: string; chunks: number; keywordOnly: number }[];
+}
+
+export interface LicenceVerification {
+  source: 'Ontario open data';
+  openDataId: string;
+  matchedName: string;
+  matchedBy: string;
+  dataDate: string | null;
 }
 
 export interface ParentProfile {
@@ -413,6 +427,8 @@ export interface ChatMessage {
   text: string;
   timestamp: string;
   aiAssisted?: boolean;
+  /** Sent from an AI draft built on simulated application data (shown as a tag to both sides). */
+  basedOnSimulatedData?: boolean;
 }
 
 export type ConversationsMap = Record<string, ChatMessage[]>;

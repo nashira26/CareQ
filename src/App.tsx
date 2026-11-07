@@ -36,7 +36,7 @@ import { Child, CentreFormInput, ageInMonths } from './lib/family';
 import type { Area, FsaCentroids } from './lib/rankCentres';
 import { ApiStore, CentreStatus, DemoStore, LocalStore, StoreError, fetchConfig, isOutage } from './lib/store';
 import { EMPTY_SNAPSHOT, Snapshot } from './lib/world';
-import type { DraftChange } from './lib/service';
+import type { DraftChange, ExtractedFromInput, RequirementCitationInput } from './lib/service';
 import torontoAreas from './data/torontoAreas.json';
 import fsaCentroids from './data/fsaCentroids.json';
 import { LogoFull } from './components/Logo';
@@ -174,6 +174,8 @@ export default function App() {
   const [registrationScreenOpen, setRegistrationScreenOpen] = useState(false);
   // Policy text the centre asked AI to read right after registering
   const [policyToRead, setPolicyToRead] = useState<string | null>(null);
+  // A document uploaded at sign-up, read with AI when the policy tab opens
+  const [docToRead, setDocToRead] = useState<string | null>(null);
 
   const currentRole = currentAccount ? currentAccount.role : 'parent';
 
@@ -278,8 +280,13 @@ export default function App() {
   // Centre actions
   const handleUpdateStatus = (applicationId: string, newStatus: ApplicationStatus, waitlistPosition?: number, waitlistEstimate?: string) =>
     store && run(store.setStatus(applicationId, newStatus as CentreStatus, waitlistPosition, waitlistEstimate));
-  const handleUpdateCentreRequirements = (centreId: string, requirements: string[], sources?: Record<string, string>) =>
-    store && run(store.updateRequirements(centreId, requirements, sources ?? {}));
+  const handleUpdateCentreRequirements = (
+    centreId: string,
+    requirements: string[],
+    sources?: Record<string, string>,
+    citations?: Record<string, RequirementCitationInput>,
+    extractedFrom?: ExtractedFromInput
+  ) => store && run(store.updateRequirements(centreId, requirements, sources ?? {}, citations, extractedFrom));
 
   // Onboarding and centre registration
   const handleCompleteOnboarding = async (children: Child[]) => {
@@ -329,9 +336,9 @@ export default function App() {
   const activeChatCentre = activeChatModal ? centres.find((c) => c.id === activeChatModal.centreId) ?? activeSingleCentre : activeSingleCentre;
   const activeMessages = activeChatModal && activeChatApp ? conversations[conversationKey(activeChatModal.centreId, activeChatApp.childId)] ?? [] : [];
 
-  const handleSendMessage = (text: string, aiAssisted: boolean) => {
+  const handleSendMessage = (text: string, aiAssisted: boolean, fromSimulatedDraft = false) => {
     if (!store || !activeChatModal || !activeChatApp) return;
-    run(store.sendMessage({ centreId: activeChatModal.centreId, childId: activeChatApp.childId }, text, aiAssisted));
+    run(store.sendMessage({ centreId: activeChatModal.centreId, childId: activeChatApp.childId }, text, aiAssisted, fromSimulatedDraft));
   };
 
   // ---------------- Navigation ----------------
@@ -429,11 +436,13 @@ export default function App() {
           areas={AREAS}
           fsa={FSA}
           onRegister={handleRegisterCentre}
-          onDone={(next) => {
+          uploadsAvailable={store.mode === 'mongo'}
+          onDone={(next, opts) => {
             setRegistrationScreenOpen(false);
             if (next === 'policy') {
               const text = centres.find((c) => c.id === currentAccount.centreId)?.registration?.policyText;
-              setPolicyToRead(text ?? null);
+              if (opts?.docKey) setDocToRead(opts.docKey);
+              else setPolicyToRead(text ?? null);
               setCentreTab('policy');
             } else {
               setCentreTab('home');
@@ -633,6 +642,8 @@ export default function App() {
                     applications={centreApplications}
                     autoReadPolicyText={policyToRead}
                     onAutoReadPolicyStarted={() => setPolicyToRead(null)}
+                    autoReadDocKey={docToRead}
+                    onAutoReadDocStarted={() => setDocToRead(null)}
                     onUpdateStatus={handleUpdateStatus}
                     onUpdateCentreRequirements={handleUpdateCentreRequirements}
                     onOpenConversation={handleCentreOpenConversation}

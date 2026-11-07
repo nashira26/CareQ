@@ -28,6 +28,10 @@ export interface ChecklistItem {
   sourceSentence: string;
   status: ChecklistStatus;
   matchedDocument?: string;
+  /** Where the requirement comes from, e.g. "Parent Handbook (March 2026), PDF p.13" (from the centre's confirmed data, never the model). */
+  citation?: string;
+  /** Link to the source document, when it has one. */
+  sourceUrl?: string;
   setBy: 'ai' | 'rules' | 'parent';
   parentConfirmed?: boolean; // only meaningful for "needs parent check"
 }
@@ -41,7 +45,7 @@ export interface PrepareInput {
   preferredStartDate: string;
   parentNotes: string;
   documents: { fileName: string; attachedTo: string }[];
-  requirements: { requirement: string; sourceSentence: string }[];
+  requirements: { requirement: string; sourceSentence: string; citation?: string; sourceUrl?: string }[];
 }
 
 export interface PrepareResult {
@@ -58,7 +62,16 @@ const firstName = (v: unknown) => clip(v, 60).split(/\s+/)[0] ?? '';
 export function sanitizePrepareInput(raw: unknown): PrepareInput | null {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   const requirements = (Array.isArray(r.requirements) ? r.requirements : [])
-    .map((q: any) => ({ requirement: clip(q?.requirement, 120), sourceSentence: clip(q?.sourceSentence, 400) }))
+    .map((q: any) => {
+      const citation = clip(q?.citation, 240);
+      const sourceUrl = clip(q?.sourceUrl, 500);
+      return {
+        requirement: clip(q?.requirement, 120),
+        sourceSentence: clip(q?.sourceSentence, 400),
+        ...(citation ? { citation } : {}),
+        ...(/^https?:\/\//i.test(sourceUrl) ? { sourceUrl } : {}),
+      };
+    })
     .filter((q) => q.requirement)
     .slice(0, 20);
   const childFirstName = firstName(r.childFirstName);
@@ -161,6 +174,16 @@ export function templateNote(input: PrepareInput): string {
   );
 }
 
+/** Each item keeps its requirement's citation and link from the centre's confirmed data (never from the model). */
+export function withCitations(input: PrepareInput, checklist: ChecklistItem[]): ChecklistItem[] {
+  return checklist.map((c, i) => {
+    const q = input.requirements[i];
+    return q && q.requirement === c.requirement
+      ? { ...c, ...(q.citation ? { citation: q.citation } : {}), ...(q.sourceUrl ? { sourceUrl: q.sourceUrl } : {}) }
+      : c;
+  });
+}
+
 /** Rule-based preparation (used when Gemini is unavailable). */
 export function prepareFallback(input: PrepareInput): PrepareResult {
   const checklist: ChecklistItem[] = input.requirements.map(({ requirement, sourceSentence }) => {
@@ -173,7 +196,7 @@ export function prepareFallback(input: PrepareInput): PrepareResult {
       : { requirement, sourceSentence, status: 'missing', setBy: 'rules' };
   });
   const fields = profileFields(input);
-  return { fields, checklist, missingItems: computeMissingItems(fields, checklist), noteToCentre: templateNote(input) };
+  return { fields, checklist: withCitations(input, checklist), missingItems: computeMissingItems(fields, checklist), noteToCentre: templateNote(input) };
 }
 
 const FORBIDDEN_NOTE = /\b(priority|prioriti[sz]e|other famil|rank|ranking|queue position|waitlist position|jump)\b/i;
@@ -230,7 +253,7 @@ export function finalizePrepared(input: PrepareInput, raw: unknown): PrepareResu
   const note = clip(r.noteToCentre, 1200);
   const noteToCentre = note && !FORBIDDEN_NOTE.test(note) ? wordCap(note, 80) : rules.noteToCentre;
 
-  return { fields, checklist, missingItems: computeMissingItems(fields, checklist), noteToCentre };
+  return { fields, checklist: withCitations(input, checklist), missingItems: computeMissingItems(fields, checklist), noteToCentre };
 }
 
 // ---------- Re-running never overwrites what the parent changed ----------

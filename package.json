@@ -15,7 +15,8 @@
     "seed": "tsx scripts/seed.ts",
     "reset": "tsx scripts/reset.ts",
     "build:index": "tsx scripts/build-index.ts",
-    "eval:ask": "tsx scripts/eval-ask.ts"
+    "eval:ask": "tsx scripts/eval-ask.ts",
+    "eval:docs": "tsx scripts/eval-docs.ts"
   },
   "dependencies": {
     "@google/genai": "^2.32.0",
@@ -26,8 +27,11 @@
     "express": "^4.21.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.546.0",
+    "mammoth": "^1.11.0",
     "mongodb": "^7.8.0",
     "motion": "^12.23.24",
+    "node-html-parser": "^9.0.7",
+    "pdf-parse": "^2.4.5",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "tsx": "^4.21.0",
@@ -42,8 +46,6 @@
     "@types/react-dom": "^19.3.0",
     "autoprefixer": "^10.4.21",
     "esbuild": "^0.28.0",
-    "node-html-parser": "^9.0.7",
-    "pdf-parse": "^2.4.5",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2"
   }

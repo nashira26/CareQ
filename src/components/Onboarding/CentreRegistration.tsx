@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Building2, ImagePlus, Sparkles, CheckCircle2, X } from 'lucide-react';
+import { Building2, ImagePlus, Sparkles, CheckCircle2, X, FileUp, Loader2, ShieldCheck } from 'lucide-react';
+import { aiPost } from '../../lib/aiFetch';
 import { Card, PrimaryButton, GhostButton } from '../ui/CareUI';
 import { AgeGroup, Centre } from '../../data/mockData';
 import {
   CENTRE_PROGRAM_OPTIONS,
   CentreFormInput,
   FieldErrors,
+  licenceLabel,
   validateCentre,
 } from '../../lib/family';
 import type { Area, FsaCentroids } from '../../lib/rankCentres';
@@ -53,11 +55,29 @@ interface Props {
   fsa: FsaCentroids;
   /** Saves the registration; returns the new centre, or a plain-language error. */
   onRegister: (form: CentreFormInput, photoDataUrl?: string) => Promise<{ centre?: Centre; error?: string }>;
-  onDone: (next: 'policy' | 'home') => void;
+  /** next 'policy' with a docKey: read that uploaded document with AI. */
+  onDone: (next: 'policy' | 'home', opts?: { docKey?: string }) => void;
   onLogout: () => void;
+  /** Uploads need the shared database (DATA_MODE=mongo). */
+  uploadsAvailable?: boolean;
 }
 
-export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, onRegister, onDone, onLogout }) => {
+const MAX_UPLOAD_BYTES = 6 * 1024 * 1024;
+type Uploaded = { docKey: string; docTitle: string; chunks: number; keywordOnly: number; pages: number; embeddingNote?: string };
+
+/** File -> base64 (no data: prefix) for the upload request. */
+async function toBase64(file: File): Promise<string> {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+
+export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, onRegister, onDone, onLogout, uploadsAvailable = false }) => {
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploaded, setUploaded] = useState<Uploaded[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [form, setForm] = useState<CentreFormInput>({
@@ -116,18 +136,73 @@ export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, onRegis
     else setSubmitError(result.error ?? 'Registration failed. Please try again.');
   };
 
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !registered) return;
+    if (!/\.(pdf|html?|docx)$/i.test(file.name)) return setUploadError('Please choose a PDF, HTML or Word (.docx) file.');
+    if (file.size > MAX_UPLOAD_BYTES) return setUploadError('Please choose a file under 6 MB.');
+    setUploading(true);
+    setUploadError(null);
+    const result = await aiPost<Uploaded & { success?: boolean }>(`/api/centres/${encodeURIComponent(registered.id)}/documents`, {
+      fileName: file.name,
+      title: file.name.replace(/\.[a-z]+$/i, '').replace(/[-_]+/g, ' '),
+      dataBase64: await toBase64(file),
+    });
+    setUploading(false);
+    if (result.ok) setUploaded((u) => [...u.filter((d) => d.docKey !== result.data.docKey), result.data]);
+    else setUploadError(result.message);
+  };
+
   if (registered) {
+    const verified = Boolean(registered.registration?.licenceVerified);
     return (
       <OnboardingShell onLogout={onLogout}>
         <Card className="space-y-4 text-center py-10">
           <CheckCircle2 className="w-10 h-10 mx-auto text-[#4E7A5A]" />
           <h1 className="text-2xl font-bold text-[#173F42]">{registered.name} is registered</h1>
           <p className="text-sm text-[#5B6B66] max-w-md mx-auto">
-            Families can now find your centre and apply. It is shown as “Self-registered · not verified”, with an approximate
+            Families can now find your centre and apply. It is shown as “{licenceLabel(registered)}”, with an approximate
             location from your {registered.registration!.locationSource}.
           </p>
+          {verified && (
+            <p className="inline-flex items-center gap-1.5 rounded-lg border border-[#CBD9C6] bg-[#EEF3EA] px-3 py-1.5 text-xs text-[#173F42]">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#4E7A5A]" />
+              Licence matched to “{registered.registration!.licenceVerified!.matchedName}” ({registered.registration!.licenceVerified!.matchedBy})
+            </p>
+          )}
+
+          {uploadsAvailable && (
+            <div className="max-w-md mx-auto text-left rounded-xl border border-[#E7E4DA] bg-[#FAF9F4] p-4 space-y-2">
+              <p className="text-sm font-semibold text-[#173F42]">Upload your documents</p>
+              <p className="text-[11px] text-[#5B6B66]">
+                Your parent handbook or admission policy (PDF, HTML or Word, up to 6 MB). CareQ reads it so parents get answers and a checklist
+                with quotes from it. The file itself is not kept.
+              </p>
+              <label className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-[#0B4A52] text-[#0B4A52] bg-white hover:bg-[#0B4A52]/5 text-sm font-semibold cursor-pointer">
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileUp className="w-4 h-4" />}
+                {uploading ? 'Reading your document…' : 'Choose a file'}
+                <input type="file" accept=".pdf,.html,.htm,.docx" className="sr-only" disabled={uploading} onChange={handleUpload} />
+              </label>
+              {uploadError && <p role="alert" className="text-[11px] font-medium text-[#A4543A]">{uploadError}</p>}
+              {uploaded.map((d) => (
+                <p key={d.docKey} className="text-[11px] text-[#173F42] flex items-start gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#4E7A5A] shrink-0 mt-0.5" />
+                  <span>
+                    <span className="font-semibold">{d.docTitle}</span>: {d.pages ? `${d.pages} pages, ` : ''}
+                    {d.chunks} passages{d.keywordOnly ? ` (${d.keywordOnly} by keyword search for now)` : ''}
+                  </span>
+                </p>
+              ))}
+            </div>
+          )}
           <div className="flex flex-wrap justify-center gap-2 pt-2">
-            {registered.registration!.policyText && (
+            {uploaded.length > 0 && (
+              <PrimaryButton noArrow onClick={() => onDone('policy', { docKey: uploaded[uploaded.length - 1].docKey })}>
+                <Sparkles className="w-4 h-4" /> Read my document with AI
+              </PrimaryButton>
+            )}
+            {!uploaded.length && registered.registration!.policyText && (
               <PrimaryButton noArrow onClick={() => onDone('policy')}>
                 <Sparkles className="w-4 h-4" /> Read my policy with AI
               </PrimaryButton>
@@ -152,7 +227,7 @@ export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, onRegis
           <div>
             <h1 className="text-2xl font-bold text-[#173F42]">Register your centre</h1>
             <p className="text-sm text-[#5B6B66] mt-1">
-              Your centre will appear in CareQ search as “Self-registered · not verified”. Demo only: saved in this browser.
+              Your centre will appear in CareQ search as “Self-registered · not verified”, or “Licensed · verified against Ontario open data” if your licence number and postal code (or name) match the Ontario open data. Demo only: saved in this browser.
             </p>
           </div>
         </div>
@@ -184,7 +259,7 @@ export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, onRegis
                 </>
               )}
             </Field>
-            <Field id="centre-licenceNumber" label="Licence number" optional error={errors.licenceNumber} hint="Shown as “Self-reported, not verified”.">
+            <Field id="centre-licenceNumber" label="Licence number" optional error={errors.licenceNumber} hint="Checked against Ontario open data with your postal code or centre name.">
               {(a) => <input {...a} type="text" value={form.licenceNumber} onChange={set('licenceNumber')} className={inputClass(!!errors.licenceNumber)} />}
             </Field>
           </div>

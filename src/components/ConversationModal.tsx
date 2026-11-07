@@ -25,7 +25,22 @@ interface ConversationModalProps {
   centre: Centre;
   application: Application;
   messages: ChatMessage[];
-  onSendMessage: (text: string, aiAssisted: boolean) => void;
+  /** fromSimulatedDraft: sent from an AI draft built on simulated application data (tagged for both sides). */
+  onSendMessage: (text: string, aiAssisted: boolean, fromSimulatedDraft?: boolean) => void;
+}
+
+interface DraftFact {
+  label: string;
+  value: string;
+  simulated: boolean;
+}
+interface DraftCitation {
+  operatorName: string;
+  docTitle: string;
+  page: string;
+  sourceUrl: string | null;
+  sourceNote: string | null;
+  quote: string;
 }
 
 export const ConversationModal: React.FC<ConversationModalProps> = ({
@@ -44,6 +59,8 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
   const [draftAiMode, setDraftAiMode] = useState<AiMode | null>(null);
   const [toneAiMode, setToneAiMode] = useState<AiMode | null>(null);
   const [aiNotice, setAiNotice] = useState<string | null>(null);
+  // What the current AI draft was built from: facts (simulated ones labelled) and a handbook line
+  const [draftContext, setDraftContext] = useState<{ facts: DraftFact[]; citation: DraftCitation | null; simulated: boolean } | null>(null);
 
   // Tone check states
   const [isCheckingTone, setIsCheckingTone] = useState<boolean>(false);
@@ -57,13 +74,28 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
 
   const isParent = role === 'parent';
 
+  // Every send goes through here; an AI-assisted message from a simulated-data draft is tagged
+  const sendOut = (text: string, aiAssisted: boolean) => {
+    onSendMessage(text, aiAssisted, aiAssisted && Boolean(draftContext?.simulated));
+    setDraftContext(null);
+  };
+
   // Smart suggestions tailored to role and application status
-  const parentSuggestions = [
-    'Inquire about waitlist timeline & current queue movement',
-    'Follow up on submitted immunization & residency documents',
-    'Request a brief morning tour of the toddler classroom',
-    'Confirm March start date availability and CWELCC fee details',
-  ];
+  // Status-aware: an offer comes first when there is one
+  const parentSuggestions =
+    application.status === 'Offer'
+      ? [
+          'Accept the offer and ask about next steps',
+          'Ask a question about the offer before deciding',
+          'Decline the offer politely',
+          'Request a brief visit before the start date',
+        ]
+      : [
+          'Inquire about waitlist timeline & current queue movement',
+          'Follow up on submitted immunization & residency documents',
+          'Request a brief morning tour of the toddler classroom',
+          'Confirm March start date availability and CWELCC fee details',
+        ];
 
   const centreSuggestions = (() => {
     switch (application.status) {
@@ -111,20 +143,40 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
     setSelectedIntent(intentText);
     setIsGeneratingAiDraft(true);
     setAiDraft(null);
+    setDraftContext(null);
 
     setAiNotice(null);
-    const result = await aiPost<{ success?: boolean; draftMessage?: string; aiMode?: AiMode }>('/api/generate-message', {
+    // Shared database: the server loads the application itself (applicationId). Local mode: the
+    // facts below are used instead (the browser holds the demo data).
+    const result = await aiPost<{
+      success?: boolean;
+      draftMessage?: string;
+      aiMode?: AiMode;
+      facts?: DraftFact[];
+      citation?: DraftCitation | null;
+      simulated?: boolean;
+    }>('/api/generate-message', {
       role,
-      childName: application.childName,
-      childAgeMonths: application.childAgeMonths,
+      applicationId: application.id,
+      intent: intentText,
+      centreId: centre.id,
       centreName: centre.name,
+      selfRegistered: Boolean(centre.registration),
+      childName: application.childName,
       applicationStatus: application.status,
       waitlistPosition: application.waitlistPosition,
-      intent: intentText,
+      waitlistReportedBy: application.waitlistReportedBy,
+      waitlistReportedDate: application.waitlistReportedDate,
+      waitlistEstimate: application.waitlistEstimate,
+      preferredStartDate: application.preferredStartDate,
+      submittedAt: application.submittedAt,
+      careType: application.careType,
+      senderName: isParent ? application.parentName : centre.name,
     });
     if (result.ok && result.data.success && result.data.draftMessage) {
       setAiDraft(result.data.draftMessage);
       setDraftAiMode(result.data.aiMode ?? null);
+      setDraftContext({ facts: result.data.facts ?? [], citation: result.data.citation ?? null, simulated: Boolean(result.data.simulated) });
     } else if (!result.ok && isUserFacingAiError(result.status)) {
       setAiNotice(`${result.message} You can still type your message yourself.`);
     }
@@ -167,7 +219,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
     }
 
     // Normal/polite message: send immediately
-    onSendMessage(textToSend.trim(), aiAssisted);
+    sendOut(textToSend.trim(), aiAssisted);
     setManualText('');
     setAiDraft(null);
     setSelectedIntent('');
@@ -253,6 +305,11 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                     {msg.aiAssisted && (
                       <span className="text-[10px] text-teal-800 bg-teal-100 font-bold px-1.5 py-0.2 rounded">
                         AI Drafted
+                      </span>
+                    )}
+                    {msg.basedOnSimulatedData && (
+                      <span className="inline-flex items-center rounded px-1.5 py-0.5 bg-[#F3EBDD] text-[#5B4A2E] text-[10px] font-semibold leading-none">
+                        Based on simulated application data
                       </span>
                     )}
                   </div>
@@ -366,7 +423,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                     type="button"
                     onClick={() => {
                       // Send suggestion directly
-                      onSendMessage(toneWarning.suggestedVersion, true);
+                      sendOut(toneWarning.suggestedVersion, true);
                       setToneWarning(null);
                       setManualText('');
                       setAiDraft(null);
@@ -394,7 +451,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                     type="button"
                     onClick={() => {
                       // The sender always makes the final choice: send as is
-                      onSendMessage(toneWarning.originalText, toneWarning.isAiAssisted);
+                      sendOut(toneWarning.originalText, toneWarning.isAiAssisted);
                       setToneWarning(null);
                       setManualText('');
                       setAiDraft(null);
@@ -431,11 +488,48 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
               />
               <AiFallbackNote aiMode={draftAiMode} />
 
+              {draftContext && draftContext.facts.length > 0 && (
+                <div className="rounded-lg border border-amber-200 bg-white/70 px-2.5 py-2 space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#5B6B66]">Facts used in this draft</p>
+                  <ul className="text-[11px] text-stone-700 space-y-0.5">
+                    {draftContext.facts.map((f) => (
+                      <li key={f.label} className="flex flex-wrap items-center gap-1">
+                        <span className="font-semibold">{f.label}:</span>
+                        <span>{f.value}</span>
+                        {f.simulated && <SimTag />}
+                      </li>
+                    ))}
+                  </ul>
+                  {draftContext.citation && (
+                    <div className="pt-1 mt-1 border-t border-amber-100 text-[11px] text-stone-700">
+                      <p className="font-semibold text-[#5B6B66]">
+                        From {draftContext.citation.operatorName}'s {draftContext.citation.docTitle}, {draftContext.citation.page}
+                      </p>
+                      <p className="italic">“{draftContext.citation.quote}”</p>
+                      {(draftContext.citation.sourceUrl || draftContext.citation.sourceNote) && (
+                        <p className="text-[10px] text-[#7A8A84]">
+                          {draftContext.citation.sourceUrl && (
+                            <a href={draftContext.citation.sourceUrl} target="_blank" rel="noreferrer" className="font-semibold text-[#0B4A52] hover:underline">
+                              Source
+                            </a>
+                          )}
+                          {draftContext.citation.sourceNote && draftContext.citation.sourceNote !== 'Exact file' && (
+                            <span>{draftContext.citation.sourceUrl ? ' · ' : ''}{draftContext.citation.sourceNote}</span>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  <p className="text-[10px] text-[#7A8A84]">Edit anything before sending. Nothing is sent until you approve.</p>
+                </div>
+              )}
+
               <div className="flex items-center justify-end gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => {
                     setAiDraft(null);
+                    setDraftContext(null);
                     setSelectedIntent('');
                   }}
                   className="px-3 py-1.5 text-xs text-stone-600 hover:text-stone-900 rounded-lg transition-colors"

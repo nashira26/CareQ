@@ -17,6 +17,7 @@ import { DaycareMap } from './DaycareMap';
 import { useOntarioData, useShortlist, OntarioCentreCard, HeartButton, Chip, ResultInfo } from './OntarioCentres';
 import { SearchChips } from './SearchChips';
 import { reportedLine } from '../../lib/simulated';
+import { licenceLabel } from '../../lib/family';
 import { doesntServeLabel } from '../../lib/searchCriteria';
 import {
   PageHeader,
@@ -328,8 +329,12 @@ export const FindTab: React.FC<FindTabProps> = ({
           <div className="p-5">
             <div className="flex items-start justify-between gap-2">
               {reg ? (
-                <span className="inline-block rounded px-1.5 py-0.5 bg-[#FBE9E1] text-[#A4543A] text-[10px] font-semibold">
-                  Self-registered · not verified
+                <span
+                  className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                    reg.licenceVerified ? 'bg-[#E4ECE1] text-[#4E7A5A]' : 'bg-[#FBE9E1] text-[#A4543A]'
+                  }`}
+                >
+                  {licenceLabel(centre)}
                 </span>
               ) : (
                 <span className="inline-block rounded px-1.5 py-0.5 bg-[#0B4A52]/10 text-[#0B4A52] text-[10px] font-semibold">
@@ -364,7 +369,7 @@ export const FindTab: React.FC<FindTabProps> = ({
             )}
             {reg && (
               <p className="text-[11px] text-[#7A8A84] mt-1">
-                {reg.licenceNumber ? `Licence #${reg.licenceNumber} · Self-reported, not verified · ` : ''}
+                {reg.licenceNumber ? `Licence #${reg.licenceNumber} · ${reg.licenceVerified ? 'matches Ontario open data' : 'Self-reported, not verified'} · ` : ''}
                 Approximate location ({reg.locationSource})
                 {reg.capacity ? ` · ${reg.capacity} licensed spaces (capacity, not availability)` : ''}
               </p>
@@ -473,7 +478,7 @@ export const FindTab: React.FC<FindTabProps> = ({
                     {e.kind === 'open-data'
                       ? 'Not on CareQ yet · Ontario open data'
                       : (e.centre as Centre).registration
-                      ? 'Self-registered · not verified'
+                      ? licenceLabel(e.centre as Centre)
                       : demoCentreLabel(e.centre as Centre)}
                   </p>
                   <p className="text-sm font-bold text-[#173F42] leading-snug line-clamp-2">{e.name}</p>
