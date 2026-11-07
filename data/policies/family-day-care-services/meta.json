@@ -1,0 +1,33 @@
+{
+  "operator": "Family Day Care Services",
+  "demoCentreId": "on-12256",
+  "demoCentreName": "Family Day Care Services - Mary Ward Child Care Centre",
+  "appliesToCentreIds": [
+    "on-56938",
+    "on-56582",
+    "on-56547",
+    "on-0004316",
+    "on-12256",
+    "on-0003186",
+    "on-56922",
+    "on-61577",
+    "on-57253",
+    "on-60499",
+    "on-61569",
+    "on-61570",
+    "on-56934",
+    "on-59652",
+    "on-56921",
+    "on-60497",
+    "on-0003324"
+  ],
+  "documents": [
+    {
+      "file": "handbook.pdf",
+      "title": "Child Care Centre Family Handbook (July 2026)",
+      "sourceUrl": "https://www.familyday.org",
+      "retrieved": "2026-11-06",
+      "sourceNote": "Operator website; exact file link not found."
+    }
+  ]
+}

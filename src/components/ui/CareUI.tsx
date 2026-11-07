@@ -132,6 +132,43 @@ export const SimNote: React.FC<SimNoteProps> = ({ children, className = '' }) =>
   </div>
 );
 
+/**
+ * "Simulated" chip for every simulated item (status, position, estimate, offer, centre message,
+ * notification). Never used on real data (open-data details, handbook content).
+ */
+export const SimTag: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <span
+    className={`inline-flex items-center rounded px-1.5 py-0.5 bg-[#F3EBDD] text-[#5B4A2E] text-[10px] font-semibold leading-none align-middle ${className}`}
+  >
+    Simulated
+  </span>
+);
+
+/** Banner on every centre-portal page: the account is a simulated demo account. */
+export const CentreDemoBanner: React.FC<{ centreName: string; realCentre: boolean; className?: string }> = ({
+  centreName,
+  realCentre,
+  className = '',
+}) => (
+  <div
+    role="note"
+    className={`rounded-xl border border-[#E7D6A8] bg-[#FBF6EA] px-4 py-2.5 text-xs text-[#5B4A2E] flex items-start gap-2 ${className}`}
+  >
+    <Sparkles className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#8A6A3B]" />
+    <span>
+      {realCentre ? (
+        <>
+          <span className="font-semibold">Simulated demo account.</span> Not operated by or affiliated with {centreName}.
+        </>
+      ) : (
+        <>
+          <span className="font-semibold">Simulated demo account.</span> {centreName} is a fictional centre.
+        </>
+      )}
+    </span>
+  </div>
+);
+
 export type AiMode = 'gemini' | 'fallback';
 
 /** Small grey note shown when an AI endpoint answered with its non-AI fallback. */

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Centre, Application, ChatMessage } from '../data/mockData';
 import { StatusBadge } from './StatusBadge';
-import { AiFallbackNote, AiMode, AiNotice } from './ui/CareUI';
+import { AiFallbackNote, AiMode, AiNotice, SimTag } from './ui/CareUI';
 import { aiPost, isUserFacingAiError } from '../lib/aiFetch';
 import {
   X,
@@ -248,6 +248,8 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                 >
                   <div className="text-[11px] font-semibold text-stone-500 mb-1 px-1 flex items-center gap-1">
                     <span>{msg.senderName}</span>
+                    {/* Every centre message in the demo is simulated */}
+                    {msg.sender === 'centre' && <SimTag />}
                     {msg.aiAssisted && (
                       <span className="text-[10px] text-teal-800 bg-teal-100 font-bold px-1.5 py-0.2 rounded">
                         AI Drafted
@@ -471,7 +473,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
               onChange={(e) => setManualText(e.target.value)}
               placeholder={
                 isParent
-                  ? 'Type a message to Riverdale Early Learning Centre...'
+                  ? `Type a message to ${centre.name}...`
                   : `Type a message to ${application.parentName}...`
               }
               className="flex-1 bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-stone-900 placeholder-stone-400 focus:outline-hidden focus:ring-2 focus:ring-[#0B4A52] focus:bg-white"

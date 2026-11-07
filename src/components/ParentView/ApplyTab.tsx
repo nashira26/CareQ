@@ -209,6 +209,17 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                   </div>
                   )}
 
+                  {/* Where the checklist comes from (real centres: quoted from their published handbook) */}
+                  {!noRequirements && centre.requirementsExtractedFrom && (
+                    <p className="text-[11px] text-[#5B6B66]">
+                      Extracted from {centre.requirementsExtractedFrom.docTitle}
+                      {centre.requirementsExtractedFrom.sourceUrl ? '' : ' (source link not found)'}
+                      {centre.requirementsExtractedFrom.fallback === 'licensing-manual' && centre.requirementsExtractedFrom.sourceNote
+                        ? `. ${centre.requirementsExtractedFrom.sourceNote}`
+                        : ''}
+                    </p>
+                  )}
+
                   {/* Requirement rows as checkbox lines */}
                   <div className="space-y-3">
                     {centre.requirements.map((req) => {
@@ -251,7 +262,9 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                                 )}
                               </div>
                               <p className="text-xs text-[#7A8A84] mt-0.5">
-                                Required by {centre.name} policy for admissions intake.
+                                {centre.requirementCitations?.[req]
+                                  ? `From ${centre.requirementCitations[req]}`
+                                  : `Required by ${centre.name} policy for admissions intake.`}
                               </p>
                             </div>
                           </div>
@@ -317,7 +330,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                     })}
                   </div>
 
-                  {/* AI-prepared application: partner centres only (open-data centres never have applications) */}
+                  {/* AI-prepared application: CareQ demo centres only (other open-data centres never have applications) */}
                   <div className="pt-4 border-t border-[#E7E4DA]">
                     {noRequirements ? (
                       <p className="text-xs text-[#7A8A84]">

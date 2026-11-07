@@ -67,11 +67,11 @@ const centreForm = {
 test('scoping over HTTP: parents and centres only reach their own data', { skip }, async () => {
   const priya = client();
   const alex = client();
-  const riverdale = client();
+  const demoCentre = client();
   const sunny = client();
 
   assert.equal((await priya('POST', '/auth/login', { role: 'parent', email: 'priya@example.ca', password: 'password' })).status, 200);
-  assert.equal((await riverdale('POST', '/auth/login', { role: 'centre', email: 'centre@riverdale.ca', password: 'password' })).status, 200);
+  assert.equal((await demoCentre('POST', '/auth/login', { role: 'centre', email: 'centre@careq-demo.example', password: 'password' })).status, 200);
   assert.equal((await alex('POST', '/auth/signup', { role: 'parent', name: 'Alex Morgan', email: 'alex@example.ca', password: 'alexpass1', termsAccepted: true })).status, 201);
   assert.equal((await alex('POST', '/onboarding', { children: [child] })).status, 200);
   assert.equal((await sunny('POST', '/auth/signup', { role: 'centre', name: 'Jordan Lee', email: 'jordan@sunny.example', password: 'sunnysteps1', termsAccepted: true })).status, 201);
@@ -87,16 +87,21 @@ test('scoping over HTTP: parents and centres only reach their own data', { skip 
 
   // A parent can't read or change another parent's application (403)
   assert.equal((await priya('POST', `/applications/${appId}/withdraw`)).status, 403);
-  assert.equal((await priya('PATCH', '/applications/app-c4-anya/draft', { change: { kind: 'noteToCentre', note: 'mine' } })).status, 200);
-  assert.equal((await alex('PATCH', '/applications/app-c4-anya/draft', { change: { kind: 'noteToCentre', note: 'hijack' } })).status, 403);
+  const priyaDraft = await priya('POST', '/applications', { centreId: 'on-07205' });
+  assert.equal(priyaDraft.status, 201);
+  const priyaDraftId = priyaDraft.json.id as string;
+  assert.equal((await priya('PATCH', `/applications/${priyaDraftId}/draft`, { change: { kind: 'noteToCentre', note: 'mine' } })).status, 200);
+  assert.equal((await alex('PATCH', `/applications/${priyaDraftId}/draft`, { change: { kind: 'noteToCentre', note: 'hijack' } })).status, 403);
+  // Harmony is preschool-only: no toddler application
+  assert.equal((await priya('POST', '/applications', { centreId: 'on-03394' })).status, 400);
   const priyaState = (await priya('GET', '/state')).json;
   assert.ok(!priyaState.applications.some((a: any) => a.id === appId));
   assert.ok(priyaState.applications.every((a: any) => a.parentAccountId === 'parent-priya'));
 
   // A centre can't read or change another centre's application (403)
-  assert.equal((await riverdale('POST', `/applications/${appId}/status`, { status: 'Waitlisted', waitlistPosition: 1 })).status, 403);
-  assert.ok(!(await riverdale('GET', '/state')).json.applications.some((a: any) => a.id === appId));
-  assert.equal((await riverdale('PUT', `/centres/${sunnyId}/requirements`, { requirements: ['X'], sources: {} })).status, 403);
+  assert.equal((await demoCentre('POST', `/applications/${appId}/status`, { status: 'Waitlisted', waitlistPosition: 1 })).status, 403);
+  assert.ok(!(await demoCentre('GET', '/state')).json.applications.some((a: any) => a.id === appId));
+  assert.equal((await demoCentre('PUT', `/centres/${sunnyId}/requirements`, { requirements: ['X'], sources: {} })).status, 403);
 
   // The right centre sees it and sets a position; the parent sees it (different "devices")
   const sunnyState = (await sunny('GET', '/state')).json;
@@ -109,12 +114,12 @@ test('scoping over HTTP: parents and centres only reach their own data', { skip 
 
   // Messages are scoped too
   const alexChild = alexState.account.children[0].id;
-  assert.equal((await riverdale('POST', '/messages', { centreId: sunnyId, childId: alexChild, text: 'hi', aiAssisted: false })).status, 403);
+  assert.equal((await demoCentre('POST', '/messages', { centreId: sunnyId, childId: alexChild, text: 'hi', aiAssisted: false })).status, 403);
   assert.equal((await sunny('POST', '/messages', { centreId: sunnyId, childId: alexChild, text: 'Welcome!', aiAssisted: false })).status, 200);
   assert.deepEqual(Object.keys((await priya('GET', '/state')).json.conversations).filter((k) => k.includes(alexChild)), []);
 
   // Signed out: no private data; invalid bodies are 400s
-  assert.equal((await client()('POST', '/applications', { centreId: 'c1' })).status, 401);
+  assert.equal((await client()('POST', '/applications', { centreId: 'careq-demo' })).status, 401);
   assert.equal((await alex('POST', `/applications/${appId}/status`, { status: 'Hacked' })).status, 400);
 
   // Reset needs the token

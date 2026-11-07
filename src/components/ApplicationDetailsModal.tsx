@@ -399,10 +399,10 @@ export const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = (
                       <div className="col-span-2">
                         <span className="text-[10px] text-stone-400 uppercase font-semibold block">Service & Residential Address:</span>
                         <span className="font-bold text-stone-900 text-sm block">
-                          422 Broadview Ave, Suite 3B, Toronto, ON M4K 2N3
+                          123 Sample Street, Toronto, ON (fictional)
                         </span>
                         <span className="text-[11px] text-stone-500">
-                          Neighbourhood Catchment: Riverdale / East York • Ward 14 Toronto-Danforth
+                          Sample document preview • fictional details
                         </span>
                       </div>
                     </div>

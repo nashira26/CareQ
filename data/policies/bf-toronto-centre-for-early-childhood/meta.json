@@ -1,0 +1,18 @@
+{
+  "operator": "B.F. Toronto Centre for Early Childhood Education",
+  "demoCentreId": "on-07205",
+  "demoCentreName": "B.F. Toronto Centre For Early Childhood (45 Golfdown)",
+  "appliesToCentreIds": [
+    "on-07205",
+    "on-08526"
+  ],
+  "documents": [
+    {
+      "file": "handbook.pdf",
+      "title": "Parent Handbook",
+      "sourceUrl": "https://www.toronto.ca/data/children/dmc/webreg/gcreg1298.html",
+      "retrieved": "2026-11-06",
+      "sourceNote": "City of Toronto listing for this centre; handbook link not found."
+    }
+  ]
+}

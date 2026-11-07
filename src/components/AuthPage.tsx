@@ -39,10 +39,20 @@ interface AuthPageProps {
   onOpenTrustPage: () => void;
 }
 
-const DEMO_LOGINS = {
-  parent: { email: 'priya@example.ca', password: 'password' },
-  centre: { email: 'centre@riverdale.ca', password: 'password' },
-};
+const DEMO_PASSWORD = 'password';
+const PARENT_DEMO_EMAIL = 'priya@example.ca';
+const CENTRE_DEMOS = [
+  {
+    label: 'CareQ Demo Centre (fictional)',
+    email: 'centre@careq-demo.example',
+    note: 'Fictional centre with sample families.',
+  },
+  {
+    label: 'Jesse Ketchum Early Learning & Child Care Centre · simulated demo account',
+    email: 'jesse-ketchum.demo@careq.example',
+    note: 'Real centre (Ontario open data). Simulated demo account, not operated by or affiliated with the centre.',
+  },
+];
 
 export const AuthPage: React.FC<AuthPageProps> = ({ onLogIn, onSignUp, onOpenTrustPage }) => {
   const [busy, setBusy] = useState(false);
@@ -69,11 +79,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogIn, onSignUp, onOpenTru
     setTargetRole(role);
     setLoginError(null);
     setSignupError(null);
-    if (role === 'parent') {
-      setLoginEmail('priya@example.ca');
-    } else {
-      setLoginEmail('centre@riverdale.ca');
-    }
+    setLoginEmail(role === 'parent' ? PARENT_DEMO_EMAIL : CENTRE_DEMOS[0].email);
   };
 
   // Handle Login submission (checked by the server in mongo mode)
@@ -87,10 +93,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogIn, onSignUp, onOpenTru
   };
 
   // One-click demo login: the demo accounts' published password
-  const handleQuickDemoLogin = async (role: 'parent' | 'centre') => {
+  const handleQuickDemoLogin = async (role: 'parent' | 'centre', email = PARENT_DEMO_EMAIL) => {
     setLoginError(null);
     setBusy(true);
-    const error = await onLogIn({ role, ...DEMO_LOGINS[role] });
+    const error = await onLogIn({ role, email, password: DEMO_PASSWORD });
     setBusy(false);
     if (error) setLoginError(error);
   };
@@ -400,7 +406,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogIn, onSignUp, onOpenTru
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       className="h-12 w-full rounded-xl border border-[#E8E4D6] bg-[#FBFAF3] pl-11 pr-4 text-sm text-[#1E3F42] placeholder:text-[#9AA59F] focus:border-[#45B5A5] focus:ring-2 focus:ring-[#45B5A5]/25 outline-none transition-all"
-                      placeholder={targetRole === 'parent' ? 'priya@example.ca' : 'centre@riverdale.ca'}
+                      placeholder={targetRole === 'parent' ? PARENT_DEMO_EMAIL : CENTRE_DEMOS[0].email}
                     />
                   </div>
                 </div>
@@ -559,26 +565,29 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogIn, onSignUp, onOpenTru
                     </button>
                   </div>
 
-                  {/* Test Centre */}
-                  <div className="bg-white p-3 rounded-xl border border-[#EFE3CC] flex items-center justify-between gap-2 shadow-2xs">
-                    <div>
-                      <div className="font-semibold text-stone-900 flex items-center gap-1.5">
-                        <Building2 className="w-3.5 h-3.5 text-[#0B4A52]" />
-                        <span>Test Centre: Riverdale Early Learning</span>
+                  {/* Test centres: the fictional demo centre, and one real centre's simulated demo account */}
+                  {CENTRE_DEMOS.map((d) => (
+                    <div key={d.email} className="bg-white p-3 rounded-xl border border-[#EFE3CC] flex items-center justify-between gap-2 shadow-2xs">
+                      <div>
+                        <div className="font-semibold text-stone-900 flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5 text-[#0B4A52] shrink-0" />
+                          <span>Test Centre: {d.label}</span>
+                        </div>
+                        <div className="text-[11px] text-stone-500 mt-0.5">
+                          Email: <code className="text-[#0B4A52] font-semibold">{d.email}</code> • Password: <code className="text-[#0B4A52] font-semibold">password</code>
+                        </div>
+                        <div className="text-[11px] text-stone-500 mt-0.5">{d.note}</div>
                       </div>
-                      <div className="text-[11px] text-stone-500 mt-0.5">
-                        Email: <code className="text-[#0B4A52] font-semibold">centre@riverdale.ca</code> • Password: <code className="text-[#0B4A52] font-semibold">password</code>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickDemoLogin('centre', d.email)}
+                        className="shrink-0 px-3 py-1.5 text-[11px] font-bold text-[#0B4A52] bg-[#45B5A5]/15 hover:bg-[#45B5A5]/25 rounded-lg transition-colors cursor-pointer"
+                        title={`Log in directly as ${d.label}`}
+                      >
+                        Log in
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleQuickDemoLogin('centre')}
-                      className="shrink-0 px-3 py-1.5 text-[11px] font-bold text-[#0B4A52] bg-[#45B5A5]/15 hover:bg-[#45B5A5]/25 rounded-lg transition-colors cursor-pointer"
-                      title="Log in directly as test centre"
-                    >
-                      Log in
-                    </button>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>

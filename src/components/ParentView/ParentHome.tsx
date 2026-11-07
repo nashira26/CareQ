@@ -6,6 +6,7 @@ import {
   InAppNotification,
 } from '../../data/mockData';
 import { StatusBadge } from '../StatusBadge';
+import { estimateLine, reportedLine } from '../../lib/simulated';
 import {
   PageHeader,
   GhostButton,
@@ -321,9 +322,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
                         <div className="text-xs text-[#5B6B66] space-y-0.5">
                           {app.waitlistPosition ? (
                             <p className="font-medium text-[#173F42]">
-                              #{app.waitlistPosition} · reported by{' '}
-                              {app.waitlistReportedBy || centreName} on{' '}
-                              {app.waitlistReportedDate || 'recently'}
+                              #{app.waitlistPosition} · {reportedLine(app.waitlistReportedBy || centreName, app.waitlistReportedDate || 'recently')}
                             </p>
                           ) : (
                             <p className="text-[#7A8A84]">
@@ -333,7 +332,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
 
                           {app.waitlistEstimate ? (
                             <p className="text-[#7A8A84] italic">
-                              Centre's estimate: {app.waitlistEstimate} (not a guarantee)
+                              {estimateLine(app.waitlistEstimate)}
                             </p>
                           ) : null}
                         </div>

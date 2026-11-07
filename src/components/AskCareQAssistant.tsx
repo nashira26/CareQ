@@ -19,7 +19,7 @@ interface AskCareQAssistantProps {
 const PRESET_QUESTIONS = [
   'How are waitlist positions set?',
   'Who can see my uploaded documents?',
-  "What are Maple Grove's requirements?",
+  "What are CareQ Demo Centre's requirements?",
   'What does simulated data mean?',
 ];
 

@@ -121,7 +121,7 @@ export const INITIAL_SUPPORT_REQUESTS: SupportRequest[] = [
     referenceNumber: 'CQ-1031',
     type: 'contact',
     submittedByRole: 'centre',
-    submittedByName: 'Riverdale Early Learning Centre',
+    submittedByName: 'CareQ Demo Centre (fictional)',
     submittedAt: 'Oct 22, 2026',
     subject: 'CWELCC 2027 fee guideline synchronization',
     message: 'Inquiring about upcoming regional municipal fee subsidy integration timelines for toddler care.',

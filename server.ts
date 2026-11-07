@@ -559,7 +559,7 @@ ${JSON.stringify(input)}`,
       role = 'parent', // 'parent' | 'centre'
       childName = 'Anya',
       childAgeMonths = 22,
-      centreName = 'Riverdale Early Learning Centre',
+      centreName = 'the centre',
       applicationStatus = 'Submitted',
       intent = 'general inquiry',
       waitlistPosition,
@@ -768,7 +768,7 @@ CRITICAL INSTRUCTIONS & BOUNDARIES:
 5. NEVER make decisions or recommendations for the user.
 6. When answering from the KNOWLEDGE BASE, provide a concise, factual answer, and end your answer with a short source attribution line on a new line in this format:
 Source: <Name of Source>
-(For example: "Source: Help FAQ" or "Source: Maple Grove's requirements" or "Source: Trust and transparency page")
+(For example: "Source: Help FAQ" or "Source: CareQ Demo Centre's requirements" or "Source: Trust and transparency page")
 
 KNOWLEDGE BASE:
 
@@ -805,6 +805,7 @@ A: Yes. When an offer is extended by a centre, you can choose to accept the offe
 1. Prototype terms of use: CareQ is an interactive demonstration for Ontario licensed child care intake. Marked: "Prototype terms, not legal advice". Does not create a binding legal placement contract.
 2. How we use your information: Basic contact details and child profile are collected solely to coordinate intake applications. Documents are shared with a centre only after the parent approves. CareQ never sells data or displays public profiles.
 3. How the AI is used: AI reads published policies to extract checklists, prepares draft messages, and checks tone. People approve everything. It never decides who gets a space. Simulated data is labelled.
+6. Real centres: Real centres' published documents and open data are used for information. Applications, positions, offers and messages involving them are simulated; these centres have not partnered with CareQ.
 4. Fairness: Centres decide admissions under their own published rules (such as sibling priority, catchment, application date). CareQ ranks no one.
 5. Policies and regulations: Governed by Ontario's licensed child care guidelines (Child Care and Early Years Act, 2014, and municipal operating guidelines). Links provided without summaries of the law.
 (Source: Trust and transparency page)

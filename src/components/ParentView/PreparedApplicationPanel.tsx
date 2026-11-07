@@ -116,7 +116,9 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
             <h5 className="text-sm font-bold text-[#173F42] flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#8A6A3B]" /> AI draft — review before sending
             </h5>
-            <span className="rounded px-1.5 py-0.5 bg-[#F3EBDD] text-[#5B4A2E] text-[10px] font-semibold">Simulated centre</span>
+            <span className="rounded px-1.5 py-0.5 bg-[#F3EBDD] text-[#5B4A2E] text-[10px] font-semibold">
+              {centre.demoKind === 'open-data' ? 'Simulated application' : 'Simulated centre'}
+            </span>
           </div>
           <AiFallbackNote aiMode={draft.aiMode} />
           <AiNotice message={aiNotice} />
@@ -210,7 +212,12 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
                   )}
                   <blockquote className="flex gap-2 border-l-2 border-[#D9E4D3] pl-2.5 text-[11px] italic text-[#5B6B66]">
                     <Quote className="w-3 h-3 shrink-0 mt-0.5 text-[#9DBB86]" />
-                    {c.sourceSentence}
+                    <span>
+                      {c.sourceSentence}
+                      {centre.requirementCitations?.[c.requirement] && (
+                        <span className="not-italic text-[#7A8A84]"> ({centre.requirementCitations[c.requirement]})</span>
+                      )}
+                    </span>
                   </blockquote>
                 </li>
               ))}

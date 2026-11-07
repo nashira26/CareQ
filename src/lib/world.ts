@@ -14,8 +14,11 @@ import {
   INITIAL_NOTIFICATIONS,
   PRIYA_ACCOUNT_ID,
   PRIYA_CHILDREN,
-  RIVERDALE_CENTRE_ID,
+  DEMO_CENTRE_ACCOUNT_ID,
+  JESSE_KETCHUM_ACCOUNT_ID,
+  conversationKey,
 } from '../data/mockData';
+import { DEMO_CENTRE_ID, REAL_DEMO_CENTRES, simulatedAccountName } from '../data/demoCentres';
 import { INITIAL_SUPPORT_REQUESTS, SupportRequest } from '../data/helpData';
 import type { Child } from './family';
 import type { PreparedDraft } from './prepareApplication';
@@ -94,7 +97,26 @@ export interface Snapshot {
   preparedDrafts: Record<string, PreparedDraft>;
 }
 
-export const DEMO_ACCOUNT_IDS = [PRIYA_ACCOUNT_ID, 'centre-riverdale'];
+/** Login emails for the centre portal demo accounts (reserved .example domain). */
+const REAL_CENTRE_EMAIL_SLUG: Record<string, string> = {
+  'on-00576': 'jesse-ketchum',
+  'on-0002899': 'wellesley-cdi',
+  'on-0004062': 'macaulay-dovercourt',
+  'on-0002575': 'leaside',
+  'on-03394': 'harmony',
+  'on-07205': 'bf-toronto',
+  'on-12256': 'mary-ward',
+};
+export const demoCentreEmail = (centreId: string) =>
+  centreId === DEMO_CENTRE_ID ? 'centre@careq-demo.example' : `${REAL_CENTRE_EMAIL_SLUG[centreId]}.demo@careq.example`;
+const centreAccountId = (centreId: string) => (centreId === DEMO_CENTRE_ID ? DEMO_CENTRE_ACCOUNT_ID : `centre-${centreId}`);
+
+export const DEMO_ACCOUNT_IDS = [
+  PRIYA_ACCOUNT_ID,
+  DEMO_CENTRE_ACCOUNT_ID,
+  ...REAL_DEMO_CENTRES.map((c) => centreAccountId(c.id)),
+];
+export { JESSE_KETCHUM_ACCOUNT_ID };
 export const DEMO_PASSWORD = 'password';
 
 export interface PasswordHasher {
@@ -111,11 +133,25 @@ export async function buildSeedWorld(hasher: PasswordHasher, now = new Date()): 
   const applications = clone(INITIAL_APPLICATIONS) as ApplicationRecord[];
   const ownerOfChild = new Map(applications.map((a) => [a.childId, a.parentAccountId]));
 
-  const conversations: ConversationRecord[] = Object.entries(clone(INITIAL_CONVERSATIONS)).map(([key, messages]) => {
-    const childId = key.slice(key.indexOf('-') + 1);
-    const centreId = key.slice(0, key.indexOf('-'));
-    return { key, centreId, childId, parentAccountId: ownerOfChild.get(childId) ?? 'unknown', messages };
-  });
+  const conversations: ConversationRecord[] = clone(INITIAL_CONVERSATIONS).map(({ centreId, childId, messages }) => ({
+    key: conversationKey(centreId, childId),
+    centreId,
+    childId,
+    parentAccountId: ownerOfChild.get(childId) ?? 'unknown',
+    messages,
+  }));
+
+  // Real centres: SIMULATED demo accounts (not operated by or affiliated with the centre)
+  const realCentreAccounts: AccountRecord[] = REAL_DEMO_CENTRES.map((c) => ({
+    id: centreAccountId(c.id),
+    role: 'centre',
+    email: demoCentreEmail(c.id),
+    name: simulatedAccountName(c.name),
+    passwordHash: demoHash,
+    centreId: c.id,
+    centreName: c.name,
+    createdAt,
+  }));
 
   return {
     accounts: [
@@ -129,15 +165,16 @@ export async function buildSeedWorld(hasher: PasswordHasher, now = new Date()): 
         createdAt,
       },
       {
-        id: 'centre-riverdale',
+        id: DEMO_CENTRE_ACCOUNT_ID,
         role: 'centre',
-        email: 'centre@riverdale.ca',
-        name: 'Sarah Jenkins',
+        email: demoCentreEmail(DEMO_CENTRE_ID),
+        name: 'CareQ Demo Centre staff (fictional)',
         passwordHash: demoHash,
-        centreId: RIVERDALE_CENTRE_ID,
-        centreName: 'Riverdale Early Learning Centre',
+        centreId: DEMO_CENTRE_ID,
+        centreName: 'CareQ Demo Centre (fictional)',
         createdAt,
       },
+      ...realCentreAccounts,
     ],
     children: clone(PRIYA_CHILDREN).map((c) => ({ ...c, parentAccountId: PRIYA_ACCOUNT_ID })),
     centres: clone(INITIAL_CENTRES),
@@ -146,7 +183,7 @@ export async function buildSeedWorld(hasher: PasswordHasher, now = new Date()): 
     notifications: clone(INITIAL_NOTIFICATIONS),
     supportRequests: clone(INITIAL_SUPPORT_REQUESTS).map((r) => ({
       ...r,
-      submittedByAccountId: r.submittedByRole === 'parent' ? PRIYA_ACCOUNT_ID : 'centre-riverdale',
+      submittedByAccountId: r.submittedByRole === 'parent' ? PRIYA_ACCOUNT_ID : DEMO_CENTRE_ACCOUNT_ID,
     })),
   };
 }

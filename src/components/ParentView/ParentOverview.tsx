@@ -205,7 +205,7 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
       {/* Bottom Grid */}
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Left Column: Your care journey */}
-        <Card className="lg:col-span-2 flex flex-col justify-between">
+        <Card className="lg:col-span-2 flex flex-col justify-between min-w-0">
           <div>
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 pb-5 border-b border-[#E7E4DA] mb-4">
               <div>
@@ -234,9 +234,9 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
                   <div
                     key={app.id}
                     onClick={() => onNavigate('track')}
-                    className="rounded-xl border border-[#E7E4DA] p-4 hover:bg-[#FAF9F4] flex items-center justify-between cursor-pointer transition-colors"
+                    className="rounded-xl border border-[#E7E4DA] p-4 hover:bg-[#FAF9F4] flex flex-col sm:flex-row sm:items-center justify-between gap-2 cursor-pointer transition-colors"
                   >
-                    <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="flex items-center gap-3.5 min-w-0 w-full sm:w-auto">
                       <IconTile icon={Leaf} tone="sage" />
                       <div className="min-w-0">
                         <div className="font-bold text-sm text-[#173F42] truncate">
@@ -248,7 +248,7 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 shrink-0 ml-3">
+                    <div className="flex items-center gap-3 shrink-0 sm:ml-3">
                       <StatusBadge status={app.status} />
                       <ChevronRight className="w-4 h-4 text-[#7A8A84]" />
                     </div>

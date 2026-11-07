@@ -4,7 +4,8 @@ import { createHash } from 'node:crypto';
 import { MemoryRepo } from './repo';
 import { buildSeedWorld, actorOf, PasswordHasher, Actor } from './world';
 import * as svc from './service';
-import { AccessError } from './access';
+import { AccessError, InputError } from './access';
+import { DEMO_CENTRE_ID, HARMONY_ID, JESSE_KETCHUM_ID } from '../data/demoCentres';
 
 const hasher: PasswordHasher = {
   hash: async (p) => createHash('sha256').update(p).digest('hex'),
@@ -25,7 +26,8 @@ const child = (firstName: string) => ({
 async function setup() {
   const repo = new MemoryRepo(await buildSeedWorld(hasher));
   const priya = actorOf((await repo.getAccount('parent-priya'))!);
-  const riverdale = actorOf((await repo.getAccount('centre-riverdale'))!);
+  const demoCentre = actorOf((await repo.getAccount('centre-careq-demo'))!);
+  const jesseKetchum = actorOf((await repo.getAccount(`centre-${JESSE_KETCHUM_ID}`))!);
 
   const alexAcc = await svc.signUp(repo, hasher, { role: 'parent', name: 'Alex Morgan', email: 'alex@example.ca', password: 'alexpass1' });
   const alex: Actor = actorOf(alexAcc);
@@ -44,7 +46,7 @@ async function setup() {
     {}
   );
   const sunny = actorOf((await repo.getAccount(sunnyAcc.id))!);
-  return { repo, priya, riverdale, alex, sunny, sunnyId };
+  return { repo, priya, demoCentre, jesseKetchum, alex, sunny, sunnyId };
 }
 
 const rejects403 = (p: Promise<unknown>) => assert.rejects(p, (e) => e instanceof AccessError && (e as AccessError).status === 403);
@@ -64,29 +66,35 @@ test('a parent only ever sees their own applications, conversations and notifica
 });
 
 test("a parent can't read or change another parent's application (403/404)", async () => {
-  const { repo, alex } = await setup();
-  // Priya's seeded draft at Danforth Sprouts
-  await rejectsHidden(svc.updateDraft(repo, alex, 'app-c4-anya', { kind: 'noteToCentre', note: 'hijack' }));
-  await rejectsHidden(svc.submitApplication(repo, alex, 'app-c4-anya'));
-  await rejectsHidden(svc.withdrawApplication(repo, alex, 'app-c1-anya'));
-  assert.equal((await repo.getApplication('app-c4-anya'))!.status, 'Draft'); // unchanged
+  const { repo, alex, priya } = await setup();
+  // A draft Priya starts at B.F. Toronto (real centre, simulated application)
+  const draftId = await svc.createDraft(repo, priya, 'on-07205');
+  await rejectsHidden(svc.updateDraft(repo, alex, draftId, { kind: 'noteToCentre', note: 'hijack' }));
+  await rejectsHidden(svc.submitApplication(repo, alex, draftId));
+  await rejectsHidden(svc.withdrawApplication(repo, alex, 'app-careq-demo-anya'));
+  assert.equal((await repo.getApplication(draftId))!.status, 'Draft'); // unchanged
 });
 
 test("a centre can't read another centre's applications, or any drafts", async () => {
-  const { repo, riverdale, sunny, sunnyId, alex } = await setup();
+  const { repo, demoCentre, jesseKetchum, sunny, sunnyId, alex } = await setup();
   const draftId = await svc.createDraft(repo, alex, sunnyId);
   const sunnySnap = await svc.getSnapshot(repo, (await repo.getAccount(sunny.accountId))!);
   assert.equal(sunnySnap.applications.length, 0, 'draft not visible to the centre');
   await svc.submitApplication(repo, alex, draftId);
   const after = await svc.getSnapshot(repo, (await repo.getAccount(sunny.accountId))!);
   assert.deepEqual(after.applications.map((a) => a.id), [draftId]);
-  const rvSnap = await svc.getSnapshot(repo, (await repo.getAccount(riverdale.accountId))!);
-  assert.ok(!rvSnap.applications.some((a) => a.id === draftId));
-  assert.ok(rvSnap.applications.every((a) => a.centreId === 'c1' && a.status !== 'Draft'));
-  // Riverdale can't change Sunny Steps' application
-  await rejectsHidden(svc.setStatus(repo, riverdale, draftId, 'Waitlisted', 2));
+  const demoSnap = await svc.getSnapshot(repo, (await repo.getAccount(demoCentre.accountId))!);
+  assert.ok(!demoSnap.applications.some((a) => a.id === draftId));
+  assert.ok(demoSnap.applications.every((a) => a.centreId === DEMO_CENTRE_ID && a.status !== 'Draft'));
+  // A real centre's simulated account sees only its own centre's applications
+  const jkSnap = await svc.getSnapshot(repo, (await repo.getAccount(jesseKetchum.accountId))!);
+  assert.ok(jkSnap.applications.length >= 3);
+  assert.ok(jkSnap.applications.every((a) => a.centreId === JESSE_KETCHUM_ID));
+  // The demo centre can't change Sunny Steps' or Jesse Ketchum's applications
+  await rejectsHidden(svc.setStatus(repo, demoCentre, draftId, 'Waitlisted', 2));
+  await rejectsHidden(svc.setStatus(repo, demoCentre, 'app-jesse-ketchum-anya', 'Offer'));
   // ... or Sunny Steps' requirements
-  await rejects403(svc.updateRequirements(repo, riverdale, sunnyId, ['X'], {}));
+  await rejects403(svc.updateRequirements(repo, demoCentre, sunnyId, ['X'], {}));
 });
 
 test('end to end: submit -> centre waitlists -> parent sees position; notifications go to the right people', async () => {
@@ -104,17 +112,21 @@ test('end to end: submit -> centre waitlists -> parent sees position; notificati
 });
 
 test('messages: parents only about their own child; centres only with connected families', async () => {
-  const { repo, alex, priya, riverdale, sunny, sunnyId } = await setup();
+  const { repo, alex, priya, demoCentre, jesseKetchum, sunny, sunnyId } = await setup();
   const alexChild = (await repo.listChildren(alex.accountId))[0].id;
   // Alex can't write as if about Priya's child
-  await rejects403(svc.sendMessage(repo, alex, { centreId: 'c1', childId: 'child-anya' }, 'hello', false));
+  await rejects403(svc.sendMessage(repo, alex, { centreId: DEMO_CENTRE_ID, childId: 'child-anya' }, 'hello', false));
   // Sunny Steps can't message a family that never applied or wrote
   await rejects403(svc.sendMessage(repo, sunny, { centreId: sunnyId, childId: alexChild }, 'hi', false));
-  // Riverdale can't post into another centre's conversation
-  await rejects403(svc.sendMessage(repo, riverdale, { centreId: sunnyId, childId: alexChild }, 'hi', false));
-  // Allowed: Priya -> Riverdale about Anya; Riverdale replies
-  await svc.sendMessage(repo, priya, { centreId: 'c1', childId: 'child-anya' }, 'Hello Riverdale', false);
-  await svc.sendMessage(repo, riverdale, { centreId: 'c1', childId: 'child-anya' }, 'Hello Priya', false);
+  // The demo centre can't post into another centre's conversation
+  await rejects403(svc.sendMessage(repo, demoCentre, { centreId: sunnyId, childId: alexChild }, 'hi', false));
+  await rejects403(svc.sendMessage(repo, demoCentre, { centreId: JESSE_KETCHUM_ID, childId: 'child-anya' }, 'hi', false));
+  // Allowed: Priya -> Jesse Ketchum about Anya (centre id contains "-"); its simulated account replies
+  await svc.sendMessage(repo, priya, { centreId: JESSE_KETCHUM_ID, childId: 'child-anya' }, 'Hello', false);
+  await svc.sendMessage(repo, jesseKetchum, { centreId: JESSE_KETCHUM_ID, childId: 'child-anya' }, 'Hello Priya', false);
+  const thread = (await svc.getSnapshot(repo, (await repo.getAccount(priya.accountId))!)).conversations[`${JESSE_KETCHUM_ID}-child-anya`];
+  assert.equal(thread.at(-1)!.text, 'Hello Priya');
+  assert.equal(thread.at(-1)!.senderName, 'Jesse Ketchum Early Learning & Child Care Centre');
   const alexSnap = await svc.getSnapshot(repo, (await repo.getAccount(alex.accountId))!);
   assert.deepEqual(alexSnap.conversations, {});
 });
@@ -142,4 +154,18 @@ test('accounts: duplicate email, wrong password, demo password, hashes never in 
   const snap = await svc.getSnapshot(repo, priya);
   assert.ok(!JSON.stringify(snap).includes(priya.passwordHash));
   assert.equal(snap.account?.isDemoAccount, true);
+});
+
+test("a centre that doesn't serve the child's age group can't get an application (Harmony is preschool-only)", async () => {
+  const { repo, priya } = await setup();
+  await assert.rejects(svc.createDraft(repo, priya, HARMONY_ID), (e) => e instanceof InputError && /Doesn't serve toddlers/.test(e.message));
+});
+
+test('seeded conversations keep the right centre and child for ids with "-"', async () => {
+  const world = await buildSeedWorld(hasher);
+  const jk = world.conversations.find((c) => c.centreId === JESSE_KETCHUM_ID && c.childId === 'child-anya');
+  assert.ok(jk);
+  assert.equal(jk.key, `${JESSE_KETCHUM_ID}-child-anya`);
+  assert.equal(jk.parentAccountId, 'parent-priya');
+  assert.ok(world.conversations.every((c) => c.parentAccountId !== 'unknown'));
 });

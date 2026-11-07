@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
 import { Centre, Application, ParentProfile } from '../../data/mockData';
 import { OntarioCentre } from '../../data/ontarioTypes';
+import { doesntServeLabel } from '../../lib/searchCriteria';
 
 const NO_REAL_CENTRES: OntarioCentre[] = [];
 
@@ -232,7 +233,7 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
             <div className="text-[11px] text-stone-500 flex items-center gap-2">
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-teal-700 inline-block"></span>
-                <span>CareQ partner centre (simulated)</span>
+                <span>CareQ demo centre (simulated applications)</span>
               </span>
               {realCentresOnMap.length > 0 && (
                 <span className="flex items-center gap-1">
@@ -249,7 +250,7 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
 
           {/* Bottom helper pill */}
           <div className="absolute bottom-3 left-3 z-1000 bg-stone-900/80 backdrop-blur-xs text-white text-[11px] px-3 py-1 rounded-full shadow-sm pointer-events-none">
-            Powered by OpenStreetMap • {centres.length} partner (simulated) + {realCentresOnMap.length} licensed centres
+            Powered by OpenStreetMap • {centres.length} demo (simulated applications) + {realCentresOnMap.length} licensed centres
           </div>
         </div>
 
@@ -349,6 +350,10 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       <span>Selected ({currentApp?.status || 'Draft'})</span>
                     </button>
+                  ) : doesntServeLabel(activeCentre.ageGroups, parentProfile.childAgeMonths) ? (
+                    <span className="flex-1 bg-[#FDF3DD] border border-[#EADBB8] text-[#8A6411] font-semibold text-xs py-2 px-3 rounded-lg text-center">
+                      {doesntServeLabel(activeCentre.ageGroups, parentProfile.childAgeMonths)}
+                    </span>
                   ) : (
                     <button
                       type="button"

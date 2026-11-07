@@ -1,17 +1,29 @@
 import React from 'react';
 import { ApplicationStatus } from '../data/mockData';
 import { Clock, AlertCircle, FileText, Check, Ban, Sparkles } from 'lucide-react';
+import { SimTag } from './ui/CareUI';
 
 interface StatusBadgeProps {
   status: ApplicationStatus;
   waitlistPosition?: number;
   size?: 'sm' | 'md';
+  /** Every non-draft status in the demo is simulated; set false only where a tag is already shown next to it. */
+  simulated?: boolean;
 }
 
-export const StatusBadge: React.FC<StatusBadgeProps> = ({
-  status,
-  waitlistPosition,
-}) => {
+export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, waitlistPosition, size, simulated = true }) => {
+  const badge = <Badge status={status} waitlistPosition={waitlistPosition} size={size} />;
+  // A draft is the parent's own unsent work, not a simulated centre status
+  if (!simulated || status === 'Draft' || !badge) return badge;
+  return (
+    <span className="inline-flex items-center gap-1">
+      {badge}
+      <SimTag />
+    </span>
+  );
+};
+
+const Badge: React.FC<Omit<StatusBadgeProps, 'simulated'>> = ({ status, waitlistPosition }) => {
   const base = 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold select-none';
 
   switch (status) {

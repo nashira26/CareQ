@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { reportedLine } from '../../lib/simulated';
 import {
   ParentProfile,
   Application,
@@ -58,7 +59,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
     },
     {
       id: 'rem-2',
-      text: 'Follow up with Riverdale intake committee',
+      text: 'Follow up with CareQ Demo Centre',
       date: 'Nov 15',
       completed: false,
     },
@@ -241,6 +242,8 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                       {/* Tiny grey label: {type} · {timestamp} */}
                       <div className="flex items-center gap-1.5 text-[11px] text-stone-400 capitalize">
                         <span>{notif.type || 'Update'}</span>
+                        <span>·</span>
+                        <span>Simulated</span>
                         <span>·</span>
                         <span>{notif.timestamp}</span>
                         {isUnread && (
@@ -468,9 +471,8 @@ export const HomeTab: React.FC<HomeTabProps> = ({
               </span>
               {bestWaitlistApp && bestWaitlistApp.waitlistPosition ? (
                 <p className="text-stone-800 font-medium leading-tight">
-                  #{bestWaitlistApp.waitlistPosition} at {bestCentreName} · reported by{' '}
-                  {bestWaitlistApp.waitlistReportedBy || bestCentreName} on{' '}
-                  {bestWaitlistApp.waitlistReportedDate || 'recently'}
+                  #{bestWaitlistApp.waitlistPosition} at {bestCentreName} ·{' '}
+                  {reportedLine(bestWaitlistApp.waitlistReportedBy || bestCentreName, bestWaitlistApp.waitlistReportedDate || 'recently')}
                 </p>
               ) : (
                 <p className="text-stone-500 italic">

@@ -10,3 +10,10 @@ coverage/
 # Raw open-data downloads (regenerate src/data/ontarioCentres.json with npm run import:ontario)
 ontario_childcare.csv
 toronto_childcare.csv
+
+# Third-party handbooks and the licensing manual: get them from the team shared drive (never commit;
+# the repo is public). Only each folder's meta.json is committed. The vector index lives in MongoDB.
+data/policies/**/*.pdf
+data/policies/**/*.html
+data/provincial/**/*.pdf
+data/index/

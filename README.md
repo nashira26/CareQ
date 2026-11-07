@@ -52,11 +52,21 @@ Open http://localhost:3000 (or the port in your `PORT` variable).
 
 ## Demo accounts and data
 
-The login page has one-click demo buttons (Priya, parent; Riverdale Early Learning Centre, centre; password `password`). You can also create your own parent or centre account.
+The login page has one-click demo buttons (password `password` for all):
+
+- **Priya** (parent, `priya@example.ca`): home area The Annex; child Anya, 22 months, toddler, full day.
+- **CareQ Demo Centre (fictional)** (centre, `centre@careq-demo.example`).
+- **Jesse Ketchum Early Learning & Child Care Centre · simulated demo account** (centre, `jesse-ketchum.demo@careq.example`).
+
+You can also create your own parent or centre account.
+
+**Demo centres.** Seven real Ontario centres (the `demoCentreId` in each `data/policies/*/meta.json`) plus one fictional "CareQ Demo Centre". The real centres keep their open-data details, and their checklists are quoted word for word from each operator's published handbook, with page citations (Family Day Care's handbook lists no admission documents, so it uses the Ontario licensing manual). Each real centre has a centre-portal account named "{centre} · simulated demo account". Every centre-portal page shows "Simulated demo account. Not operated by or affiliated with {centre}." Applications, positions, offers and messages involving these centres are simulated and labelled "Simulated"; these centres have not partnered with CareQ. The operators' other sites stay open-data centres (information only). Other accounts follow the same pattern: `{slug}.demo@careq.example` (see `src/lib/world.ts`).
+
+**Handbooks.** The PDFs/HTML in `data/policies/` and `data/provincial/` are third-party documents. Get them from the team shared drive; they are git-ignored, and only each folder's `meta.json` is committed.
 
 - **Mongo mode (default):** all demo data lives in MongoDB, so a parent and a centre on different devices see the same applications, positions, messages and notifications. Passwords are hashed with bcrypt; sessions are httpOnly cookies (7 days). The server enforces who sees what: a parent only their own family's data, a centre only its own centre's (403 otherwise).
 - **Local mode** (`DATA_MODE=local`): each browser keeps its own copy; "Reset demo" clears that browser.
-- All data is fictional demo data. The 1,100 Ontario open-data centres come from `src/data/ontarioCentres.json` and are never stored in the database.
+- Families, applications, positions, offers and messages are simulated. The 1,100 Ontario open-data centres come from `src/data/ontarioCentres.json`; only the 7 demo centres are copied into the database (`src/data/demoCentres.ts`).
 
 ### Resetting the demo (mongo mode)
 
@@ -89,14 +99,14 @@ Six Gemini tools run on the server (`server.ts`). The API key never reaches the 
 
 If Gemini is unavailable, each tool falls back to a basic non-AI version.
 
-Centre search ranking is plain code, not AI: `src/lib/rankCentres.ts` (distance 50, age/program fit 30, languages and checkable extras 20; partner centres get no bonus). Run its unit tests with `npm test`.
+Centre search ranking is plain code, not AI: `src/lib/rankCentres.ts` (distance 50, age/program fit 30, languages and checkable extras 20; demo centres get no bonus). Run its unit tests with `npm test`.
 
 ## Responsible AI rules
 
 - People approve every application, message and withdrawal.
 - Centres decide admissions. The AI never ranks children or families.
 - Queue positions and waits are shown only as the centre reported them, with a date, or as "not provided". CareQ never predicts them.
-- All centres, families, waitlists and messages in the demo are simulated and labelled.
+- Families, applications, positions, offers and messages in the demo are simulated and labelled "Simulated". Real centres' published documents and open data are used for information and are never labelled simulated.
 
 ## Tech stack
 

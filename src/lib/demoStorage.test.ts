@@ -71,7 +71,7 @@ test('storage that throws (private window) never breaks the app', async () => {
 test('reset clears the demo key and the shortlist only', () => {
   const s = memory();
   s.setItem(DEMO_STORAGE_KEY, '{}');
-  s.setItem(SHORTLIST_KEY, '["c1"]');
+  s.setItem(SHORTLIST_KEY, '["careq-demo"]');
   s.setItem('unrelated', 'keep');
   clearDemoStorage(s);
   assert.equal(s.getItem(DEMO_STORAGE_KEY), null);

@@ -9,7 +9,9 @@ import {
   DemoBanner,
   IconTile,
   SimNote,
+  SimTag,
 } from '../ui/CareUI';
+import { estimateLine, reportedLine } from '../../lib/simulated';
 import {
   Sparkles,
   AlertTriangle,
@@ -89,8 +91,8 @@ export const TrackTab: React.FC<TrackTabProps> = ({
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[#173F42]">
-                Placement offer received!
+              <h3 className="text-base font-bold text-[#173F42] flex items-center gap-2">
+                Placement offer received! <SimTag />
               </h3>
               <p className="text-xs text-[#5B6B66] mt-0.5">
                 A spot is available for {parentProfile.childName}. Review and accept below to secure enrolment.
@@ -194,22 +196,22 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                       <div className="col-span-2">
                         {hasPosition ? (
                           <div>
-                            <div className="text-2xl font-bold text-[#4E7A5A] leading-tight">
+                            <div className="text-2xl font-bold text-[#4E7A5A] leading-tight flex items-center gap-1.5">
                               #{app.waitlistPosition}
+                              <SimTag />
                             </div>
                             <div className="text-[10px] text-[#7A8A84] mt-0.5 leading-tight">
-                              reported by {app.waitlistReportedBy || centre?.name || 'centre'} ·{' '}
-                              {app.waitlistReportedDate || 'recently'}
+                              {reportedLine(app.waitlistReportedBy || centre?.name || 'centre', app.waitlistReportedDate || 'recently')}
                             </div>
                             {app.waitlistEstimate && (
                               <div className="text-[10px] text-[#7A8A84] mt-1 leading-tight">
-                                Centre's estimate: {app.waitlistEstimate}, not a guarantee
+                                {estimateLine(app.waitlistEstimate)}
                               </div>
                             )}
                           </div>
                         ) : app.waitlistEstimate ? (
                           <div className="text-[10px] text-[#7A8A84] leading-tight">
-                            Centre's estimate: {app.waitlistEstimate}, not a guarantee
+                            {estimateLine(app.waitlistEstimate)}
                           </div>
                         ) : (
                           <div className="text-xs text-[#7A8A84]">Not reported</div>
@@ -340,11 +342,12 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                       </span>
                       {hasPosition ? (
                         <div>
-                          <span className="text-xl font-bold text-[#4E7A5A]">
+                          <span className="text-xl font-bold text-[#4E7A5A] inline-flex items-center gap-1.5">
                             #{app.waitlistPosition}
+                            <SimTag />
                           </span>
                           <span className="block text-[10px] text-[#7A8A84] mt-0.5">
-                            Reported {app.waitlistReportedDate || 'recently'}
+                            {reportedLine(app.waitlistReportedBy || centre?.name || 'centre', app.waitlistReportedDate || 'recently')}
                           </span>
                         </div>
                       ) : (
@@ -355,7 +358,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 
                   {app.waitlistEstimate && (
                     <div className="text-[11px] text-[#7A8A84] bg-[#FAF9F4] p-2.5 rounded-lg border border-[#E7E4DA]">
-                      Centre's estimate: {app.waitlistEstimate}, not a guarantee
+                      {estimateLine(app.waitlistEstimate)}
                     </div>
                   )}
 
@@ -448,11 +451,12 @@ export const TrackTab: React.FC<TrackTabProps> = ({
             </div>
 
             <div className="bg-[#E4ECE1]/60 border border-[#CBD9C6] rounded-xl p-3.5 text-xs text-[#173F42] space-y-1">
-              <p className="font-semibold">
-                Congratulations! A licensed spot has been offered for {parentProfile.childName}.
+              <p className="font-semibold flex flex-wrap items-center gap-2">
+                Simulated offer: a licensed spot has been offered for {parentProfile.childName}. <SimTag />
               </p>
               <p className="text-[#5B6B66]">
-                Target Start Date: {parentProfile.preferredStartDate} · Toddler Room · {selectedOfferCentre.hours}
+                Target Start Date: {selectedOfferApp.preferredStartDate || parentProfile.preferredStartDate}
+                {selectedOfferCentre.hours ? ` · ${selectedOfferCentre.hours}` : ''}
               </p>
             </div>
 
@@ -558,6 +562,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 
             <div className="bg-[#FAF9F4] border border-[#E7E4DA] rounded-xl p-4">
               {(() => {
+                const historyReporter = historyModalCentre?.name || historyModalApp.waitlistReportedBy || 'the centre';
                 const history =
                   historyModalApp.positionHistory && historyModalApp.positionHistory.length > 0
                     ? [...historyModalApp.positionHistory]
@@ -575,7 +580,8 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                     <div className="space-y-2 py-1">
                       {history.length === 1 && (
                         <div className="text-sm text-[#173F42]">
-                          - {history[0].date} — Position {history[0].position} (joined the waitlist)
+                          - Position {history[0].position} (joined the waitlist)
+                          <span className="block pl-3 text-[11px] text-[#7A8A84]">{reportedLine(historyReporter, history[0].date)}</span>
                         </div>
                       )}
                       <p className="text-xs text-[#7A8A84] italic">No changes recorded yet.</p>
@@ -593,8 +599,9 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                         <li key={idx} className="flex items-start gap-2">
                           <span className="text-[#7A8A84] select-none">-</span>
                           <span>
-                            {item.date} — Position {item.position}
+                            Position {item.position}
                             {isOldest ? ' (joined the waitlist)' : ''}
+                            <span className="block text-[11px] text-[#7A8A84]">{reportedLine(historyReporter, item.date)}</span>
                           </span>
                         </li>
                       );

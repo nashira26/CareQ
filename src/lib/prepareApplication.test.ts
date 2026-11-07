@@ -13,7 +13,7 @@ import {
 } from './prepareApplication';
 
 const input: PrepareInput = {
-  centreName: 'Annex Community Child Care',
+  centreName: 'CareQ Demo Centre (fictional)',
   parentFirstName: 'Priya',
   childFirstName: 'Anya',
   childAgeMonths: 22,

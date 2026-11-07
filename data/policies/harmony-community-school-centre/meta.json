@@ -1,0 +1,17 @@
+{
+  "operator": "Harmony Child Care Centre",
+  "demoCentreId": "on-03394",
+  "demoCentreName": "Harmony Child Care Centre (Harmony Community School Centre) 124 Northcliffe Blvd",
+  "appliesToCentreIds": [
+    "on-03394"
+  ],
+  "documents": [
+    {
+      "file": "handbook.pdf",
+      "title": "Policies and Procedures Parent Handbook (revised January 2020)",
+      "sourceUrl": "https://www.harmonychildcarecentre.ca",
+      "retrieved": "2026-11-06",
+      "sourceNote": "Website named in the handbook; exact file link not found."
+    }
+  ]
+}

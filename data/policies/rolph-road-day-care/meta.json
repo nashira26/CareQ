@@ -1,0 +1,19 @@
+{
+  "operator": "Rolph Road / Leaside Daycare Centres",
+  "demoCentreId": "on-0002575",
+  "demoCentreName": "Leaside Day Care Centre (Rolph Road Day Care)",
+  "appliesToCentreIds": [
+    "on-0002575",
+    "on-0004636",
+    "on-06802"
+  ],
+  "documents": [
+    {
+      "file": "parent-handbook.html",
+      "title": "Parent Handbook (updated June 2026)",
+      "sourceUrl": "https://www.leasidedaycare.com",
+      "retrieved": "2026-11-06",
+      "sourceNote": "Website named in the handbook page; exact page link not found."
+    }
+  ]
+}

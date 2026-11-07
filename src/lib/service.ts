@@ -52,6 +52,7 @@ import {
   validateCentre,
 } from './family';
 import type { Area, FsaCentroids } from './rankCentres';
+import { doesntServeLabel } from './searchCriteria';
 import { NOT_PROVIDED, PreparedDraft } from './prepareApplication';
 
 const shortDate = (now: Date) => now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -217,8 +218,12 @@ async function ownApp(repo: Repo, actor: Actor, id: string, check: (a: Actor, ap
 /** Start (or reuse) a draft for the active child at a partner centre. Returns the application id. */
 export async function createDraft(repo: Repo, actor: Actor, centreId: string): Promise<string> {
   assertAllowed(isParent(actor));
-  if (!(await repo.getCentre(centreId))) throw new NotFoundError('Centre not found.');
+  const centre = await repo.getCentre(centreId);
+  if (!centre) throw new NotFoundError('Centre not found.');
   const child = await activeChildOf(repo, actor);
+  // e.g. a preschool-only centre can't take a toddler application
+  const notServed = doesntServeLabel(centre.ageGroups, ageInMonths(child.dateOfBirth));
+  if (notServed) throw new InputError(`${centre.name}: ${notServed}.`);
   const existing = (await repo.listApplications({ parentAccountId: actor.accountId, centreId, childId: child.id }))[0];
   if (existing) return existing.id;
   const app: ApplicationRecord = {

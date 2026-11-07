@@ -36,6 +36,18 @@ export const EMPTY_CRITERIA: SearchCriteria = {
 export const ageGroupFromMonths = (months: number): AgeGroup =>
   months < 18 ? 'Infant' : months < 30 ? 'Toddler' : 'Preschool';
 
+const AGE_GROUP_PLURAL: Record<AgeGroup, string> = { Infant: 'infants', Toddler: 'toddlers', Preschool: 'preschoolers' };
+
+/**
+ * "Doesn't serve toddlers" when a centre's reported age groups exclude the child's age group,
+ * otherwise null (also null when the ages aren't reported).
+ */
+export const doesntServeLabel = (ageGroups: AgeGroup[] | null | undefined, childAgeMonths: number): string | null => {
+  if (!ageGroups || ageGroups.length === 0) return null;
+  const group = ageGroupFromMonths(childAgeMonths);
+  return ageGroups.includes(group) ? null : `Doesn't serve ${AGE_GROUP_PLURAL[group]}`;
+};
+
 export const hasAnyCriteria = (c: SearchCriteria): boolean =>
   Boolean(
     c.areaText || c.maxDistanceKm !== null || c.ageGroup || c.childAgeMonths !== null || c.careType ||

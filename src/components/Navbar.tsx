@@ -101,6 +101,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="text-[11px] text-[#7A8A84]">
                 {currentRole === 'parent'
                   ? `Parent demo · ${parentProfile.childName}`
+                  : singleCentre.demoKind === 'open-data'
+                  ? 'Simulated demo account'
                   : 'Centre demo · Simulated staff account'}
               </div>
             </div>

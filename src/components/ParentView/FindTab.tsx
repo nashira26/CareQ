@@ -16,6 +16,8 @@ import {
 import { DaycareMap } from './DaycareMap';
 import { useOntarioData, useShortlist, OntarioCentreCard, HeartButton, Chip, ResultInfo } from './OntarioCentres';
 import { SearchChips } from './SearchChips';
+import { reportedLine } from '../../lib/simulated';
+import { doesntServeLabel } from '../../lib/searchCriteria';
 import {
   PageHeader,
   Eyebrow,
@@ -93,18 +95,22 @@ const openDataToRankable = (c: OntarioCentre): RankableCentre => ({
 /** Key for an AI explanation: reused only while the centre's facts are unchanged. */
 const explainKey = (r: RankedCentre) => `${r.id}|${r.matchedFacts.join(';')}|${r.unknownFacts.join(';')}`;
 
+/** Real centre (open data, simulated applications) or the fictional demo centre. */
+const demoCentreLabel = (c: Centre) =>
+  c.demoKind === 'open-data' ? 'Ontario open data · Simulated applications' : 'Fictional demo centre · Simulated';
+
 const appliedLabel = (status: ApplicationStatus) => (status === 'Draft' ? 'Draft application' : `Applied · ${status}`);
 
 /** Queue position exactly as the centre reported it, with the date when known. */
 const positionLabel = (app: Application) =>
   app.waitlistPosition
-    ? `#${app.waitlistPosition} · reported by centre${app.waitlistReportedDate ? ` on ${app.waitlistReportedDate}` : ''}`
+    ? `#${app.waitlistPosition} · ${reportedLine(app.waitlistReportedBy || 'centre', app.waitlistReportedDate || 'recently')}`
     : null;
 
 export const FindTab: React.FC<FindTabProps> = ({
   centres,
   applications,
-  parentProfile: _parentProfile,
+  parentProfile,
   homeArea,
   onSelectCentre,
   onNavigateToApply,
@@ -139,7 +145,9 @@ export const FindTab: React.FC<FindTabProps> = ({
   // One list of all centres: partner centres first, then open-data centres A–Z
   const allEntries: Entry[] = useMemo(() => {
     const partner: Entry[] = centres.map((c) => ({ kind: 'partner', id: c.id, name: c.name, centre: c, rankable: partnerToRankable(c) }));
-    const open: Entry[] = (ontarioFile?.centres ?? []).map((c) => ({
+    // The real demo centres are already in `centres` (same id): don't list their open-data copy twice
+    const onCareQ = new Set(centres.map((c) => c.id));
+    const open: Entry[] = (ontarioFile?.centres ?? []).filter((c) => !onCareQ.has(c.id)).map((c) => ({
       kind: 'open-data',
       id: c.id,
       name: c.name,
@@ -298,6 +306,7 @@ export const FindTab: React.FC<FindTabProps> = ({
     const existingApp = appByCentre.get(centre.id);
     const tone = TONES[index % TONES.length];
     const reg = centre.registration; // self-registered by its own staff (demo, not verified)
+    const notServed = doesntServeLabel(centre.ageGroups, parentProfile.childAgeMonths);
     return (
       <div
         key={centre.id}
@@ -323,7 +332,7 @@ export const FindTab: React.FC<FindTabProps> = ({
                 </span>
               ) : (
                 <span className="inline-block rounded px-1.5 py-0.5 bg-[#0B4A52]/10 text-[#0B4A52] text-[10px] font-semibold">
-                  CareQ partner centre · Simulated
+                  {demoCentreLabel(centre)}
                 </span>
               )}
               <HeartButton name={centre.name} active={shortlist.includes(centre.id)} onToggle={() => toggleShortlist(centre.id)} />
@@ -341,6 +350,17 @@ export const FindTab: React.FC<FindTabProps> = ({
             <h3 className="text-[17px] font-bold text-[#173F42] mt-1 leading-snug">{centre.name}</h3>
             <div className="mt-1.5">{statusPill(centre.id)}</div>
             {centre.address && <p className="text-xs text-[#5B6B66] mt-2">{centre.address}</p>}
+            {centre.demoKind === 'open-data' && (
+              <p className="text-[11px] text-[#7A8A84] mt-1">
+                {centre.licenceNumber ? `Licence #${centre.licenceNumber} · ` : ''}Ontario open data
+                {centre.capacity ? ` · ${centre.capacity} licensed spaces (capacity, not availability)` : ''}
+              </p>
+            )}
+            {notServed && (
+              <p className="mt-2 inline-block rounded-md border border-[#EADBB8] bg-[#FDF3DD] px-2 py-0.5 text-[11px] font-semibold text-[#8A6411]">
+                {notServed}
+              </p>
+            )}
             {reg && (
               <p className="text-[11px] text-[#7A8A84] mt-1">
                 {reg.licenceNumber ? `Licence #${reg.licenceNumber} · Self-reported, not verified · ` : ''}
@@ -405,6 +425,10 @@ export const FindTab: React.FC<FindTabProps> = ({
                 <span>Manage ({existingApp.status})</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
+            ) : notServed ? (
+              <span className="text-xs text-[#7A8A84]" title={`${notServed}, so you can't apply for ${parentProfile.childName}.`}>
+                Can&apos;t apply
+              </span>
             ) : (
               <button
                 type="button"
@@ -446,7 +470,7 @@ export const FindTab: React.FC<FindTabProps> = ({
                       ? 'Not on CareQ yet · Ontario open data'
                       : (e.centre as Centre).registration
                       ? 'Self-registered · not verified'
-                      : 'CareQ partner centre · Simulated'}
+                      : demoCentreLabel(e.centre as Centre)}
                   </p>
                   <p className="text-sm font-bold text-[#173F42] leading-snug line-clamp-2">{e.name}</p>
                   <div className="flex items-center justify-between gap-2">
@@ -566,7 +590,7 @@ export const FindTab: React.FC<FindTabProps> = ({
           ) : (
             <>
               {results.length} centres
-              <span className="ml-2 text-xs font-normal text-[#7A8A84]">CareQ partner centres first, then licensed centres A–Z</span>
+              <span className="ml-2 text-xs font-normal text-[#7A8A84]">CareQ demo centres first, then licensed centres A–Z</span>
             </>
           )}
           {!ontarioFile && !loadError && (
@@ -596,7 +620,7 @@ export const FindTab: React.FC<FindTabProps> = ({
           <DaycareMap
             centres={mapPartner}
             applications={applications}
-            parentProfile={_parentProfile}
+            parentProfile={parentProfile}
             realCentres={mapOpenData}
             onSelectCentre={onSelectCentre}
             onOpenConversation={onOpenConversation}
@@ -642,8 +666,8 @@ export const FindTab: React.FC<FindTabProps> = ({
         <div className="space-y-1">
           <p className="text-[11px] text-[#7A8A84]">
             {areaUnplaced
-              ? 'Ordered by fit with what you asked for, then by name. CareQ never knows availability unless a partner centre reports it.'
-              : 'Ranked by distance and fit with what you asked for. CareQ never knows availability unless a partner centre reports it.'}
+              ? 'Ordered by fit with what you asked for, then by name. CareQ never knows availability unless a centre reports it.'
+              : 'Ranked by distance and fit with what you asked for. CareQ never knows availability unless a centre reports it.'}
           </p>
           <AiFallbackNote aiMode={explainAiMode} />
         </div>

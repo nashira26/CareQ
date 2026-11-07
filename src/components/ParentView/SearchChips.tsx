@@ -248,7 +248,7 @@ export const SearchChips: React.FC<SearchChipsProps> = ({
     chips.push(
       <span
         key="start"
-        title="CareQ never knows availability unless a partner centre reports it."
+        title="CareQ never knows availability unless a centre reports it."
         className={`${chipBase} border-[#E7E4DA] bg-[#F3F2EE] text-[#7A8A84]`}
       >
         <HelpCircle className="w-3 h-3" /> Can&apos;t check: start {criteria.startDate}

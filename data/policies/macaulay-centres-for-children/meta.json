@@ -1,0 +1,38 @@
+{
+  "operator": "Macaulay Centres for Children",
+  "demoCentreId": "on-0004062",
+  "demoCentreName": "Macaulay - Dovercourt Child Care Centre",
+  "appliesToCentreIds": [
+    "on-0004062",
+    "on-56946",
+    "on-16013",
+    "on-0002568",
+    "on-0005169",
+    "on-58266",
+    "on-58517",
+    "on-60509",
+    "on-61565",
+    "on-57801",
+    "on-57792",
+    "on-61582",
+    "on-59382",
+    "on-60653",
+    "on-60033",
+    "on-60038",
+    "on-0005105",
+    "on-63274",
+    "on-61556",
+    "on-60511",
+    "on-60498",
+    "on-60491"
+  ],
+  "documents": [
+    {
+      "file": "handbook.pdf",
+      "title": "Parent Handbook (January 2024)",
+      "sourceUrl": "https://macaulaycentre.org/services/licensed-child-care/licensed-child-care-centres",
+      "retrieved": "2026-11-06",
+      "sourceNote": "Operator page for its licensed centres; exact file link not found."
+    }
+  ]
+}

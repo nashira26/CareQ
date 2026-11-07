@@ -40,6 +40,7 @@ import type { DraftChange } from './lib/service';
 import torontoAreas from './data/torontoAreas.json';
 import fsaCentroids from './data/fsaCentroids.json';
 import { LogoFull } from './components/Logo';
+import { CentreDemoBanner } from './components/ui/CareUI';
 import {
   Search,
   FileEdit,
@@ -503,7 +504,7 @@ export default function App() {
           <div className="h-8 bg-[#F3EBDD] text-[11px] text-[#5B4A2E] flex items-center justify-center gap-3 px-4 shrink-0 select-none">
             <span className="w-1.5 h-1.5 rounded-full bg-[#B9933E] shrink-0" />
             <span className="font-bold tracking-[0.14em]">PROTOTYPE</span>
-            <span className="hidden sm:inline">Centres, families, waitlists and messages in this demo are simulated.</span>
+            <span className="hidden sm:inline">Families, applications, positions, offers and messages in this demo are simulated.</span>
             <span className="sm:hidden">Simulated data prototype.</span>
             <Info className="w-3.5 h-3.5 text-[#5B4A2E] shrink-0" />
           </div>
@@ -604,6 +605,10 @@ export default function App() {
             ) : (
               /* Centres see ONLY the centre screens */
               <div className="space-y-6">
+                {/* On every centre-portal page: demo centres' portal accounts are simulated */}
+                {activeSingleCentre.demoKind && (
+                  <CentreDemoBanner centreName={activeSingleCentre.name} realCentre={activeSingleCentre.demoKind === 'open-data'} />
+                )}
                 {centreTab === 'home' && (
                   <CentreOverview
                     singleCentre={activeSingleCentre}

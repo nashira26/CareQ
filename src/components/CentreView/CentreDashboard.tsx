@@ -713,7 +713,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                   type="button"
                   onClick={() =>
                     setPolicyInputText(
-                      `High Park Forest Care & Preschool - 2026 Admissions Directive.
+                      `Sample 2026 Admissions Policy (fictional).
 Applicants must submit a verified Birth Certificate or Passport.
 ISPA immunization proof is required 30 days before attendance.
 Parents must sign the Outdoor Risk & Nature All-Weather Participation Agreement.
@@ -723,7 +723,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                   }
                   className="text-[11px] font-semibold text-[#0B4A52] hover:underline cursor-pointer"
                 >
-                  Preset: Forest Policy
+                  Preset: Sample policy
                 </button>
               </div>
 

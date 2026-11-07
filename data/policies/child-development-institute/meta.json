@@ -1,0 +1,20 @@
+{
+  "operator": "Child Development Institute (CDI Early Learning Centres)",
+  "demoCentreId": "on-0002899",
+  "demoCentreName": "Wellesley Early Learning Centre - Earlscourt Creche Cdi - 495 Sherbourne Street",
+  "appliesToCentreIds": [
+    "on-55444",
+    "on-0001449",
+    "on-0002899",
+    "on-0005598"
+  ],
+  "documents": [
+    {
+      "file": "handbook.pdf",
+      "title": "Family Handbook (revised January 1, 2025)",
+      "sourceUrl": "https://www.childdevelop.ca",
+      "retrieved": "2026-11-06",
+      "sourceNote": "Website named in the handbook; exact file link not found."
+    }
+  ]
+}

@@ -335,11 +335,16 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
               with OpenStreetMap; {joinStats.withoutMapLocation} without a map location.
             </p>
             <p className="text-stone-500">
-              CareQ shows no availability, waitlist or fee information for these real centres
+              Apart from the demo centres below, CareQ shows no application, waitlist or fee information for these real centres
               ("Not on CareQ yet · Ontario open data").
             </p>
             <p className="font-semibold text-stone-900">
-              Partner centres, their waitlists, offers and messages are simulated for this demo.
+              Real centres' published documents and open data are used for information. Applications, positions,
+              offers and messages involving them are simulated; these centres have not partnered with CareQ.
+            </p>
+            <p>
+              CareQ Demo Centre is fictional. The demo portal accounts for real centres are simulated demo accounts,
+              not operated by or affiliated with those centres.
             </p>
             <p>
               Accounts and centres created on this device are demo data saved only in this browser and removed by
@@ -352,29 +357,48 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
         {/* Direct links to each centre's published policy */}
         <div className="space-y-2 pt-2">
           <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider">
-            Centres' Published Admission Policies
+            Demo centres and where their requirements come from
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {centres.map((c) => (
-              <div
-                key={c.id}
-                className="p-3 rounded-xl border border-stone-200 bg-stone-50/50 flex items-center justify-between"
-              >
-                <div>
-                  <span className="font-semibold text-xs sm:text-sm text-stone-900 block">
-                    {c.name}
-                  </span>
-                  <span className="text-[11px] text-stone-500">
-                    {c.neighbourhood} • Simulated demo centre • Sample admission policy
-                  </span>
-                </div>
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0B4A52] bg-white border border-stone-200 px-2 py-1 rounded-lg">
-                  <FileText className="w-3 h-3 text-[#45B5A5]" />
-                  <span>Policy Document</span>
-                </span>
-              </div>
-            ))}
+            {centres
+              .filter((c) => c.demoKind)
+              .map((c) => {
+                const doc = c.requirementsExtractedFrom;
+                return (
+                  <div
+                    key={c.id}
+                    className="p-3 rounded-xl border border-stone-200 bg-stone-50/50 flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <span className="font-semibold text-xs sm:text-sm text-stone-900 block">{c.name}</span>
+                      <span className="text-[11px] text-stone-500 block">
+                        {c.demoKind === 'open-data'
+                          ? `Ontario open data${c.licenceNumber ? ` • Licence #${c.licenceNumber}` : ''} • Simulated demo account`
+                          : 'Fictional demo centre • Sample admission policy'}
+                      </span>
+                      {doc && (
+                        <span className="text-[11px] text-stone-500 block">
+                          Requirements extracted from {doc.docTitle}
+                          {doc.sourceUrl ? '' : ' (source link not found)'} • retrieved {formatSourceDate(doc.retrieved)}
+                          {doc.fallback === 'licensing-manual' && doc.sourceNote ? ` • ${doc.sourceNote}` : ''}
+                        </span>
+                      )}
+                    </div>
+                    {doc?.sourceUrl ? (
+                      <a
+                        href={doc.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold text-[#0B4A52] bg-white border border-stone-200 px-2 py-1 rounded-lg hover:underline"
+                      >
+                        <FileText className="w-3 h-3 text-[#45B5A5]" />
+                        <span>Source</span>
+                      </a>
+                    ) : null}
+                  </div>
+                );
+              })}
           </div>
         </div>
       </section>

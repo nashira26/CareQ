@@ -87,10 +87,15 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
             {singleCentre.name}
           </h2>
           <p className="mt-3 text-sm text-[#5B6B66]">
-            {singleCentre.address || singleCentre.neighbourhood} · {singleCentre.hours}
+            {singleCentre.address || singleCentre.neighbourhood}
+            {singleCentre.hours ? ` · ${singleCentre.hours}` : ''}
           </p>
           <span className="mt-4 inline-block rounded-md border border-[#C9DCC2] bg-white/70 px-2.5 py-1 text-[10px] text-[#4E7A5A] font-semibold">
-            Licensed centre · Demo details
+            {singleCentre.demoKind === 'open-data'
+              ? `Licensed centre · Ontario open data${singleCentre.licenceNumber ? ` (licence #${singleCentre.licenceNumber})` : ''}`
+              : singleCentre.demoKind === 'fictional'
+              ? 'Fictional centre · Demo details'
+              : 'Licensed centre · Demo details'}
           </span>
         </div>
 

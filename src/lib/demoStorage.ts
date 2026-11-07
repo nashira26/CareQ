@@ -9,10 +9,10 @@
  */
 import type { PasswordHasher, World } from './world';
 
-export const DEMO_STORAGE_KEY = 'careq-demo-v3';
-export const DEMO_STORAGE_VERSION = 3;
+export const DEMO_STORAGE_KEY = 'careq-demo-v4';
+export const DEMO_STORAGE_VERSION = 4;
 /** Older saved demos (different data shape): deleted on start, never converted. */
-export const OLD_DEMO_KEYS = ['careq-demo-v1', 'careq-demo-v2'];
+export const OLD_DEMO_KEYS = ['careq-demo-v1', 'careq-demo-v2', 'careq-demo-v3'];
 export const SHORTLIST_KEY = 'careq.shortlist.v1';
 /** Every localStorage key Reset demo clears. */
 export const DEMO_KEYS = [DEMO_STORAGE_KEY, SHORTLIST_KEY, ...OLD_DEMO_KEYS];

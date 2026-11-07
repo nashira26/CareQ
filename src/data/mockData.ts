@@ -1,4 +1,5 @@
 import type { Child } from '../lib/family';
+import { CAREQ_DEMO_CENTRE, DEMO_CENTRES, DEMO_CENTRE_ID, DEMO_CENTRE_NAME, JESSE_KETCHUM_ID } from './demoCentres';
 
 export type AgeGroup = 'Infant' | 'Toddler' | 'Preschool';
 
@@ -24,17 +25,40 @@ export interface Centre {
   ageGroups: AgeGroup[];
   hours: string;
   requirements: string[];
-  /** Requirement title -> the policy sentence it came from (confirmed by the centre). Simulated for demo centres. */
+  /**
+   * Requirement title -> the policy sentence it came from. Real demo centres: quoted word for word
+   * from their published handbook (real data). Fictional/self-registered centres: their own policy.
+   */
   requirementSources?: Record<string, string>;
+  /** Requirement title -> citation, e.g. "Parent Handbook (March 2026), p.14". Real demo centres only. */
+  requirementCitations?: Record<string, string>;
+  /** The published document the requirements were extracted from (real demo centres only). */
+  requirementsExtractedFrom?: {
+    docTitle: string;
+    sourceUrl?: string;
+    sourceNote?: string;
+    retrieved: string;
+    /** Set when the centre's handbook had no clear requirements and the licensing manual was used. */
+    fallback?: 'licensing-manual';
+  };
+  /**
+   * 'open-data': a real Ontario centre (details from open data) with a SIMULATED demo account.
+   * 'fictional': CareQ Demo Centre. Absent for centres self-registered in the demo.
+   */
+  demoKind?: 'open-data' | 'fictional';
+  /** Real demo centres: from the Ontario open data. */
+  licenceNumber?: string;
+  operator?: string;
+  /** Licensed spaces (open data): capacity, not availability. */
+  capacity?: number;
   feeNote?: string;
   address?: string;
   policyNotes?: string;
   imageUrl?: string;
   lat?: number;
   lng?: number;
-  /** Simulated for the demo; same values as the Ontario open data (e.g. 'Full day'). */
+  /** Same values as the Ontario open data (e.g. 'Full day'). */
   programOptions?: string[];
-  /** Simulated for the demo. */
   languages?: string[];
   /** Present only for centres registered by their own staff in this browser (demo, not verified). */
   registration?: CentreRegistration;
@@ -116,7 +140,10 @@ export interface InAppNotification {
 }
 
 export const PRIYA_ACCOUNT_ID = 'parent-priya';
-export const RIVERDALE_CENTRE_ID = 'c1';
+export { DEMO_CENTRE_ID };
+/** Centre portal demo accounts shown on the login page. */
+export const DEMO_CENTRE_ACCOUNT_ID = 'centre-careq-demo';
+export const JESSE_KETCHUM_ACCOUNT_ID = `centre-${JESSE_KETCHUM_ID}`;
 
 /** One conversation per centre and child. */
 export const conversationKey = (centreId: string, childId: string) => `${centreId}-${childId}`;
@@ -129,7 +156,7 @@ export const PRIYA_CHILDREN: Child[] = [
     dateOfBirth: '2025-01-05',
     careType: 'Full day',
     preferredStartDate: 'March 2027',
-    homeArea: 'Danforth & Pape',
+    homeArea: 'The Annex',
     notes: '',
   },
 ];
@@ -138,503 +165,244 @@ export const PARENT_PROFILE: ParentProfile = {
   name: 'Priya',
   children: PRIYA_CHILDREN,
   childId: 'child-anya',
-  homeArea: 'Danforth & Pape',
+  homeArea: 'The Annex',
   childName: 'Anya',
   childAgeMonths: 22,
-  careType: 'Full-time',
+  careType: 'Full day',
   preferredStartDate: 'March 2027',
 };
 
-export const INITIAL_CENTRES: Centre[] = [
-  {
-    id: 'c1',
-    // Taken from this centre's policyNotes below
-    requirementSources: {
-      "Child's Birth Certificate":
-        'Pursuant to the Child Care and Early Years Act (CCEYA), all applicants must provide an official Child’s Birth Certificate and an up-to-date Yellow Immunization Card (ISPA compliance).',
-      'Yellow Immunization Card (ISPA)':
-        'Pursuant to the Child Care and Early Years Act (CCEYA), all applicants must provide an official Child’s Birth Certificate and an up-to-date Yellow Immunization Card (ISPA compliance).',
-      'Proof of Toronto Residency':
-        'Families residing in Toronto must verify residency with a utility bill or lease agreement.',
-      'Emergency Contact & Medical Consent Form':
-        'An Emergency Contact & Medical Consent Form signed by both legal guardians is required before queue ranking.',
-    },
-    programOptions: ['Full day', 'Before school', 'After school'],
-    languages: ['English'],
-    name: 'Riverdale Early Learning Centre',
-    neighbourhood: 'Riverdale',
-    ageGroups: ['Infant', 'Toddler', 'Preschool'],
-    hours: '7:30 AM – 6:00 PM',
-    feeNote: 'CWELCC Participating ($10/day program)',
-    address: '428 Broadview Ave, Toronto, ON M4K 2N3',
-    lat: 43.6653,
-    lng: -79.3528,
-    imageUrl: 'https://images.unsplash.com/photo-1587654780291-39c9404d746b?auto=format&fit=crop&w=800&q=80',
-    requirements: [
-      "Child's Birth Certificate",
-      'Yellow Immunization Card (ISPA)',
-      'Proof of Toronto Residency',
-      'Emergency Contact & Medical Consent Form',
-    ],
-    policyNotes:
-      'Pursuant to the Child Care and Early Years Act (CCEYA), all applicants must provide an official Child’s Birth Certificate and an up-to-date Yellow Immunization Card (ISPA compliance). Families residing in Toronto must verify residency with a utility bill or lease agreement. An Emergency Contact & Medical Consent Form signed by both legal guardians is required before queue ranking.',
-  },
-  {
-    id: 'c2',
-    requirementSources: {
-      "Child's Birth Certificate": "Please provide a copy of your child's birth certificate with your application.",
-      'Immunization Record': "An up-to-date immunization record is required before your child's first day.",
-      'Health & Allergy Questionnaire': 'Parents complete a short health and allergy questionnaire as part of enrolment.',
-      'Proof of Ontario Address': 'We ask for one document showing your current Ontario address, such as a utility bill.',
-    },
-    programOptions: ['Full day', 'Half day'],
-    languages: ['English'],
-    name: "Bloor West Children's Village",
-    neighbourhood: 'Bloor West Village',
-    ageGroups: ['Toddler', 'Preschool'],
-    hours: '8:00 AM – 5:30 PM',
-    feeNote: 'CWELCC Participating',
-    address: '2215 Bloor St W, Toronto, ON M6S 1N5',
-    lat: 43.6508,
-    lng: -79.4795,
-    imageUrl: 'https://images.unsplash.com/photo-1596495578065-6e0763fa1178?auto=format&fit=crop&w=800&q=80',
-    requirements: [
-      "Child's Birth Certificate",
-      'Immunization Record',
-      'Health & Allergy Questionnaire',
-      'Proof of Ontario Address',
-    ],
-  },
-  {
-    id: 'c3',
-    requirementSources: {
-      "Child's Birth Certificate or Passport": "A birth certificate or passport is needed to confirm your child's age.",
-      'Immunization Records': "Please include your child's current immunization records.",
-      'Parent Consent & Outdoors Agreement':
-        'Because our program spends part of each day outdoors, a parent consent and outdoors agreement must be signed.',
-      'Child Developmental History Summary':
-        "A brief summary of your child's developmental history helps our educators plan for their first weeks.",
-    },
-    programOptions: ['Full day', 'Half day'],
-    languages: ['English'],
-    name: 'High Park Forest Care & Preschool',
-    neighbourhood: 'High Park',
-    ageGroups: ['Infant', 'Toddler', 'Preschool'],
-    hours: '7:00 AM – 6:00 PM',
-    feeNote: 'CWELCC Participating',
-    address: '1870 Bloor St W, Toronto, ON M6P 3K7',
-    lat: 43.6538,
-    lng: -79.4682,
-    imageUrl: 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&w=800&q=80',
-    requirements: [
-      "Child's Birth Certificate or Passport",
-      'Immunization Records',
-      'Parent Consent & Outdoors Agreement',
-      'Child Developmental History Summary',
-    ],
-  },
-  {
-    id: 'c4',
-    requirementSources: {
-      "Child's Birth Certificate": "A copy of the child's birth certificate is required at registration.",
-      'Immunization Yellow Card': "Please bring a copy of your child's yellow immunization card.",
-      "Physician's Health Assessment":
-        "A physician's health assessment completed in the last 12 months is required for infants and toddlers.",
-      'Proof of Ontario Address': 'Proof of an Ontario address, such as a lease or utility bill, is part of the application.',
-    },
-    programOptions: ['Full day'],
-    languages: ['English', 'Greek'],
-    name: 'Danforth Sprouts Daycare',
-    neighbourhood: 'The Danforth',
-    ageGroups: ['Infant', 'Toddler'],
-    hours: '7:30 AM – 5:30 PM',
-    feeNote: 'CWELCC Participating',
-    address: '612 Danforth Ave, Toronto, ON M4K 1R3',
-    lat: 43.6784,
-    lng: -79.3482,
-    imageUrl: 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?auto=format&fit=crop&w=800&q=80',
-    requirements: [
-      "Child's Birth Certificate",
-      'Immunization Yellow Card',
-      "Physician's Health Assessment",
-      'Proof of Ontario Address',
-    ],
-  },
-  {
-    id: 'c5',
-    requirementSources: {
-      "Child's Birth Certificate": "Applications must include a copy of the child's birth certificate.",
-      'Immunization History': "Please attach your child's immunization history.",
-      'Emergency Contact Authorization':
-        'An emergency contact authorization listing two adults who can pick up your child is required.',
-      'Family Information & Schedule Sheet':
-        'Families fill in an information and schedule sheet describing the days and hours they need.',
-      'Residence in the Annex catchment area':
-        "Applicants must live within the centre's catchment area (postal codes M5R and M5S).",
-    },
-    programOptions: ['Half day', 'Before school', 'After school'],
-    languages: ['English', 'French'],
-    name: 'Annex Community Child Care',
-    neighbourhood: 'The Annex',
-    ageGroups: ['Toddler', 'Preschool'],
-    hours: '8:00 AM – 6:00 PM',
-    feeNote: 'CWELCC Participating',
-    address: '380 Huron St, Toronto, ON M5S 2G6',
-    lat: 43.6658,
-    lng: -79.3995,
-    imageUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=800&q=80',
-    requirements: [
-      "Child's Birth Certificate",
-      'Immunization History',
-      'Emergency Contact Authorization',
-      'Family Information & Schedule Sheet',
-      'Residence in the Annex catchment area',
-    ],
-  },
-  {
-    id: 'c6',
-    requirementSources: {
-      "Proof of Child's Age / Birth Certificate": "We need proof of your child's age, such as a birth certificate.",
-      'Yellow Immunization Card': 'A current yellow immunization card is required.',
-      'Proof of Ontario Residency': 'Please provide proof that your family lives in Ontario.',
-      'Dietary & Medical Needs Form': 'A dietary and medical needs form must be completed so staff can plan meals and care.',
-    },
-    programOptions: ['Full day', 'Extended hours'],
-    languages: ['English'],
-    name: 'Leslieville Little Stars Child Care',
-    neighbourhood: 'Leslieville',
-    ageGroups: ['Infant', 'Toddler', 'Preschool'],
-    hours: '7:30 AM – 5:45 PM',
-    feeNote: 'CWELCC Participating',
-    address: '1095 Queen St E, Toronto, ON M4M 1K7',
-    lat: 43.6601,
-    lng: -79.3375,
-    imageUrl: 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&w=800&q=80',
-    requirements: [
-      "Proof of Child's Age / Birth Certificate",
-      'Yellow Immunization Card',
-      'Proof of Ontario Residency',
-      'Dietary & Medical Needs Form',
-    ],
-  },
-  {
-    id: 'c7',
-    requirementSources: {
-      "Child's Birth Certificate": "A copy of the child's birth certificate is required.",
-      'Yellow Immunization Card (ISPA)': "Your child's yellow immunization card (ISPA) must be up to date.",
-      'Proof of Ontario Address': 'Include one document showing your Ontario address.',
-      'Parent Intake Questionnaire': 'Parents complete an intake questionnaire about routines, sleep and feeding.',
-    },
-    programOptions: ['Full day', 'Before school', 'After school'],
-    languages: ['English', 'French'],
-    name: 'Maple Grove Children’s Centre',
-    neighbourhood: 'High Park',
-    ageGroups: ['Infant', 'Toddler', 'Preschool'],
-    hours: '7:30 AM – 6:00 PM',
-    feeNote: 'CWELCC Participating ($10/day program)',
-    address: '154 Maple Grove Ave, Toronto, ON M6R 2L4',
-    lat: 43.6456,
-    lng: -79.4523,
-    imageUrl: 'https://images.unsplash.com/photo-1596495578065-6e0763fa1178?auto=format&fit=crop&w=800&q=80',
-    requirements: [
-      "Child's Birth Certificate",
-      'Yellow Immunization Card (ISPA)',
-      'Proof of Ontario Address',
-      'Parent Intake Questionnaire',
-    ],
-  },
-];
+/** 7 real Ontario open-data centres (simulated demo accounts) + CareQ Demo Centre (fictional). See demoCentres.ts. */
+export const INITIAL_CENTRES: Centre[] = DEMO_CENTRES;
 
-// Initial applications across centres (including multiple kids for Riverdale Early Learning Centre)
+const WELLESLEY_ID = 'on-0002899';
+const MACAULAY_ID = 'on-0004062';
+const LEASIDE_ID = 'on-0002575';
+const nameOf = (id: string) => DEMO_CENTRES.find((c) => c.id === id)!.name;
+const allDone = (centreId: string) => [...DEMO_CENTRES.find((c) => c.id === centreId)!.requirements];
+
+const anya = {
+  parentAccountId: PRIYA_ACCOUNT_ID,
+  childId: 'child-anya',
+  parentName: 'Priya',
+  childName: 'Anya',
+  childAgeMonths: 22,
+  careType: 'Full day',
+  preferredStartDate: 'March 2027',
+};
+
+/**
+ * Every status, position, estimate and offer below is SIMULATED (and labelled so in the UI).
+ * The families are fictional.
+ */
 export const INITIAL_APPLICATIONS: Application[] = [
-  // Applications for Riverdale Early Learning Centre (c1) featuring multiple kids
+  // ---- Priya & Anya (toddler, full day) ----
   {
-    id: 'app-c1-anya',
-    centreId: 'c1',
-    parentAccountId: 'parent-priya',
-    childId: 'child-anya',
-    parentName: 'Priya',
-    childName: 'Anya',
-    childAgeMonths: 22,
-    careType: 'Full-time',
-    preferredStartDate: 'March 2027',
+    ...anya,
+    id: 'app-jesse-ketchum-anya',
+    centreId: JESSE_KETCHUM_ID,
+    status: 'Waitlisted',
+    waitlistPosition: 4,
+    waitlistReportedBy: nameOf(JESSE_KETCHUM_ID),
+    waitlistReportedDate: 'Nov 2',
+    waitlistReportedTimestamp: new Date('2026-11-02T14:00:00Z').getTime(),
+    waitlistEstimate: '4–6 months',
+    positionHistory: [
+      { position: 9, date: 'Sep 29' },
+      { position: 6, date: 'Oct 14' },
+      { position: 4, date: 'Nov 2' },
+    ],
+    submittedAt: 'Sep 22, 2026',
+    completedRequirements: allDone(JESSE_KETCHUM_ID),
+  },
+  {
+    ...anya,
+    id: 'app-leaside-anya',
+    centreId: LEASIDE_ID,
+    status: 'Waitlisted',
+    waitlistPosition: 10,
+    waitlistReportedBy: nameOf(LEASIDE_ID),
+    waitlistReportedDate: 'Oct 1',
+    waitlistReportedTimestamp: new Date('2026-10-01T15:00:00Z').getTime(),
+    // No waitlistEstimate -> "No wait estimate provided by the centre."
+    positionHistory: [
+      { position: 12, date: 'Sep 18' },
+      { position: 10, date: 'Oct 1' },
+    ],
+    submittedAt: 'Sep 10, 2026',
+    completedRequirements: allDone(LEASIDE_ID),
+  },
+  {
+    ...anya,
+    id: 'app-wellesley-anya',
+    centreId: WELLESLEY_ID,
+    status: 'Submitted',
+    submittedAt: 'Oct 28, 2026',
+    completedRequirements: allDone(WELLESLEY_ID),
+  },
+  {
+    ...anya,
+    id: 'app-macaulay-anya',
+    centreId: MACAULAY_ID,
+    status: 'Offer',
+    submittedAt: 'Aug 20, 2026',
+    completedRequirements: allDone(MACAULAY_ID),
+  },
+  {
+    ...anya,
+    id: 'app-careq-demo-anya',
+    centreId: DEMO_CENTRE_ID,
     status: 'Submitted',
     submittedAt: 'Oct 14, 2026',
-    completedRequirements: [
-      "Child's Birth Certificate",
-      'Yellow Immunization Card (ISPA)',
-      'Proof of Toronto Residency',
-      'Emergency Contact & Medical Consent Form',
-    ],
+    completedRequirements: [...CAREQ_DEMO_CENTRE.requirements],
     uploadedDocuments: {
-      "Child's Birth Certificate": {
-        fileName: 'anya_patel_birth_certificate.pdf',
-        fileSize: '1.4 MB',
-        uploadedAt: 'Oct 14, 2026',
-      },
-      'Yellow Immunization Card (ISPA)': {
-        fileName: 'anya_ispa_yellow_card_scan.pdf',
-        fileSize: '920 KB',
-        uploadedAt: 'Oct 14, 2026',
-      },
-      'Proof of Toronto Residency': {
-        fileName: 'toronto_hydro_bill_sept2026.pdf',
-        fileSize: '410 KB',
-        uploadedAt: 'Oct 14, 2026',
-      },
-      'Emergency Contact & Medical Consent Form': {
-        fileName: 'emergency_consent_signed.pdf',
-        fileSize: '650 KB',
-        uploadedAt: 'Oct 14, 2026',
-      },
+      "Child's Birth Certificate": { fileName: 'anya_birth_certificate.pdf', fileSize: '1.4 MB', uploadedAt: 'Oct 14, 2026' },
+      'Yellow Immunization Card (ISPA)': { fileName: 'anya_ispa_yellow_card_scan.pdf', fileSize: '920 KB', uploadedAt: 'Oct 14, 2026' },
+      'Proof of Toronto Residency': { fileName: 'toronto_hydro_bill_sept2026.pdf', fileSize: '410 KB', uploadedAt: 'Oct 14, 2026' },
+      'Emergency Contact & Medical Consent Form': { fileName: 'emergency_consent_signed.pdf', fileSize: '650 KB', uploadedAt: 'Oct 14, 2026' },
     },
-    parentNotes: 'Requesting Toddler room placement; both parents work near Broadview station.',
+    parentNotes: 'Requesting Toddler room placement.',
+  },
+
+  // ---- Fictional families at Jesse Ketchum (so its simulated dashboard isn't empty) ----
+  {
+    id: 'app-jesse-ketchum-yara',
+    centreId: JESSE_KETCHUM_ID,
+    parentAccountId: 'seed-family-haddad',
+    childId: 'child-yara',
+    parentName: 'Omar Haddad',
+    childName: 'Yara',
+    childAgeMonths: 26,
+    careType: 'Full day',
+    preferredStartDate: 'January 2027',
+    status: 'Waitlisted',
+    waitlistPosition: 2,
+    waitlistReportedBy: nameOf(JESSE_KETCHUM_ID),
+    waitlistReportedDate: 'Oct 14',
+    waitlistReportedTimestamp: new Date('2026-10-14T14:00:00Z').getTime(),
+    positionHistory: [
+      { position: 3, date: 'Sep 29' },
+      { position: 2, date: 'Oct 14' },
+    ],
+    submittedAt: 'Aug 30, 2026',
+    completedRequirements: allDone(JESSE_KETCHUM_ID),
   },
   {
-    id: 'app-c1-lucas',
-    centreId: 'c1',
+    id: 'app-jesse-ketchum-theo',
+    centreId: JESSE_KETCHUM_ID,
+    parentAccountId: 'seed-family-okafor',
+    childId: 'child-theo',
+    parentName: 'Grace Okafor',
+    childName: 'Theo',
+    childAgeMonths: 38,
+    careType: 'Full day',
+    preferredStartDate: 'February 2027',
+    status: 'Submitted',
+    submittedAt: 'Nov 3, 2026',
+    completedRequirements: allDone(JESSE_KETCHUM_ID).slice(0, 3),
+    parentNotes: 'Preschool room; Theo is moving from a home child care provider.',
+  },
+
+  // ---- Fictional families at CareQ Demo Centre ----
+  {
+    id: 'app-careq-demo-lucas',
+    centreId: DEMO_CENTRE_ID,
     parentAccountId: 'seed-family-chen',
     childId: 'child-lucas',
     parentName: 'Marcus Chen',
     childName: 'Lucas',
     childAgeMonths: 14,
-    careType: 'Full-time',
+    careType: 'Full day',
     preferredStartDate: 'January 2027',
     status: 'Under review',
     submittedAt: 'Oct 18, 2026',
-    completedRequirements: [
-      "Child's Birth Certificate",
-      'Yellow Immunization Card (ISPA)',
-      'Proof of Toronto Residency',
-    ],
+    completedRequirements: ["Child's Birth Certificate", 'Yellow Immunization Card (ISPA)', 'Proof of Toronto Residency'],
     uploadedDocuments: {
-      "Child's Birth Certificate": {
-        fileName: 'lucas_chen_birth_record.pdf',
-        fileSize: '1.1 MB',
-        uploadedAt: 'Oct 18, 2026',
-      },
-      'Yellow Immunization Card (ISPA)': {
-        fileName: 'lucas_vaccines_record.pdf',
-        fileSize: '840 KB',
-        uploadedAt: 'Oct 18, 2026',
-      },
-      'Proof of Toronto Residency': {
-        fileName: 'lease_agreement_riverdale.pdf',
-        fileSize: '2.1 MB',
-        uploadedAt: 'Oct 18, 2026',
-      },
+      "Child's Birth Certificate": { fileName: 'lucas_chen_birth_record.pdf', fileSize: '1.1 MB', uploadedAt: 'Oct 18, 2026' },
+      'Yellow Immunization Card (ISPA)': { fileName: 'lucas_vaccines_record.pdf', fileSize: '840 KB', uploadedAt: 'Oct 18, 2026' },
+      'Proof of Toronto Residency': { fileName: 'lease_agreement.pdf', fileSize: '2.1 MB', uploadedAt: 'Oct 18, 2026' },
     },
-    parentNotes: 'Sibling attended Riverdale ELC 3 years ago.',
+    parentNotes: 'Sibling attended this centre 3 years ago.',
   },
   {
-    id: 'app-c1-maya',
-    centreId: 'c1',
+    id: 'app-careq-demo-maya',
+    centreId: DEMO_CENTRE_ID,
     parentAccountId: 'seed-family-rodriguez',
     childId: 'child-maya',
     parentName: 'Sofia Rodriguez',
     childName: 'Maya',
     childAgeMonths: 34,
-    careType: 'Full-time',
+    careType: 'Full day',
     preferredStartDate: 'April 2027',
     status: 'Waitlisted',
     waitlistPosition: 3,
-    waitlistReportedBy: 'Riverdale Early Learning Centre',
+    waitlistReportedBy: DEMO_CENTRE_NAME,
     waitlistReportedDate: 'Sep 24',
     positionHistory: [
       { position: 6, date: 'Sep 10' },
       { position: 3, date: 'Sep 24' },
     ],
     submittedAt: 'Sep 22, 2026',
-    completedRequirements: [
-      "Child's Birth Certificate",
-      'Yellow Immunization Card (ISPA)',
-      'Proof of Toronto Residency',
-      'Emergency Contact & Medical Consent Form',
-    ],
+    completedRequirements: [...CAREQ_DEMO_CENTRE.requirements],
     uploadedDocuments: {
-      "Child's Birth Certificate": {
-        fileName: 'maya_rodriguez_cert.pdf',
-        fileSize: '1.2 MB',
-        uploadedAt: 'Sep 22, 2026',
-      },
+      "Child's Birth Certificate": { fileName: 'maya_rodriguez_cert.pdf', fileSize: '1.2 MB', uploadedAt: 'Sep 22, 2026' },
     },
     parentNotes: 'Preschool program transition; peanut allergy noted.',
   },
   {
-    id: 'app-c1-leo',
-    centreId: 'c1',
+    id: 'app-careq-demo-leo',
+    centreId: DEMO_CENTRE_ID,
     parentAccountId: 'seed-family-miller',
     childId: 'child-leo',
     parentName: 'David Miller',
     childName: 'Leo',
     childAgeMonths: 9,
-    careType: 'Full-time',
+    careType: 'Full day',
     preferredStartDate: 'May 2027',
     status: 'Waitlisted',
     waitlistPosition: 8,
-    waitlistReportedBy: 'Riverdale Early Learning Centre',
+    waitlistReportedBy: DEMO_CENTRE_NAME,
     waitlistReportedDate: 'Sep 05',
-    positionHistory: [
-      { position: 8, date: 'Sep 05' },
-    ],
+    positionHistory: [{ position: 8, date: 'Sep 05' }],
     submittedAt: 'Sep 05, 2026',
-    completedRequirements: [
-      "Child's Birth Certificate",
-      'Yellow Immunization Card (ISPA)',
-    ],
+    completedRequirements: ["Child's Birth Certificate", 'Yellow Immunization Card (ISPA)'],
     uploadedDocuments: {
-      "Child's Birth Certificate": {
-        fileName: 'leo_miller_birth_proof.pdf',
-        fileSize: '980 KB',
-        uploadedAt: 'Sep 05, 2026',
-      },
+      "Child's Birth Certificate": { fileName: 'leo_miller_birth_proof.pdf', fileSize: '980 KB', uploadedAt: 'Sep 05, 2026' },
     },
     parentNotes: 'Infant room intake waiting for mother returning from leave.',
   },
   {
-    id: 'app-c1-chloe',
-    centreId: 'c1',
+    id: 'app-careq-demo-chloe',
+    centreId: DEMO_CENTRE_ID,
     parentAccountId: 'seed-family-tremblay',
     childId: 'child-chloe',
     parentName: 'Jessica Tremblay',
     childName: 'Chloe',
     childAgeMonths: 28,
-    careType: 'Full-time',
+    careType: 'Full day',
     preferredStartDate: 'February 2027',
     status: 'Offer',
     submittedAt: 'Aug 14, 2026',
-    completedRequirements: [
-      "Child's Birth Certificate",
-      'Yellow Immunization Card (ISPA)',
-      'Proof of Toronto Residency',
-      'Emergency Contact & Medical Consent Form',
-    ],
+    completedRequirements: [...CAREQ_DEMO_CENTRE.requirements],
     uploadedDocuments: {
-      "Child's Birth Certificate": {
-        fileName: 'chloe_tremblay_cert.pdf',
-        fileSize: '1.3 MB',
-        uploadedAt: 'Aug 14, 2026',
-      },
+      "Child's Birth Certificate": { fileName: 'chloe_tremblay_cert.pdf', fileSize: '1.3 MB', uploadedAt: 'Aug 14, 2026' },
     },
     parentNotes: 'Placement spot open in Toddler B room.',
   },
   {
-    id: 'app-c1-noah',
-    centreId: 'c1',
+    id: 'app-careq-demo-noah',
+    centreId: DEMO_CENTRE_ID,
     parentAccountId: 'seed-family-al-mansoor',
     childId: 'child-noah',
     parentName: 'Tariq Al-Mansoor',
     childName: 'Noah',
     childAgeMonths: 20,
-    careType: 'Full-time',
+    careType: 'Full day',
     preferredStartDate: 'December 2026',
     status: 'Accepted',
     submittedAt: 'Jul 29, 2026',
-    completedRequirements: [
-      "Child's Birth Certificate",
-      'Yellow Immunization Card (ISPA)',
-      'Proof of Toronto Residency',
-      'Emergency Contact & Medical Consent Form',
-    ],
+    completedRequirements: [...CAREQ_DEMO_CENTRE.requirements],
     parentNotes: 'Enrolment confirmed starting Dec 1.',
-  },
-
-  // Additional applications for Priya & Anya at other centres for the parent view
-  {
-    id: 'app-c2-anya',
-    centreId: 'c2',
-    parentAccountId: 'parent-priya',
-    childId: 'child-anya',
-    parentName: 'Priya',
-    childName: 'Anya',
-    childAgeMonths: 22,
-    careType: 'Full-time',
-    preferredStartDate: 'March 2027',
-    status: 'Under review',
-    submittedAt: 'Oct 02, 2026',
-    completedRequirements: [
-      "Child's Birth Certificate",
-      'Immunization Record',
-      'Health & Allergy Questionnaire',
-      'Proof of Ontario Address',
-    ],
-  },
-  {
-    id: 'app-c7-anya',
-    centreId: 'c7',
-    parentAccountId: 'parent-priya',
-    childId: 'child-anya',
-    parentName: 'Priya',
-    childName: 'Anya',
-    childAgeMonths: 22,
-    careType: 'Full-time',
-    preferredStartDate: 'March 2027',
-    status: 'Waitlisted',
-    waitlistPosition: 14,
-    waitlistReportedBy: 'Maple Grove',
-    waitlistReportedDate: 'Nov 3',
-    waitlistReportedTimestamp: new Date('2026-11-03T09:00:00Z').getTime(),
-    waitlistEstimate: '8–12 months',
-    positionHistory: [
-      { position: 22, date: 'Oct 1' },
-      { position: 17, date: 'Oct 20' },
-      { position: 14, date: 'Nov 3' },
-    ],
-    submittedAt: 'Oct 20, 2026',
-    completedRequirements: [
-      "Child's Birth Certificate",
-      'Yellow Immunization Card (ISPA)',
-      'Proof of Ontario Address',
-    ],
-  },
-  {
-    id: 'app-c3-anya',
-    centreId: 'c3',
-    parentAccountId: 'parent-priya',
-    childId: 'child-anya',
-    parentName: 'Priya',
-    childName: 'Anya',
-    childAgeMonths: 22,
-    careType: 'Full-time',
-    preferredStartDate: 'March 2027',
-    status: 'Waitlisted',
-    waitlistPosition: 7,
-    waitlistReportedBy: 'High Park Forest Care',
-    waitlistReportedDate: 'Sep 18',
-    waitlistReportedTimestamp: new Date('2026-09-18T10:00:00Z').getTime(),
-    positionHistory: [
-      { position: 11, date: 'Aug 15' },
-      { position: 7, date: 'Sep 18' },
-    ],
-    // No waitlistEstimate -> shows "No wait estimate provided by the centre."
-    // Reported Sep 18 (over 30 days ago from Nov 2) -> shows "Last update over a month ago."
-    submittedAt: 'Sep 18, 2026',
-    completedRequirements: [
-      "Child's Birth Certificate or Passport",
-      'Immunization Records',
-      'Parent Consent & Outdoors Agreement',
-      'Child Developmental History Summary',
-    ],
-  },
-  {
-    id: 'app-c4-anya',
-    centreId: 'c4',
-    parentAccountId: 'parent-priya',
-    childId: 'child-anya',
-    parentName: 'Priya',
-    childName: 'Anya',
-    childAgeMonths: 22,
-    careType: 'Full-time',
-    preferredStartDate: 'March 2027',
-    status: 'Draft',
-    completedRequirements: ["Child's Birth Certificate"],
-    uploadedDocuments: {
-      "Child's Birth Certificate": {
-        fileName: 'anya_patel_birth_certificate.pdf',
-        fileSize: '1.4 MB',
-        uploadedAt: 'Oct 28, 2026',
-      },
-    },
   },
 ];
 
@@ -649,131 +417,215 @@ export interface ChatMessage {
 
 export type ConversationsMap = Record<string, ChatMessage[]>;
 
-export const INITIAL_CONVERSATIONS: ConversationsMap = {
-  // Keyed by conversationKey(centreId, childId)
-  'c1-child-anya': [
-    {
-      id: 'm1',
-      sender: 'centre',
-      senderName: 'Riverdale Early Learning Centre',
-      text: "Hello Priya, welcome to Riverdale Early Learning Centre! We have received Anya's toddler application for March 2027 and are verifying the uploaded documentation.",
-      timestamp: 'Oct 15, 2026 • 10:14 AM',
-    },
-    {
-      id: 'm2',
-      sender: 'parent',
-      senderName: 'Priya',
-      text: "Thank you! We've uploaded the birth certificate, ISPA yellow card, and Toronto utility bill. Please let us know if anything else is needed.",
-      timestamp: 'Oct 16, 2026 • 2:30 PM',
-    },
-    {
-      id: 'm3',
-      sender: 'centre',
-      senderName: 'Riverdale Early Learning Centre',
-      text: 'All documents look complete and verified. We will follow up as toddler room allocations for March are finalized.',
-      timestamp: 'Oct 17, 2026 • 11:05 AM',
-    },
-  ],
-  'c2-child-anya': [
-    {
-      id: 'm-c2-1',
-      sender: 'parent',
-      senderName: 'Priya',
-      text: "Hello Bloor West team, we've submitted our toddler application for March 2027. Looking forward to hearing from you!",
-      timestamp: 'Oct 02, 2026 • 9:20 AM',
-    },
-    {
-      id: 'm-c2-2',
-      sender: 'centre',
-      senderName: "Bloor West Children's Village",
-      text: 'Hi Priya, thanks for your submission. Your file is currently under review by our intake committee.',
-      timestamp: 'Oct 03, 2026 • 3:45 PM',
-    },
-  ],
-  'c3-child-anya': [
-    {
-      id: 'm-c3-1',
-      sender: 'centre',
-      senderName: 'High Park Forest Care & Preschool',
-      text: 'Hello Priya, Anya is placed at #7 on our Toddler waitlist for March. We will notify you if a spot opens up.',
-      timestamp: 'Sep 19, 2026 • 1:15 PM',
-    },
-  ],
-  'c1-child-lucas': [
-    {
-      id: 'm-lucas-1',
-      sender: 'parent',
-      senderName: 'Marcus Chen',
-      text: "Hi, submitting Lucas's toddler application. His older brother Noah was at Riverdale 3 years ago!",
-      timestamp: 'Oct 18, 2026 • 11:20 AM',
-    },
-    {
-      id: 'm-lucas-2',
-      sender: 'centre',
-      senderName: 'Riverdale Early Learning Centre',
-      text: 'Wonderful to have your family back, Marcus! Our committee is reviewing your sibling priority status.',
-      timestamp: 'Oct 19, 2026 • 9:00 AM',
-    },
-  ],
-  'c1-child-maya': [
-    {
-      id: 'm-maya-1',
-      sender: 'centre',
-      senderName: 'Riverdale Early Learning Centre',
-      text: 'Hello Sofia, Maya is currently #3 on our preschool intake waitlist. We anticipate movement in early spring.',
-      timestamp: 'Sep 24, 2026 • 2:10 PM',
-    },
-  ],
-  'c1-child-chloe': [
-    {
-      id: 'm-chloe-1',
-      sender: 'centre',
-      senderName: 'Riverdale Early Learning Centre',
-      text: 'Hello Jessica! We are pleased to extend a Toddler placement offer for Chloe. Please review and confirm in your portal.',
-      timestamp: 'Aug 14, 2026 • 10:00 AM',
-    },
-  ],
-};
+/** Seeded conversations. centreId/childId are explicit (centre ids like "on-00576" contain "-"). Centre messages are simulated. */
+export const INITIAL_CONVERSATIONS: { centreId: string; childId: string; messages: ChatMessage[] }[] = [
+  {
+    centreId: JESSE_KETCHUM_ID,
+    childId: 'child-anya',
+    messages: [
+      {
+        id: 'm-jk-1',
+        sender: 'centre',
+        senderName: nameOf(JESSE_KETCHUM_ID),
+        text: "Hello Priya, we have received Anya's toddler application for March 2027 and added her to our waitlist.",
+        timestamp: 'Sep 23, 2026 • 10:05 AM',
+      },
+      {
+        id: 'm-jk-2',
+        sender: 'centre',
+        senderName: nameOf(JESSE_KETCHUM_ID),
+        text: 'Update: Anya is now #4 on our toddler waitlist as of Nov 2. We will contact you if a space opens.',
+        timestamp: 'Nov 2, 2026 • 9:40 AM',
+      },
+      {
+        id: 'm-jk-3',
+        sender: 'parent',
+        senderName: 'Priya',
+        text: 'Thank you for the update! March 2027 is still our preferred start.',
+        timestamp: 'Nov 2, 2026 • 12:15 PM',
+      },
+    ],
+  },
+  {
+    centreId: MACAULAY_ID,
+    childId: 'child-anya',
+    messages: [
+      {
+        id: 'm-mac-1',
+        sender: 'centre',
+        senderName: nameOf(MACAULAY_ID),
+        text: 'Hello Priya, we are pleased to offer Anya a toddler space starting March 2027. Please review the offer in your portal.',
+        timestamp: 'Nov 4, 2026 • 11:20 AM',
+      },
+    ],
+  },
+  {
+    centreId: WELLESLEY_ID,
+    childId: 'child-anya',
+    messages: [
+      {
+        id: 'm-wel-1',
+        sender: 'parent',
+        senderName: 'Priya',
+        text: "Hello, we've submitted Anya's toddler application for March 2027. Looking forward to hearing from you!",
+        timestamp: 'Oct 28, 2026 • 9:20 AM',
+      },
+      {
+        id: 'm-wel-2',
+        sender: 'centre',
+        senderName: nameOf(WELLESLEY_ID),
+        text: 'Hi Priya, thanks for your application. We will be in touch once we have reviewed it.',
+        timestamp: 'Oct 29, 2026 • 3:45 PM',
+      },
+    ],
+  },
+  {
+    centreId: DEMO_CENTRE_ID,
+    childId: 'child-anya',
+    messages: [
+      {
+        id: 'm-demo-1',
+        sender: 'centre',
+        senderName: DEMO_CENTRE_NAME,
+        text: "Hello Priya, welcome to CareQ Demo Centre! We have received Anya's toddler application for March 2027 and are verifying the uploaded documentation.",
+        timestamp: 'Oct 15, 2026 • 10:14 AM',
+      },
+      {
+        id: 'm-demo-2',
+        sender: 'parent',
+        senderName: 'Priya',
+        text: "Thank you! We've uploaded the birth certificate, ISPA yellow card, and Toronto utility bill. Please let us know if anything else is needed.",
+        timestamp: 'Oct 16, 2026 • 2:30 PM',
+      },
+      {
+        id: 'm-demo-3',
+        sender: 'centre',
+        senderName: DEMO_CENTRE_NAME,
+        text: 'All documents look complete. We will follow up as toddler room allocations for March are finalized.',
+        timestamp: 'Oct 17, 2026 • 11:05 AM',
+      },
+    ],
+  },
+  {
+    centreId: DEMO_CENTRE_ID,
+    childId: 'child-lucas',
+    messages: [
+      {
+        id: 'm-lucas-1',
+        sender: 'parent',
+        senderName: 'Marcus Chen',
+        text: "Hi, submitting Lucas's application. His older brother attended your centre 3 years ago!",
+        timestamp: 'Oct 18, 2026 • 11:20 AM',
+      },
+      {
+        id: 'm-lucas-2',
+        sender: 'centre',
+        senderName: DEMO_CENTRE_NAME,
+        text: 'Wonderful to have your family back, Marcus! We are reviewing your application.',
+        timestamp: 'Oct 19, 2026 • 9:00 AM',
+      },
+    ],
+  },
+  {
+    centreId: DEMO_CENTRE_ID,
+    childId: 'child-maya',
+    messages: [
+      {
+        id: 'm-maya-1',
+        sender: 'centre',
+        senderName: DEMO_CENTRE_NAME,
+        text: 'Hello Sofia, Maya is currently #3 on our preschool waitlist.',
+        timestamp: 'Sep 24, 2026 • 2:10 PM',
+      },
+    ],
+  },
+  {
+    centreId: DEMO_CENTRE_ID,
+    childId: 'child-chloe',
+    messages: [
+      {
+        id: 'm-chloe-1',
+        sender: 'centre',
+        senderName: DEMO_CENTRE_NAME,
+        text: 'Hello Jessica! We are pleased to extend a Toddler placement offer for Chloe. Please review and confirm in your portal.',
+        timestamp: 'Aug 14, 2026 • 10:00 AM',
+      },
+    ],
+  },
+];
 
+const at = (iso: string) => new Date(iso).getTime();
+
+/** All simulated (labelled "Simulated" wherever they appear). */
 export const INITIAL_NOTIFICATIONS: InAppNotification[] = [
   {
     id: 'notif-1',
     recipientRole: 'parent',
-    recipientId: 'parent-priya',
-    message: 'Maple Grove updated your position to 14 on Nov 3',
-    timestamp: 'Nov 3',
-    createdAt: Date.now() - 86400000,
+    recipientId: PRIYA_ACCOUNT_ID,
+    message: `${nameOf(MACAULAY_ID)} made an offer for Anya on Nov 4`,
+    timestamp: 'Nov 4',
+    createdAt: at('2026-11-04T16:20:00Z'),
     read: false,
-    type: 'position',
+    type: 'offer',
   },
   {
     id: 'notif-2',
     recipientRole: 'parent',
-    recipientId: 'parent-priya',
-    message: 'Riverdale Early Learning Centre updated your application status to Under review on Oct 28',
-    timestamp: 'Oct 28',
-    createdAt: Date.now() - 86400000 * 7,
+    recipientId: PRIYA_ACCOUNT_ID,
+    message: `${nameOf(JESSE_KETCHUM_ID)} updated your position to 4 on Nov 2`,
+    timestamp: 'Nov 2',
+    createdAt: at('2026-11-02T14:00:00Z'),
     read: false,
-    type: 'status',
+    type: 'position',
   },
   {
     id: 'notif-3',
-    recipientRole: 'centre',
-    recipientId: 'c1',
-    message: 'Priya submitted an application for Anya on Oct 25',
-    timestamp: 'Oct 25',
-    createdAt: Date.now() - 86400000 * 10,
-    read: false,
-    type: 'application',
+    recipientRole: 'parent',
+    recipientId: PRIYA_ACCOUNT_ID,
+    message: `${nameOf(LEASIDE_ID)} updated your position to 10 on Oct 1`,
+    timestamp: 'Oct 1',
+    createdAt: at('2026-10-01T15:00:00Z'),
+    read: true,
+    type: 'position',
   },
   {
     id: 'notif-4',
     recipientRole: 'centre',
-    recipientId: 'c1',
+    recipientId: DEMO_CENTRE_ID,
+    message: 'Priya submitted an application for Anya on Oct 14',
+    timestamp: 'Oct 14',
+    createdAt: at('2026-10-14T15:00:00Z'),
+    read: false,
+    type: 'application',
+  },
+  {
+    id: 'notif-5',
+    recipientRole: 'centre',
+    recipientId: DEMO_CENTRE_ID,
     message: 'Marcus Chen submitted an application for Lucas on Oct 18',
     timestamp: 'Oct 18',
-    createdAt: Date.now() - 86400000 * 17,
+    createdAt: at('2026-10-18T15:20:00Z'),
     read: true,
     type: 'application',
+  },
+  {
+    id: 'notif-6',
+    recipientRole: 'centre',
+    recipientId: JESSE_KETCHUM_ID,
+    message: 'Grace Okafor submitted an application for Theo on Nov 3',
+    timestamp: 'Nov 3',
+    createdAt: at('2026-11-03T17:00:00Z'),
+    read: false,
+    type: 'application',
+  },
+  {
+    id: 'notif-7',
+    recipientRole: 'centre',
+    recipientId: JESSE_KETCHUM_ID,
+    message: "Updated Anya's position to 4 on Nov 2",
+    timestamp: 'Nov 2',
+    createdAt: at('2026-11-02T14:00:01Z'),
+    read: true,
+    type: 'position',
   },
 ];
