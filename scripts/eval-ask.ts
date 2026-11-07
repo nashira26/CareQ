@@ -3,20 +3,24 @@
  *
  *   npm run eval:ask                          # http://localhost:$PORT (default 3000)
  *   npm run eval:ask -- http://localhost:3100
+ *   npm run eval:ask -- http://localhost:3100 --pace=8   # 8 s between questions (free-tier per-minute limit)
  *
  * Asks the demo questions anonymously and as Priya (priya@example.ca / password) and prints a
  * results table: question, expected, got, sources, mode, pass. Exits 1 if any check fails.
  */
 import 'dotenv/config';
 
-const BASE = (process.argv[2] || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, '');
+const args = process.argv.slice(2);
+const BASE = (args.find((a) => !a.startsWith('--')) || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, '');
+/** --pace=8 waits 8 s between questions (stays under the Gemini free tier's per-minute limit). */
+const PACE_MS = Number(args.find((a) => a.startsWith('--pace='))?.slice(7) ?? 0) * 1000;
 const NO_INFO = "I don't have that information; please contact the centre or use Help.";
 const PROVINCIAL_LABEL = 'General Ontario rule; check with the centre.';
 const JK = 'on-00576'; // Jesse Ketchum Early Learning & Child Care Centre
 const TELCCS = 'Toronto Early Learning & Child Care Services (City of Toronto)';
 
 type Citation = { kind: string; operatorName: string; docTitle: string; page: string; quote: string; label?: string; simulated?: boolean; scope?: string };
-type Answer = { answer: string; citations: Citation[]; toolsUsed: string[]; retrievalMode: string; aiMode: string; modelUsed: string | null };
+type Answer = { answer: string; citations: Citation[]; toolsUsed: string[]; retrievalMode: string; aiMode: string; modelUsed: string | null; latencyMs?: number; cached?: boolean };
 
 interface Case {
   group: string;
@@ -120,20 +124,32 @@ const shortSource = (c: Citation) =>
 async function main() {
   const cookie = await login();
   const rows: string[] = [];
+  const timings: { model: string; ms: number }[] = [];
   let failed = 0;
   for (const c of CASES) {
     process.stdout.write(`… ${c.question} (${c.as})\n`);
-    const started = Date.now();
+    if (PACE_MS && rows.length) await new Promise((r) => setTimeout(r, PACE_MS));
     const a = await ask(c, cookie);
     const ok = c.check(a);
     if (!ok) failed++;
     const sources = [...new Set(a.citations.map(shortSource))].join('; ') || '-';
-    const mode = `${a.aiMode}${a.modelUsed ? ` (${a.modelUsed})` : ''} · ${a.retrievalMode} · tools: ${a.toolsUsed.join(', ') || '-'} · ${((Date.now() - started) / 1000).toFixed(1)}s`;
-    rows.push(`| ${c.group} | ${cell(c.question)} | ${c.as} | ${cell(c.expected)} | ${cell(a.answer.slice(0, 220))}${a.answer.length > 220 ? '…' : ''} | ${cell(sources)} | ${cell(mode)} | ${ok ? '✅' : '❌'} |`);
+    const model = a.cached ? 'cache' : a.aiMode === 'fallback' ? 'fallback (no AI)' : a.modelUsed ?? '-';
+    const ms = a.latencyMs ?? NaN;
+    if (!a.cached) timings.push({ model, ms });
+    const mode = `${a.retrievalMode} · tools: ${a.toolsUsed.join(', ') || '-'}`;
+    rows.push(`| ${c.group} | ${cell(c.question)} | ${c.as} | ${cell(c.expected)} | ${cell(a.answer.slice(0, 200))}${a.answer.length > 200 ? '…' : ''} | ${cell(sources)} | ${cell(model)} | ${Number.isFinite(ms) ? (ms / 1000).toFixed(1) + ' s' : '-'} | ${cell(mode)} | ${ok ? '✅' : '❌'} |`);
   }
-  console.log('\n| Group | Question | As | Expected | Got | Sources | Mode | Pass |');
-  console.log('| --- | --- | --- | --- | --- | --- | --- | --- |');
+  console.log('\n| Group | Question | As | Expected | Got | Sources | Model | Server time | Retrieval · tools | Pass |');
+  console.log('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const r of rows) console.log(r);
+
+  // Server latency per model (excluding cache hits)
+  console.log('\n| Answered by | Questions | Median | Max |');
+  console.log('| --- | --- | --- | --- |');
+  for (const model of [...new Set(timings.map((t) => t.model))]) {
+    const ms = timings.filter((t) => t.model === model).map((t) => t.ms).sort((x, y) => x - y);
+    console.log(`| ${model} | ${ms.length} | ${(ms[Math.floor((ms.length - 1) / 2)] / 1000).toFixed(1)} s | ${(ms.at(-1)! / 1000).toFixed(1)} s |`);
+  }
   console.log(`\n${CASES.length - failed}/${CASES.length} passed`);
   process.exit(failed ? 1 : 0);
 }

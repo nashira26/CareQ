@@ -38,6 +38,27 @@ const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 15000;
 const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite';
 const GEMINI_FALLBACK_TIMEOUT_MS = Number(process.env.GEMINI_FALLBACK_TIMEOUT_MS) || 10000;
 
+/**
+ * Models per AI endpoint: GEMINI_MODEL_<ENDPOINT> (first) and GEMINI_BACKUP_MODEL_<ENDPOINT> (tried
+ * once on timeout/429/503), e.g. GEMINI_MODEL_ASK_CAREQ, GEMINI_BACKUP_MODEL_PREPARE_APPLICATION.
+ * Defaults: GEMINI_MODEL, then GEMINI_FALLBACK_MODEL; except Ask CareQ, which runs 2–3 model turns
+ * inside 15 s, so it starts with the fast model (flash-lite answered correctly in ~2 s in the
+ * 2026-11-07 eval) and keeps the main model as its backup. Policy extraction and Prepare with AI
+ * keep the main model, where quality matters more than speed.
+ */
+const ENDPOINT_MODEL_DEFAULTS: Record<string, { primary: string; backup: string }> = {
+  'ask-careq': { primary: GEMINI_FALLBACK_MODEL, backup: GEMINI_MODEL },
+};
+const modelsFor = (endpoint: string) => {
+  const key = endpoint.toUpperCase().replace(/-/g, '_');
+  const d = ENDPOINT_MODEL_DEFAULTS[endpoint] ?? { primary: GEMINI_MODEL, backup: GEMINI_FALLBACK_MODEL };
+  return {
+    primary: process.env[`GEMINI_MODEL_${key}`] || d.primary,
+    backup: process.env[`GEMINI_BACKUP_MODEL_${key}`] || d.backup,
+  };
+};
+const AI_ENDPOINTS = ['extract-policy-requirements', 'parse-search', 'explain-results', 'prepare-application', 'generate-message', 'check-tone', 'ask-careq'];
+
 // In-memory cache of successful Gemini answers, so repeated demo inputs answer instantly.
 const CACHE_TTL_MS = 30 * 60 * 1000;
 const CACHE_MAX_ENTRIES = 200;
@@ -140,6 +161,17 @@ async function startServer() {
       return;
     }
     res.locals.account = account ?? undefined;
+    // Per-endpoint latency and the model that answered: logged, and returned as latencyMs
+    const started = Date.now();
+    const json = res.json.bind(res);
+    res.json = (body?: any) => {
+      if (body && typeof body === 'object' && 'aiMode' in body) {
+        const ms = Date.now() - started;
+        console.log(`[ai] ${endpoint}: ${body.aiMode}${body.cached ? ' (cached)' : ''} · model ${body.modelUsed ?? 'none'} · ${ms}ms`);
+        return json({ ...body, latencyMs: ms });
+      }
+      return json(body);
+    };
     next();
   };
 
@@ -200,16 +232,17 @@ async function startServer() {
     geminiCache.delete(cacheKey);
 
     const started = Date.now();
+    const { primary, backup } = modelsFor(label);
     let response: GenerateContentResponse;
-    let modelUsed = GEMINI_MODEL;
+    let modelUsed = primary;
     try {
-      response = await callModel(label, GEMINI_MODEL, params, GEMINI_TIMEOUT_MS);
+      response = await callModel(label, primary, params, GEMINI_TIMEOUT_MS);
     } catch (err) {
       if (!isRetryable(err)) throw err;
       const status = err instanceof ApiError ? `HTTP ${err.status}` : 'timeout';
-      console.warn(`[gemini] ${label}: ${GEMINI_MODEL} failed (${status}); retrying with ${GEMINI_FALLBACK_MODEL}`);
-      modelUsed = GEMINI_FALLBACK_MODEL;
-      response = await callModel(label, GEMINI_FALLBACK_MODEL, params, GEMINI_FALLBACK_TIMEOUT_MS);
+      console.warn(`[gemini] ${label}: ${primary} failed (${status}); retrying with ${backup}`);
+      modelUsed = backup;
+      response = await callModel(label, backup, params, GEMINI_FALLBACK_TIMEOUT_MS);
     }
     console.log(`[gemini] ${label}: answered by ${modelUsed} in ${Date.now() - started}ms`);
 
@@ -810,20 +843,21 @@ If it is respectful, calm, neutral, professional, or standard:
     const cached = askCache.get(cacheKey);
     if (cached) {
       console.log('[gemini] ask-careq: cache hit');
-      return res.json({ success: true, ...cached });
+      return res.json({ success: true, ...cached, cached: true });
     }
 
-    // One model per request: main model, and the backup from then on if the main one fails
-    let current = GEMINI_MODEL;
+    // One model pair per request: the endpoint's first model, and its backup from then on if that fails
+    const { primary, backup } = modelsFor('ask-careq');
+    let current = primary;
     const askModel: AskModelCall = async (params, deadline) => {
       const remaining = () => deadline - Date.now();
       try {
-        const timeout = Math.min(current === GEMINI_MODEL ? GEMINI_TIMEOUT_MS : GEMINI_FALLBACK_TIMEOUT_MS, remaining());
+        const timeout = Math.min(current === primary ? GEMINI_TIMEOUT_MS : GEMINI_FALLBACK_TIMEOUT_MS, remaining());
         return { response: await callModel('ask-careq', current, params, timeout), modelUsed: current };
       } catch (err) {
-        if (current !== GEMINI_MODEL || !isRetryable(err) || remaining() < 2000) throw err;
-        console.warn(`[gemini] ask-careq: ${GEMINI_MODEL} failed (${err instanceof ApiError ? `HTTP ${err.status}` : 'timeout'}); retrying with ${GEMINI_FALLBACK_MODEL}`);
-        current = GEMINI_FALLBACK_MODEL;
+        if (current !== primary || primary === backup || !isRetryable(err) || remaining() < 2000) throw err;
+        console.warn(`[gemini] ask-careq: ${primary} failed (${err instanceof ApiError ? `HTTP ${err.status}` : 'timeout'}); retrying with ${backup}`);
+        current = backup;
         return { response: await callModel('ask-careq', current, params, Math.min(GEMINI_FALLBACK_TIMEOUT_MS, remaining())), modelUsed: current };
       }
     };
@@ -856,6 +890,7 @@ If it is respectful, calm, neutral, professional, or standard:
     app.use(vite.middlewares);
   }
 
+  console.log(`[ai] models: ${AI_ENDPOINTS.map((e) => `${e} ${modelsFor(e).primary} (backup ${modelsFor(e).backup})`).join('; ')}`);
   app.listen(Number(port), () => {
     console.log(`CareQ server running at http://localhost:${port} (${process.env.NODE_ENV === 'production' ? 'production' : 'development'}, data: ${DATA_MODE})`);
   });
