@@ -124,7 +124,7 @@ export const AskCareQAssistant: React.FC = () => {
           sender: 'assistant',
           text: data.answer || NO_INFO,
           timestamp: now(),
-          aiMode: data.aiMode,
+          aiMode: data.aiMode === 'rule' ? undefined : data.aiMode,
           citations: data.citations ?? [],
           notice: data.retrievalMode === 'keyword' ? data.notice || BASIC_SEARCH_NOTICE : undefined,
         },

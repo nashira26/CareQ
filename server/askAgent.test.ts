@@ -15,6 +15,7 @@ import {
   askCacheKey,
   finaliseAnswer,
   isCacheable,
+  isQueueQuestion,
   quoteIsVerbatim,
   verifiedQuote,
   retrieveForAsk,
@@ -220,28 +221,60 @@ test('search_documents: the centre comes from the request; a centreId chosen by 
 
 // ---------------- get_my_application ----------------
 
-test('get_my_application: nothing for anonymous users or centre accounts (no getApplications)', async () => {
-  const { model, requests } = scriptedModel([
-    () => ({ functionCalls: [{ name: 'get_my_application', args: {} }] }),
-    () => answerJson([{ text: 'You are #3.', fromApplication: true }]),
-  ]);
-  const out = await runAskAgent({ question: 'Where am I on the list?', centreId: JK, deps: keywordDeps([JK_WITHDRAW]) }, model);
-  assert.equal(lastToolResult(requests[1].contents).available, false);
-  assert.equal(requests[0].mode, 'ANY'); // personal question: the first call must be get_my_application
-  assert.equal(out.answer, NO_INFO);
-  assert.deepEqual(out.toolsUsed, ['get_my_application']);
+const QUEUE_QUESTIONS = [
+  'Where am I on the list?',
+  'What is my position?',
+  'When will I get a spot?',
+  'How long is the wait?',
+  'Is there a space next week?',
+  'Are there any spots available?',
+];
+const neverCalled: AskModelCall = async () => {
+  throw new Error('the model must not be called for position/availability questions');
+};
+
+test('position / wait / availability questions are answered without Gemini (mode "rule")', async () => {
+  for (const question of QUEUE_QUESTIONS) {
+    assert.ok(isQueueQuestion(question), question);
+    // Anonymous user or centre account (no getApplications): the exact refusal
+    const anon = await runAskAgent({ question, centreId: JK, deps: keywordDeps([JK_WITHDRAW]) }, neverCalled);
+    assert.deepEqual([anon.answer, anon.aiMode, anon.modelUsed, anon.citations.length], [NO_INFO, 'rule', null, 0], question);
+    // Signed-in parent without an application at this centre: the exact refusal
+    const none = await runAskAgent({ question, centreId: JK, deps: keywordDeps([JK_WITHDRAW]), getApplications: async () => [] }, neverCalled);
+    assert.deepEqual([none.answer, none.aiMode], [NO_INFO, 'rule'], question);
+    // Signed-in parent with an application here: the server-written lines, "From your application · Simulated"
+    const priya = await runAskAgent({ question, centreId: JK, deps: keywordDeps([JK_WITHDRAW]), getApplications: async () => [PRIYA_APP] }, neverCalled);
+    assert.equal(priya.aiMode, 'rule');
+    assert.match(priya.answer, /^Anya's application at Jesse Ketchum Early Learning & Child Care Centre: Waitlisted\. Position #4\. Reported by Jesse Ketchum Early Learning & Child Care Centre · Simulated · Nov 2\. Centre's estimate: 4–6 months, not a guarantee · Simulated\.$/);
+    assert.deepEqual([priya.citations.length, priya.citations[0].kind, priya.citations[0].simulated], [1, 'application', true]);
+  }
 });
 
-test('get_my_application: a signed-in parent gets their own simulated application with who reported it and when', async () => {
+test('questions about how waitlists work still go to the handbook (not the rule path)', () => {
+  for (const q of ['How does the waitlist work?', "What must a centre's waiting list policy include?", 'How do I withdraw?', 'What do I need to register?']) {
+    assert.equal(isQueueQuestion(q), false, q);
+  }
+});
+
+test('get_my_application through the agent: nothing for anonymous users or centre accounts', async () => {
+  const { model, requests } = scriptedModel([
+    () => ({ functionCalls: [{ name: 'get_my_application', args: {} }] }),
+    () => answerJson([{ text: 'Here is your status.', fromApplication: true }]),
+  ]);
+  const out = await runAskAgent({ question: 'What does my application say?', centreId: JK, deps: keywordDeps([JK_WITHDRAW]) }, model);
+  assert.equal(lastToolResult(requests[1].contents).available, false);
+  assert.equal(out.answer, NO_INFO);
+});
+
+test('get_my_application through the agent: a parent gets the server-written lines, never the model’s words', async () => {
   const { model } = scriptedModel([
     () => ({ functionCalls: [{ name: 'get_my_application', args: {} }] }),
-    () => answerJson([{ text: 'Here is your position.', fromApplication: true }]),
+    () => answerJson([{ text: 'You are number 1 and will start Monday.', fromApplication: true }]),
   ]);
-  const out = await runAskAgent({ question: 'Where am I on the list?', centreId: JK, deps: keywordDeps([JK_WITHDRAW]), getApplications: async () => [PRIYA_APP] }, model);
+  const out = await runAskAgent({ question: 'What does my application say?', centreId: JK, deps: keywordDeps([JK_WITHDRAW]), getApplications: async () => [PRIYA_APP] }, model);
   assert.equal(out.aiMode, 'gemini');
-  assert.match(out.answer, /Anya's application at Jesse Ketchum.*Waitlisted/);
-  assert.match(out.answer, /Simulated · Nov 2/);
-  assert.equal(out.citations[0].kind, 'application');
+  assert.match(out.answer, /Position #4\. Reported by .* · Simulated · Nov 2/);
+  assert.doesNotMatch(out.answer, /number 1|Monday/);
 });
 
 // ---------------- Limits and fallback ----------------

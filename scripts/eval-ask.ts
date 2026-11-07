@@ -44,7 +44,14 @@ const CASES: Case[] = [
   { group: 'Unanswerable', question: 'When will I get a spot?', as: 'anonymous', centreId: JK, expected: 'Refusal', check: refused },
   { group: 'Unanswerable', question: 'Is there a space next week?', as: 'anonymous', centreId: JK, expected: 'Refusal', check: refused },
   { group: 'Unanswerable', question: 'Do you offer swimming lessons?', as: 'anonymous', centreId: JK, expected: 'Refusal (not in handbook)', check: refused },
-  { group: 'Unanswerable', question: 'Is there a space next week?', as: 'priya', centreId: JK, expected: 'Refusal (even signed in)', check: refused },
+  {
+    group: 'Position',
+    question: 'Is there a space next week?',
+    as: 'priya',
+    centreId: JK,
+    expected: 'Her application lines only (no availability claim), no model',
+    check: (a) => a.aiMode === 'rule' && a.citations.length === 1 && a.citations[0].kind === 'application' && !/available|next week/i.test(a.answer),
+  },
   {
     group: 'Position',
     question: 'Where am I on the list?',
@@ -133,7 +140,7 @@ async function main() {
     const ok = c.check(a);
     if (!ok) failed++;
     const sources = [...new Set(a.citations.map(shortSource))].join('; ') || '-';
-    const model = a.cached ? 'cache' : a.aiMode === 'fallback' ? 'fallback (no AI)' : a.modelUsed ?? '-';
+    const model = a.cached ? 'cache' : a.aiMode === 'fallback' ? 'fallback (no AI)' : a.aiMode === 'rule' ? 'rule (no model)' : a.modelUsed ?? '-';
     const ms = a.latencyMs ?? NaN;
     if (!a.cached) timings.push({ model, ms });
     const mode = `${a.retrievalMode} · tools: ${a.toolsUsed.join(', ') || '-'}`;

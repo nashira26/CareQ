@@ -38,7 +38,7 @@ export interface AskResponse {
   citations?: AskCitation[];
   toolsUsed?: string[];
   retrievalMode?: 'vector' | 'vector-local' | 'keyword' | 'none';
-  aiMode?: 'gemini' | 'fallback';
+  aiMode?: 'gemini' | 'fallback' | 'rule';
   modelUsed?: string | null;
   notice?: string;
 }

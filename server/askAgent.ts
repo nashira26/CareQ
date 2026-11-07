@@ -3,7 +3,7 @@
  *
  *   question ──► Gemini ──► search_documents(query)   (centreId injected by the server, never the model)
  *                   │   └─► get_my_application()      (signed-in parent, current centre only)
- *                   ▼  (max 3 tool calls, 15 s in total)
+ *                   ▼  (max 2 tool calls, 15 s in total)
  *            JSON sentences + {chunkId, quote} ──► verify every quote verbatim ──► drop unsupported
  *            sentences ──► server writes application facts itself ──► answer + citations
  *
@@ -31,7 +31,7 @@ import {
 
 export const NO_INFO = "I don't have that information; please contact the centre or use Help.";
 export const FALLBACK_HEADING = "Here's what the handbook says:";
-export const MAX_TOOL_CALLS = 3;
+export const MAX_TOOL_CALLS = 2;
 export const ASK_DEADLINE_MS = 15_000;
 export const ASK_TOP = 4;
 export const MAX_QUOTE_WORDS = 25;
@@ -85,7 +85,8 @@ export interface AskResult {
   citations: Citation[];
   toolsUsed: string[];
   retrievalMode: RetrievalMode;
-  aiMode: 'gemini' | 'fallback';
+  /** rule = answered by the server without Gemini (position / wait / availability questions). */
+  aiMode: 'gemini' | 'fallback' | 'rule';
   modelUsed: string | null;
   fallbackReason?: 'timeout' | 'error';
   notice?: string;
@@ -126,6 +127,16 @@ export const WAIT_CLAIM =
   /#\s?\d|\b(you are|you're|your child is)\b.*\b(position|number|\d+(st|nd|rd|th))\b|\b(space|spot|place|opening|vacanc\w*)s? (is|are|will be) (available|open)\b|\b\d+\s*(day|week|month|year)s?\b.*\b(wait|waitlist|waiting)\b|\b(wait|waitlist|waiting)\b.*\b\d+\s*(day|week|month|year)s?\b/i;
 
 const personalQuestion = (q: string) => POSITION_Q.test(q) || WHEN_Q.test(q);
+
+/** "How long is the wait?", "how many families are ahead of us?" */
+const WAIT_Q = /\bhow long (is|will be) (the|my|our) wait|\bwait(ing)? time\b|\b(people|children|kids|families) ahead\b|\bam i next\b/i;
+
+/**
+ * Questions about the user's own position, list place, wait, spot or availability. These are
+ * answered by the server without Gemini (answerQueueQuestion). Narrower than UNCACHEABLE_Q, so
+ * "How does the waitlist work?" still goes to the handbook.
+ */
+export const isQueueQuestion = (q: string) => personalQuestion(q) || AVAILABILITY_Q.test(q) || WAIT_Q.test(q);
 
 // ---------------- Retrieval rules ----------------
 
@@ -448,7 +459,7 @@ Rules:
 - For questions about the user's own application, position, wait or spot, call get_my_application. Never state or estimate a position, wait time or availability yourself; if get_my_application returns it, write one sentence with "fromApplication": true and the server will fill in the exact reported facts.
 - Every other sentence must have at least one source: the chunkId of a passage you were given and an exact quote copied character for character from that passage, at most 25 words.
 - Short, plain language (1–4 sentences). No legal advice. Never rank or compare families or centres.
-- If the first search doesn't answer the question, search again with different words (e.g. "admission package", "enrolment forms"; at most 3 searches in total).
+- If the first search doesn't answer the question, search again with different words (e.g. "admission package", "enrolment forms"; at most 2 searches in total).
 - If the passages still don't answer the question, reply {"noInformation": true}.
 
 Final reply: JSON only, no other text:
@@ -477,7 +488,25 @@ const passageForModel = (p: AskPassage) => ({
   text: p.text,
 });
 
+/**
+ * Position / list / wait / spot / availability questions, without the model: the exact refusal for
+ * anonymous users, centre accounts and parents with no application at this centre; otherwise the
+ * server-written application lines ("From your application · Simulated"). Null for other questions.
+ */
+export async function answerQueueQuestion(ctx: AskContext): Promise<AskResult | null> {
+  if (!isQueueQuestion(ctx.question)) return null;
+  const base = { toolsUsed: [] as string[], retrievalMode: 'none' as const, aiMode: 'rule' as const, modelUsed: null };
+  if (!ctx.getApplications) return { ...base, answer: NO_INFO, citations: [] };
+  const apps = await ctx.getApplications().catch(() => [] as AppFact[]);
+  const toolsUsed = ['get_my_application'];
+  if (!apps.length) return { ...base, toolsUsed, answer: NO_INFO, citations: [] };
+  const lines = apps.map(applicationLines);
+  return { ...base, toolsUsed, answer: lines.map((l) => l.join(' ')).join('\n\n'), citations: apps.map((a, i) => applicationCitation(a, lines[i])) };
+}
+
 export async function runAskAgent(ctx: AskContext, model: AskModelCall, deadlineMs = ASK_DEADLINE_MS): Promise<AskResult> {
+  const rule = await answerQueueQuestion(ctx);
+  if (rule) return rule;
   const deadline = Date.now() + deadlineMs;
   const passages = new Map<string, AskPassage>();
   const toolsUsed: string[] = [];
@@ -515,7 +544,6 @@ export async function runAskAgent(ctx: AskContext, model: AskModelCall, deadline
     let nudged = false;
     // MAX_TOOL_CALLS tool turns + 1 nudge + the answer
     for (let turn = 0; turn <= MAX_TOOL_CALLS + 1; turn++) {
-      const force = turn === 0 && personalQuestion(ctx.question);
       const noMoreTools = toolCalls >= MAX_TOOL_CALLS;
       const { response, modelUsed: used } = await withDeadline(
         model(
@@ -524,15 +552,11 @@ export async function runAskAgent(ctx: AskContext, model: AskModelCall, deadline
             config: {
               systemInstruction: SYSTEM_INSTRUCTION,
               temperature: 0,
-              // Low thinking: two or three model turns must fit in 15 s (default thinking took 10-12 s per turn)
+              // Low thinking: up to three model turns must fit in 15 s (default thinking took 10-12 s per turn)
               thinkingConfig: { thinkingLevel: 'LOW' as any },
               tools: [{ functionDeclarations: TOOL_DECLARATIONS }],
               toolConfig: {
-                functionCallingConfig: noMoreTools
-                  ? { mode: 'NONE' as any }
-                  : force
-                  ? { mode: 'ANY' as any, allowedFunctionNames: ['get_my_application'] }
-                  : { mode: 'AUTO' as any },
+                functionCallingConfig: noMoreTools ? { mode: 'NONE' as any } : { mode: 'AUTO' as any },
               },
             },
           },
