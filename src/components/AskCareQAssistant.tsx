@@ -1,8 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, X, Send, Sparkles, Loader2, MessageSquare, Info } from 'lucide-react';
-import { Centre } from '../data/mockData';
+import { Bot, X, Send, Loader2, Info, ExternalLink, Building2 } from 'lucide-react';
 import { aiPost, isUserFacingAiError } from '../lib/aiFetch';
-import { AiFallbackNote, AiMode } from './ui/CareUI';
+import {
+  ASK_CENTRE_EVENT,
+  AskCentre,
+  AskCitation,
+  AskResponse,
+  CENTRE_QUESTIONS,
+  GENERAL_QUESTIONS,
+  citationHeading,
+  showSourceNote,
+} from '../lib/askCareQ';
+import { AiFallbackNote, AiMode, SimTag } from './ui/CareUI';
 
 interface ChatMessage {
   id: string;
@@ -10,28 +19,57 @@ interface ChatMessage {
   text: string;
   timestamp: string;
   aiMode?: AiMode;
+  citations?: AskCitation[];
+  notice?: string;
 }
 
-interface AskCareQAssistantProps {
-  centres: Centre[];
-}
+const NO_INFO = "I don't have that information; please contact the centre or use Help.";
+const BASIC_SEARCH_NOTICE = 'AI search limited right now: basic search used';
+const now = () => new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
-const PRESET_QUESTIONS = [
-  'How are waitlist positions set?',
-  'Who can see my uploaded documents?',
-  "What are CareQ Demo Centre's requirements?",
-  'What does simulated data mean?',
-];
+/** One source under an answer: a handbook quote card, or "From your application · Simulated". */
+const QuoteCard: React.FC<{ c: AskCitation }> = ({ c }) => (
+  <div className="rounded-xl border border-[#E7E4DA] bg-[#FAF9F4] px-2.5 py-2 space-y-1">
+    <p className="text-[10px] font-semibold text-[#5B6B66] flex items-center gap-1 flex-wrap">
+      <span>{citationHeading(c)}</span>
+      {c.kind === 'application' && c.simulated && (
+        <>
+          <span aria-hidden>·</span>
+          <SimTag />
+        </>
+      )}
+    </p>
+    {c.kind === 'document' && <p className="text-[11px] text-[#173F42] italic leading-snug">“{c.quote}”</p>}
+    {c.label && <p className="text-[10px] font-medium text-[#8A6A3B]">{c.label}</p>}
+    {(c.sourceUrl || showSourceNote(c)) && (
+      <p className="text-[10px] text-[#7A8A84] flex items-center gap-1 flex-wrap">
+        {c.sourceUrl && (
+          <a
+            href={c.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-0.5 font-semibold text-[#0B4A52] hover:underline"
+          >
+            Source <ExternalLink className="w-2.5 h-2.5" />
+          </a>
+        )}
+        {showSourceNote(c) && <span>{c.sourceNote}</span>}
+      </p>
+    )}
+  </div>
+);
 
-export const AskCareQAssistant: React.FC<AskCareQAssistantProps> = ({ centres }) => {
+export const AskCareQAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  // The centre the questions are about (null: general questions, answered from provincial + Help sources)
+  const [centre, setCentre] = useState<AskCentre | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome-1',
       sender: 'assistant',
-      text: "Hello! I am the Ask CareQ assistant. I can answer questions about CareQ's policies, intake processes, and centres' confirmed requirements.\n\nSource: Help FAQ",
+      text: "Hello! I'm Ask CareQ. I answer from CareQ's Help pages, Ontario's licensing manual and centres' published handbooks, and I show where each answer comes from.",
       timestamp: 'Just now',
     },
   ]);
@@ -44,63 +82,72 @@ export const AskCareQAssistant: React.FC<AskCareQAssistantProps> = ({ centres })
     }
   }, [messages, isOpen]);
 
+  // "Ask about this centre" buttons (Find and Track cards) open the panel scoped to that centre
+  useEffect(() => {
+    const onAsk = (e: Event) => {
+      const detail = (e as CustomEvent<AskCentre>).detail;
+      if (!detail?.centreId) return;
+      setCentre(detail);
+      setIsOpen(true);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `ctx-${Date.now()}`,
+          sender: 'assistant',
+          text: `Now answering about ${detail.centreName}, from its operator's published handbook.`,
+          timestamp: now(),
+        },
+      ]);
+    };
+    window.addEventListener(ASK_CENTRE_EVENT, onAsk);
+    return () => window.removeEventListener(ASK_CENTRE_EVENT, onAsk);
+  }, []);
+
   const handleSend = async (questionText?: string) => {
     const q = (questionText || input).trim();
     if (!q || isLoading) return;
 
-    const userMsg: ChatMessage = {
-      id: `u-${Date.now()}`,
-      sender: 'user',
-      text: q,
-      timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((prev) => [...prev, { id: `u-${Date.now()}`, sender: 'user', text: q, timestamp: now() }]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const result = await aiPost<{ answer?: string; aiMode?: AiMode }>('/api/ask-careq', {
-        question: q,
-        centres: centres.map((c) => ({
-          name: c.name,
-          neighbourhood: c.neighbourhood,
-          ageGroups: c.ageGroups,
-          hours: c.hours,
-          requirements: c.requirements,
-          feeNote: c.feeNote,
-        })),
-      });
+      // Only the centre id is sent; the server decides what the search may see
+      const result = await aiPost<AskResponse>('/api/ask-careq', { question: q, ...(centre ? { centreId: centre.centreId } : {}) });
       // Too many questions: say so plainly (the reply is not an AI answer)
       if (!result.ok) throw Object.assign(new Error(result.message), { userFacing: isUserFacingAiError(result.status) });
       const data = result.data;
-      const answer =
-        data.answer || "I don't have that information; please contact the centre or use Help.";
-
-      const botMsg: ChatMessage = {
-        id: `a-${Date.now()}`,
-        sender: 'assistant',
-        text: answer,
-        timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-        aiMode: data.aiMode,
-      };
-
-      setMessages((prev) => [...prev, botMsg]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `a-${Date.now()}`,
+          sender: 'assistant',
+          text: data.answer || NO_INFO,
+          timestamp: now(),
+          aiMode: data.aiMode,
+          citations: data.citations ?? [],
+          notice: data.retrievalMode === 'keyword' ? data.notice || BASIC_SEARCH_NOTICE : undefined,
+        },
+      ]);
     } catch (err) {
       // Fallback (or the rate-limit message, which the user can act on)
       const userFacing = (err as { userFacing?: boolean }).userFacing;
-      const botMsg: ChatMessage = {
-        id: `a-${Date.now()}`,
-        sender: 'assistant',
-        text: userFacing ? (err as Error).message : "I don't have that information; please contact the centre or use Help.",
-        timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-        aiMode: 'fallback',
-      };
-      setMessages((prev) => [...prev, botMsg]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `a-${Date.now()}`,
+          sender: 'assistant',
+          text: userFacing ? (err as Error).message : NO_INFO,
+          timestamp: now(),
+          aiMode: 'fallback',
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const suggestions = centre ? CENTRE_QUESTIONS : GENERAL_QUESTIONS;
 
   return (
     <>
@@ -124,7 +171,11 @@ export const AskCareQAssistant: React.FC<AskCareQAssistantProps> = ({ centres })
 
       {/* Small Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-5 right-5 z-50 w-96 max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-4rem)] bg-white rounded-2xl shadow-2xl border border-stone-200 flex flex-col overflow-hidden animate-in fade-in-50 slide-in-from-bottom-4 duration-200">
+        <div
+          role="dialog"
+          aria-label="Ask CareQ"
+          className="fixed bottom-5 right-5 z-50 w-96 max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-4rem)] bg-white rounded-2xl shadow-2xl border border-stone-200 flex flex-col overflow-hidden animate-in fade-in-50 slide-in-from-bottom-4 duration-200"
+        >
           {/* Top Panel Header */}
           <div className="bg-[#0B4A52] text-white p-3.5 flex items-center justify-between shadow-xs">
             <div className="flex items-center gap-2">
@@ -154,15 +205,30 @@ export const AskCareQAssistant: React.FC<AskCareQAssistantProps> = ({ centres })
             </span>
           </div>
 
+          {centre && (
+            <div className="border-b border-stone-200 bg-white px-3.5 py-2 text-[11px] text-[#173F42] flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5 text-[#0B4A52] shrink-0" />
+              <span className="flex-1 min-w-0 truncate">
+                Asking about <span className="font-semibold">{centre.centreName}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setCentre(null)}
+                className="shrink-0 p-0.5 rounded text-[#7A8A84] hover:text-[#173F42] hover:bg-stone-100 cursor-pointer"
+                aria-label="Stop asking about this centre"
+                title="Ask general questions instead"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {/* Messages Feed */}
           <div className="flex-1 p-3.5 overflow-y-auto space-y-3 bg-[#F7F8F7]/60 text-xs">
             {messages.map((msg) => {
               const isUser = msg.sender === 'user';
               return (
-                <div
-                  key={msg.id}
-                  className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
-                >
+                <div key={msg.id} className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
                   <div
                     className={`max-w-[85%] rounded-2xl p-3 leading-relaxed whitespace-pre-wrap ${
                       isUser
@@ -172,10 +238,16 @@ export const AskCareQAssistant: React.FC<AskCareQAssistantProps> = ({ centres })
                   >
                     {msg.text}
                   </div>
+                  {!isUser && msg.citations && msg.citations.length > 0 && (
+                    <div className="max-w-[85%] w-full mt-1.5 space-y-1.5">
+                      {msg.citations.map((c, i) => (
+                        <QuoteCard key={i} c={c} />
+                      ))}
+                    </div>
+                  )}
+                  {!isUser && msg.notice && <p className="text-[11px] text-[#7A8A84] mt-1 px-1">{msg.notice}</p>}
                   {!isUser && <AiFallbackNote aiMode={msg.aiMode} className="mt-1 px-1" />}
-                  <span className="text-[10px] text-stone-400 mt-1 px-1">
-                    {msg.timestamp}
-                  </span>
+                  <span className="text-[10px] text-stone-400 mt-1 px-1">{msg.timestamp}</span>
                 </div>
               );
             })}
@@ -183,7 +255,7 @@ export const AskCareQAssistant: React.FC<AskCareQAssistantProps> = ({ centres })
             {isLoading && (
               <div className="flex items-center gap-2 text-stone-500 text-xs py-1 px-2">
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0B4A52]" />
-                <span>Checking verified knowledge base...</span>
+                <span>Searching the published documents...</span>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -192,7 +264,7 @@ export const AskCareQAssistant: React.FC<AskCareQAssistantProps> = ({ centres })
           {/* Suggested Quick Prompts */}
           <div className="p-2 border-t border-stone-200 bg-white">
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] no-scrollbar">
-              {PRESET_QUESTIONS.map((q) => (
+              {suggestions.map((q) => (
                 <button
                   key={q}
                   type="button"
@@ -217,7 +289,7 @@ export const AskCareQAssistant: React.FC<AskCareQAssistantProps> = ({ centres })
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about policies, documents, or FAQ..."
+                placeholder={centre ? 'Ask about this centre...' : 'Ask about policies, documents, or FAQ...'}
                 disabled={isLoading}
                 className="flex-1 px-3 py-2 text-xs rounded-xl border border-stone-200 focus:outline-hidden focus:ring-2 focus:ring-[#45B5A5]/30 focus:border-[#45B5A5]"
               />

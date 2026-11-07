@@ -63,6 +63,8 @@ export interface RetrieveOptions {
   /** Restrict to this centre's operator handbook (+ provincial documents when includeProvincial). */
   centreId?: string;
   includeProvincial?: boolean;
+  /** Only this kind of document (e.g. 'provincial' for the licensing manual alone). */
+  scope?: 'operator' | 'provincial';
   limit?: number;
 }
 
@@ -328,6 +330,7 @@ export function cosineSearch(queryVector: number[], chunks: StoredChunk[], limit
 
 /** Which chunks a question may see. */
 export function inScope(c: Pick<StoredChunk, 'scope' | 'appliesToCentreIds'>, opts: RetrieveOptions): boolean {
+  if (opts.scope && c.scope !== opts.scope) return false;
   const includeProvincial = opts.includeProvincial ?? true;
   if (c.scope === 'provincial') return includeProvincial;
   return !opts.centreId || c.appliesToCentreIds.includes(opts.centreId);
@@ -335,6 +338,8 @@ export function inScope(c: Pick<StoredChunk, 'scope' | 'appliesToCentreIds'>, op
 
 /** The same scope as an Atlas Vector Search pre-filter (fields: scope, appliesToCentreIds). */
 export function vectorFilter(opts: RetrieveOptions): object | undefined {
+  if (opts.scope === 'provincial') return { scope: 'provincial' };
+  if (opts.scope === 'operator') return opts.centreId ? { appliesToCentreIds: opts.centreId } : { scope: 'operator' };
   const includeProvincial = opts.includeProvincial ?? true;
   if (!opts.centreId) return includeProvincial ? undefined : { scope: 'operator' };
   return includeProvincial

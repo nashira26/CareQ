@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import {
@@ -14,7 +15,10 @@ import { factsSentence } from './src/lib/rankCentres';
 import { sanitizePrepareInput, finalizePrepared, prepareFallback } from './src/lib/prepareApplication';
 import type { Area, FsaCentroids } from './src/lib/rankCentres';
 import { createDataApi } from './server/api';
-import { connectMongo, ensureIndexes, isEmpty, reseed, mongo, pingMongo } from './server/db';
+import { connectMongo, ensureIndexes, isEmpty, reseed, mongo, pingMongo, MongoRepo } from './server/db';
+import { AskCache, AskModelCall, AskUser, AppFact, askCacheKey, runAskAgent } from './server/askAgent';
+import { MemoryQueryStore, MongoQueryStore, RetrieverDeps, StoredChunk, geminiQueryEmbedder, memoryChunkSource, mongoChunkSource } from './server/retrieval';
+import type { AccountRecord } from './src/lib/world';
 import { sessionAccount } from './server/auth';
 import { rateLimit, AI_LIMIT_PER_SESSION, AI_LIMIT_ANON_ASK, RATE_LIMIT_MESSAGE } from './server/rateLimit';
 import torontoAreas from './src/data/torontoAreas.json';
@@ -113,14 +117,15 @@ async function startServer() {
    * 10/min per IP for anonymous Ask CareQ. In local mode there are no server sessions, so limits are per IP.
    */
   const aiGuard = (endpoint: string) => async (req: Request, res: Response, next: () => void) => {
-    let accountId: string | null = null;
+    let account: AccountRecord | null = null;
     if (DATA_MODE === 'mongo' && mongo.db) {
       try {
-        accountId = (await sessionAccount(mongo.db, req))?.id ?? null;
+        account = await sessionAccount(mongo.db, req);
       } catch {
-        accountId = null;
+        account = null;
       }
     }
+    const accountId = account?.id ?? null;
     const anonymousAllowed = endpoint === 'ask-careq' || DATA_MODE === 'local';
     if (!accountId && !anonymousAllowed) {
       res.status(401).json({ error: 'Please log in to use CareQ\'s AI features.' });
@@ -134,6 +139,7 @@ async function startServer() {
       res.status(429).json({ error: RATE_LIMIT_MESSAGE, retryAfterSeconds: limit.retryAfterSeconds });
       return;
     }
+    res.locals.account = account ?? undefined;
     next();
   };
 
@@ -737,133 +743,98 @@ If it is respectful, calm, neutral, professional, or standard:
     }
   });
 
-  // API 5: Ask CareQ Assistant
-  app.post('/api/ask-careq', aiGuard('ask-careq'), async (req: Request, res: Response) => {
-    const { question, centres } = req.body;
+  // API 5: Ask CareQ, an agent with two tools (search_documents, get_my_application); see server/askAgent.ts
+  const askCache = new AskCache();
+  let retrieverDeps: { db: unknown; deps: RetrieverDeps } | null = null;
+  const embed = process.env.GEMINI_API_KEY ? geminiQueryEmbedder(ai) : undefined;
+  const getRetrieverDeps = (): RetrieverDeps => {
+    const db = DATA_MODE === 'mongo' ? mongo.db : null;
+    if (retrieverDeps && retrieverDeps.db === db) return retrieverDeps.deps;
+    let deps: RetrieverDeps;
+    if (db) {
+      deps = { source: mongoChunkSource(db), embed, queryStore: new MongoQueryStore(db), log: console.warn };
+    } else {
+      // Local mode (or MongoDB not connected yet): the index file written by npm run build:index, if present
+      const file = path.resolve(__dirname, 'data', 'index', 'policyChunks.json');
+      let chunks: StoredChunk[] = [];
+      try {
+        if (fs.existsSync(file)) chunks = JSON.parse(fs.readFileSync(file, 'utf8')).chunks ?? [];
+      } catch (e) {
+        console.warn('[ask-careq] could not read data/index/policyChunks.json:', (e as Error).message);
+      }
+      deps = { source: memoryChunkSource(chunks), embed, queryStore: new MemoryQueryStore(), log: console.warn };
+    }
+    retrieverDeps = { db, deps };
+    return deps;
+  };
 
+  app.post('/api/ask-careq', aiGuard('ask-careq'), async (req: Request, res: Response) => {
+    const { question } = req.body ?? {};
     if (!question || typeof question !== 'string' || !question.trim()) {
       return res.status(400).json({ error: 'Question is required.' });
     }
+    // The centre page the user is on. Only the server uses it (as the search filter); the model never chooses it.
+    const rawCentre = req.body?.centreId;
+    const centreId = typeof rawCentre === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(rawCentre) ? rawCentre : undefined;
+    const account = res.locals.account as AccountRecord | undefined;
+    const user: AskUser = !account
+      ? { kind: 'anonymous' }
+      : account.role === 'parent'
+      ? { kind: 'parent', accountId: account.id }
+      : { kind: 'centre', accountId: account.id };
 
-    const fallbackExact = "I don't have that information; please contact the centre or use Help.";
+    // get_my_application: a signed-in parent's own applications at this centre (never drafts), from MongoDB
+    const db = DATA_MODE === 'mongo' ? mongo.db : null;
+    const getApplications =
+      user.kind === 'parent' && centreId && db
+        ? async (): Promise<AppFact[]> => {
+            const repo = new MongoRepo(db);
+            const [apps, centre] = await Promise.all([repo.listApplications({ parentAccountId: user.accountId, centreId }), repo.getCentre(centreId)]);
+            return apps
+              .filter((a) => a.status !== 'Draft')
+              .map((a) => ({
+                childName: a.childName,
+                centreName: centre?.name ?? 'the centre',
+                status: a.status,
+                position: typeof a.waitlistPosition === 'number' && a.waitlistPosition > 0 ? a.waitlistPosition : null,
+                reportedBy: a.waitlistReportedBy ?? null,
+                reportedDate: a.waitlistReportedDate ?? null,
+                estimate: a.waitlistEstimate ?? null,
+                // Demo centres (real or fictional) are simulated; a self-registered centre's data is not
+                simulated: !centre?.registration,
+              }));
+          }
+        : undefined;
 
-    try {
-      const centresContext = Array.isArray(centres)
-        ? centres
-            .map(
-              (c: any) =>
-                `Centre Name: ${c.name}\nNeighbourhood: ${c.neighbourhood}\nAge Groups: ${(c.ageGroups || []).join(', ')}\nHours: ${c.hours || 'N/A'}\nConfirmed Requirements: ${(c.requirements || []).join('; ')}\nFee Note: ${c.feeNote || 'N/A'}`
-            )
-            .join('\n\n')
-        : '';
-
-      const prompt = `You are the "Ask CareQ" official assistant for CareQ, an Ontario child care intake coordination platform prototype.
-
-CRITICAL INSTRUCTIONS & BOUNDARIES:
-1. You may ONLY answer using the provided KNOWLEDGE BASE below.
-2. If the user's question cannot be answered strictly and directly from the provided KNOWLEDGE BASE, you MUST reply with this EXACT phrase and nothing else:
-"${fallbackExact}"
-3. NEVER give legal advice under any circumstances.
-4. NEVER guess or estimate space availability, open spots, wait times, or waitlist positions.
-5. NEVER make decisions or recommendations for the user.
-6. When answering from the KNOWLEDGE BASE, provide a concise, factual answer, and end your answer with a short source attribution line on a new line in this format:
-Source: <Name of Source>
-(For example: "Source: Help FAQ" or "Source: CareQ Demo Centre's requirements" or "Source: Trust and transparency page")
-
-KNOWLEDGE BASE:
-
---- SOURCE 1: HELP FAQ ---
-Q: How do applications work in CareQ?
-A: CareQ simplifies child care intake across Ontario licensed centres. Parents explore licensed centres, add centres to their intake list, upload required documents (such as immunization records and proof of residency), and review their application before submitting. Participating centres receive the verified file directly and update application progress.
-(Source: Help FAQ)
-
-Q: How are waitlist positions set?
-A: Waitlist positions are set independently by each centre under its own published admission policy (such as sibling priority, catchment area, or intake application date). CareQ is a communication and intake coordination tool—CareQ ranks no one and does not decide placement order.
-(Source: Help FAQ)
-
-Q: What does "simulated data" mean?
-A: CareQ is currently operating as an interactive prototype demonstration. Simulated data indicates sample demonstration records—such as mock waitlist position histories, demo parent profiles, and sample notifications—created to demonstrate realistic coordination without exposing real confidential personal information.
-(Source: Help FAQ)
-
-Q: How is AI used in CareQ?
-A: AI in CareQ assists with administrative productivity: it reads published centre intake policies to extract required document checklists, prepares draft messages, and suggests calmer phrasing for messages. Human beings approve everything—the AI never decides who gets a child care space, never ranks families, and never takes automated actions.
-(Source: Help FAQ)
-
-Q: Who can see my documents?
-A: Documents are shared with a centre only after the parent explicitly reviews and approves submission. CareQ does not share your uploaded files publicly, does not sell data, and competing centres cannot see files submitted to other centres.
-(Source: Help FAQ)
-
-Q: How do I contact support or report an issue?
-A: You can submit a Contact Us inquiry or Technical Support ticket directly in the Help tab. Every submission receives a tracking reference number (e.g., CQ-1042). If you experience a communication, fairness, or privacy concern with another party, you can use the "Raise a concern" form.
-(Source: Help FAQ)
-
-Q: Can I decline an offer or withdraw an application?
-A: Yes. When an offer is extended by a centre, you can choose to accept the offer (and optionally withdraw pending applications from other centres) or decline/withdraw directly from your Track Status dashboard.
-(Source: Help FAQ)
-
---- SOURCE 2: TRUST AND TRANSPARENCY PAGE ---
-1. Prototype terms of use: CareQ is an interactive demonstration for Ontario licensed child care intake. Marked: "Prototype terms, not legal advice". Does not create a binding legal placement contract.
-2. How we use your information: Basic contact details and child profile are collected solely to coordinate intake applications. Documents are shared with a centre only after the parent approves. CareQ never sells data or displays public profiles.
-3. How the AI is used: AI reads published policies to extract checklists, prepares draft messages, and checks tone. People approve everything. It never decides who gets a space. Simulated data is labelled.
-6. Real centres: Real centres' published documents and open data are used for information. Applications, positions, offers and messages involving them are simulated; these centres have not partnered with CareQ.
-4. Fairness: Centres decide admissions under their own published rules (such as sibling priority, catchment, application date). CareQ ranks no one.
-5. Policies and regulations: Governed by Ontario's licensed child care guidelines (Child Care and Early Years Act, 2014, and municipal operating guidelines). Links provided without summaries of the law.
-(Source: Trust and transparency page)
-
---- SOURCE 3: CONFIRMED REQUIREMENTS OF CENTRES ---
-${centresContext}
-
-USER'S QUESTION:
-"""
-${question}
-"""`;
-
-      const { response, modelUsed } = await generateWithTimeout('ask-careq', {
-        contents: prompt,
-        config: {
-          temperature: 0.1,
-        },
-      });
-
-      let text = response.text ? response.text.trim() : fallbackExact;
-
-      // Double-check fallback adherence if Gemini generated a hallucinated apology
-      if (!text || text.toLowerCase().includes("as an ai") || text.toLowerCase().includes("i am unable")) {
-        text = fallbackExact;
-      }
-
-      return res.json({
-        aiMode: 'gemini',
-        modelUsed,
-        success: true,
-        answer: text,
-      });
-    } catch (err) {
-      console.error('Ask CareQ API error:', err);
-      // Deterministic rule-based fallback based on keywords
-      const q = question.toLowerCase();
-      let answer = fallbackExact;
-
-      if (q.includes('waitlist') || q.includes('position') || q.includes('rank')) {
-        answer = 'Waitlist positions are set independently by each centre under its own published admission policy. CareQ ranks no one.\n\nSource: Help FAQ';
-      } else if (q.includes('document') || q.includes('see') || q.includes('privacy') || q.includes('upload')) {
-        answer = 'Documents are shared with a centre only after the parent approves. They are never shared publicly or sold.\n\nSource: Trust and transparency page';
-      } else if (q.includes('ai') || q.includes('artificial')) {
-        answer = "CareQ's AI reads published policies to prepare checklists, drafts messages, and checks tone. People approve everything and the AI never decides who gets a space.\n\nSource: Help FAQ";
-      } else if (q.includes('simulated')) {
-        answer = 'Simulated data refers to labelled sample records used in this prototype demonstration to test coordination safely.\n\nSource: Help FAQ';
-      } else if (q.includes('support') || q.includes('contact') || q.includes('help')) {
-        answer = 'You can reach support by submitting a Contact Us or Technical Support request directly in the Help tab.\n\nSource: Help FAQ';
-      }
-
-      return res.json({
-        aiMode: 'fallback',
-        modelUsed: null,
-        fallbackReason: fallbackReasonFor(err),
-        success: true,
-        answer,
-      });
+    const cacheKey = askCacheKey(user, centreId, question);
+    const cached = askCache.get(cacheKey);
+    if (cached) {
+      console.log('[gemini] ask-careq: cache hit');
+      return res.json({ success: true, ...cached });
     }
+
+    // One model per request: main model, and the backup from then on if the main one fails
+    let current = GEMINI_MODEL;
+    const askModel: AskModelCall = async (params, deadline) => {
+      const remaining = () => deadline - Date.now();
+      try {
+        const timeout = Math.min(current === GEMINI_MODEL ? GEMINI_TIMEOUT_MS : GEMINI_FALLBACK_TIMEOUT_MS, remaining());
+        return { response: await callModel('ask-careq', current, params, timeout), modelUsed: current };
+      } catch (err) {
+        if (current !== GEMINI_MODEL || !isRetryable(err) || remaining() < 2000) throw err;
+        console.warn(`[gemini] ask-careq: ${GEMINI_MODEL} failed (${err instanceof ApiError ? `HTTP ${err.status}` : 'timeout'}); retrying with ${GEMINI_FALLBACK_MODEL}`);
+        current = GEMINI_FALLBACK_MODEL;
+        return { response: await callModel('ask-careq', current, params, Math.min(GEMINI_FALLBACK_TIMEOUT_MS, remaining())), modelUsed: current };
+      }
+    };
+
+    const started = Date.now();
+    const result = await runAskAgent({ question: question.trim().slice(0, 500), centreId, deps: getRetrieverDeps(), getApplications }, askModel);
+    console.log(
+      `[ask-careq] ${result.aiMode}${result.modelUsed ? ` (${result.modelUsed})` : ''} in ${Date.now() - started}ms · tools ${result.toolsUsed.join(',') || '-'} · ${result.retrievalMode} · ${result.citations.length} citation(s)`
+    );
+    askCache.set(cacheKey, question, result);
+    return res.json({ success: true, ...result });
   });
 
   // Unknown /api routes are JSON 404s (never the HTML app)

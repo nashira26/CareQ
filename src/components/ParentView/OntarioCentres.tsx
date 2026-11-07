@@ -3,6 +3,7 @@ import { MapPin, Heart, Database, Users, Navigation } from 'lucide-react';
 import { OntarioCentre, OntarioCentresFile, formatSourceDate } from '../../data/ontarioTypes';
 
 import { SHORTLIST_KEY } from '../../lib/demoStorage';
+import { AskAboutCentre } from '../AskAboutCentre';
 
 const readShortlist = (): string[] => {
   try {
@@ -160,6 +161,9 @@ export const OntarioCentreCard: React.FC<{
             <span>{centre.capacity} licensed spaces in total (capacity, not availability)</span>
           </p>
         )}
+        <div className="mt-3">
+          <AskAboutCentre centreId={centre.id} centreName={centre.name} />
+        </div>
       </div>
 
       <div className="border-t border-[#E7E4DA] pt-3 space-y-1">

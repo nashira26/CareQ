@@ -14,7 +14,8 @@
     "test": "node --import tsx --test src/lib/*.test.ts server/*.test.ts",
     "seed": "tsx scripts/seed.ts",
     "reset": "tsx scripts/reset.ts",
-    "build:index": "tsx scripts/build-index.ts"
+    "build:index": "tsx scripts/build-index.ts",
+    "eval:ask": "tsx scripts/eval-ask.ts"
   },
   "dependencies": {
     "@google/genai": "^2.32.0",

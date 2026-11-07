@@ -115,9 +115,18 @@ Six Gemini tools run on the server (`server.ts`). The API key never reaches the 
 | Result explainer| `/api/explain-results`             | Restates the ranking facts for the top 10; adds no new claims                    |
 | Message drafter | `/api/generate-message`            | Sender edits and approves                                                        |
 | Tone check      | `/api/check-tone`                  | Suggests only                                                                    |
-| Ask CareQ       | `/api/ask-careq`                   | Answers only from confirmed info; says "I don't have that information" otherwise |
+| Ask CareQ       | `/api/ask-careq`                   | Agent with two tools; cites a verified quote for every fact; says "I don't have that information" otherwise |
 
 If Gemini is unavailable, each tool falls back to a basic non-AI version.
+
+**Ask CareQ** (`server/askAgent.ts`) is a Gemini function-calling agent with exactly two tools: `search_documents(query)` (the published handbooks, the Ontario licensing manual and the Help FAQ; the centre filter is set by the server from the page the user is on, never by the model) and `get_my_application()` (a signed-in parent's own application at that centre; nothing for anonymous users or centre accounts). At most 3 tool calls and 15 s per question.
+
+- With a centre ("Ask about this centre" on Find and Track cards): that operator's handbook first, plus at most one provincial passage when it clearly answers better. Without a centre (the floating button): the licensing manual and the Help FAQ.
+- Every fact carries a citation (operator, document, "PDF p.N" or section, link, a quote of at most 25 words). The server checks each quote word for word against the retrieved passage and drops any sentence it can't support. Provincial passages say "General Ontario rule; check with the centre."
+- Positions, waits and availability are never stated unless the parent's own application has them; then the server writes who reported it, when, and "Simulated".
+- Fallback without Gemini: the top 2 passages with their sources under "Here's what the handbook says:".
+- Answers are cached per user (anonymous / parent / centre account); questions about the parent's application, positions, lists, waits, spots or availability are never cached.
+- Live check against a running server (real Gemini and the MongoDB index): `npm run eval:ask -- http://localhost:3000` prints a results table.
 
 Centre search ranking is plain code, not AI: `src/lib/rankCentres.ts` (distance 50, age/program fit 30, languages and checkable extras 20; demo centres get no bonus). Run its unit tests with `npm test`.
 

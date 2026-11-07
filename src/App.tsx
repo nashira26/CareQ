@@ -470,7 +470,7 @@ export default function App() {
             <footer className="border-t border-stone-200 bg-white py-4 px-4 text-center text-xs text-stone-500">
               <p>CareQ • Simplified Ontario Child Care Intake & Central Waitlist Management</p>
             </footer>
-            <AskCareQAssistant centres={centres} />
+            <AskCareQAssistant />
           </div>
         </ResetContext.Provider>
       );
@@ -480,7 +480,7 @@ export default function App() {
       <ResetContext.Provider value={resetCtx}>
         {banners}
         <AuthPage onLogIn={handleLogIn} onSignUp={handleSignUp} onOpenTrustPage={() => setIsTrustPageOpen(true)} />
-        <AskCareQAssistant centres={centres} />
+        <AskCareQAssistant />
       </ResetContext.Provider>
     );
   }
@@ -689,7 +689,7 @@ export default function App() {
         </div>
 
         {/* Ask CareQ Assistant Floating on every screen */}
-        <AskCareQAssistant centres={centres} />
+        <AskCareQAssistant />
       </div>
     </ResetContext.Provider>
   );

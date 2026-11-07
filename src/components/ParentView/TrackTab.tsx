@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Centre, Application, ParentProfile } from '../../data/mockData';
 import { StatusBadge } from '../StatusBadge';
+import { AskAboutCentre } from '../AskAboutCentre';
 import {
   PageHeader,
   Card,
@@ -227,6 +228,8 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                           View &amp; message →
                         </GhostButton>
 
+                        <AskAboutCentre centreId={app.centreId} centreName={centre?.name || 'this centre'} hideWhenUncovered />
+
                         <div className="flex items-center gap-2 flex-wrap justify-end">
                           {hasPosition && (
                             <button
@@ -362,6 +365,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                     </div>
                   )}
 
+                  <AskAboutCentre centreId={app.centreId} centreName={centre?.name || 'this centre'} hideWhenUncovered className="mb-2" />
                   <div className="pt-3 border-t border-[#E7E4DA] flex items-center justify-between gap-2">
                     <GhostButton
                       onClick={() => onOpenConversation(app.centreId)}

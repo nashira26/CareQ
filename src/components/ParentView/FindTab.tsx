@@ -44,6 +44,7 @@ import {
 } from '../../lib/rankCentres';
 import torontoAreas from '../../data/torontoAreas.json';
 import fsaCentroids from '../../data/fsaCentroids.json';
+import { AskAboutCentre } from '../AskAboutCentre';
 
 // Approximate centre points, used only to sort by distance (see metadata.approximate).
 const AREAS = (torontoAreas as { areas: Area[] }).areas;
@@ -403,6 +404,9 @@ export const FindTab: React.FC<FindTabProps> = ({
                 <span className="font-semibold">Language:</span> {centre.languages.join(', ')}
               </p>
             )}
+            <div className="mt-3">
+              <AskAboutCentre centreId={centre.id} centreName={centre.name} />
+            </div>
           </div>
         </div>
 
