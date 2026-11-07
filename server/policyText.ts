@@ -40,7 +40,9 @@ const PAGE_NUMBER_LINES = [
   /^-\s*\d{1,3}\s*-$/, // "- 3 -"
   /^\d{1,3}\s*\/\s*\d{1,3}$/, // "242/283"
 ];
-const TOC_LINE = /(\.\s?){4,}\s*\d{1,3}\s*$/; // "Admission Procedures ........ 13"
+// "Admission Procedures ........ 13", "Program Statement ………… 13", or a line that is mostly leader dots
+const TOC_LINE = /([.…]\s?){4,}\s*\d{0,3}\s*$/;
+const TOC_LEADERS = /[.…]{3,}.*\d{1,3}.*[.…]{3,}/; // several TOC entries run together on one line
 const TOC_TITLE = /^table\s+of\s+contents$/i;
 
 const normaliseForRepeat = (line: string) => line.toLowerCase().replace(/\d+/g, '#').replace(/\s+/g, ' ').trim();
@@ -86,7 +88,7 @@ export function cleanPages(pages: PageText[]): PageText[] {
       }
       if (PRINT_STAMP.test(line) || URL_PAGE_FOOTER.test(line)) continue;
       if (PAGE_NUMBER_LINES.some((re) => re.test(line))) continue;
-      if (TOC_LINE.test(line) || TOC_TITLE.test(line)) continue;
+      if (TOC_LINE.test(line) || TOC_LEADERS.test(line) || TOC_TITLE.test(line)) continue;
       if (repeated.has(normaliseForRepeat(line))) continue;
       // "immuniz-" + "ation" -> "immunization" (lowercase continuation only)
       const prev = kept.length ? kept[kept.length - 1] : '';
@@ -261,6 +263,39 @@ export function chunkPages(pages: PageText[], documentTitle: string): TextChunk[
     if (buf.length && !isOnlyOverlap) push(section.heading, buf);
   }
   return chunks;
+}
+
+// ---------------- Section selection (e.g. the parts of the licensing manual parents need) ----------------
+
+/** Top-level sections of a long document: "Part 5.3 …", "Part 2 — …", "Glossary of Terms", "Appendix A — …". */
+const TOP_SECTION = /^(Part\s+\d+(\.\d+)*|Appendix\s+[A-Z]|Glossary of Terms)\b/i;
+
+/** "Part 2" matches "Part 2 — Canada-Wide…" and "Part 2.3 Base Fees…", not "Part 20" or "Part 3.2". */
+const matchesSection = (top: string, wanted: string) => {
+  const w = wanted.trim().toLowerCase();
+  const t = top.toLowerCase();
+  return t === w || (t.startsWith(w) && /^[\s.—–-]/.test(t.slice(w.length)));
+};
+
+/**
+ * Keep only the chunks inside the listed top-level sections. Each chunk belongs to the last
+ * top-level heading before it; its heading becomes "Part 5.3 Immunization of Children › Intent".
+ * Chunks are renumbered from 0. Returns the kept chunks and the sections that were found.
+ */
+export function selectSections(chunks: TextChunk[], include: string[]): { chunks: TextChunk[]; kept: { section: string; page: number | null; chunks: number }[] } {
+  let top: string | null = null;
+  const kept: TextChunk[] = [];
+  const sections = new Map<string, { section: string; page: number | null; chunks: number }>();
+  for (const c of chunks) {
+    if (TOP_SECTION.test(c.heading)) top = c.heading;
+    if (!top || !include.some((w) => matchesSection(top!, w))) continue;
+    const heading = c.heading === top ? top : `${top} › ${c.heading}`;
+    kept.push({ ...c, index: kept.length, heading });
+    const s = sections.get(top) ?? { section: top, page: c.page, chunks: 0 };
+    s.chunks++;
+    sections.set(top, s);
+  }
+  return { chunks: kept, kept: [...sections.values()] };
 }
 
 // ---------------- HTML ----------------

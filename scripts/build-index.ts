@@ -16,14 +16,12 @@ import path from 'node:path';
 import { MongoClient } from 'mongodb';
 import { GoogleGenAI } from '@google/genai';
 import { PDFParse } from 'pdf-parse';
-import { PageText, TextChunk, chunkPages, cleanPages, htmlToText, tooLittleText } from '../server/policyText';
+import { PageText, TextChunk, chunkPages, cleanPages, htmlToText, selectSections, tooLittleText } from '../server/policyText';
+import { EMBED_DIMENSIONS, EMBED_MODEL, POLICY_CHUNKS, PolicyChunk, VECTOR_INDEX_NAME, normalise } from '../server/policyIndexConfig';
 
 const ROOT = process.cwd();
 const DATA = path.join(ROOT, 'data');
 const OUT_FILE = path.join(DATA, 'index', 'policyChunks.json');
-export const EMBED_MODEL = process.env.GEMINI_EMBED_MODEL || 'gemini-embedding-2';
-export const EMBED_DIMENSIONS = 768;
-export const VECTOR_INDEX_NAME = 'policy_chunks_vector';
 const BATCH_SIZE = 50;
 const MAX_TRIES = 6;
 /** A request that hasn't answered by then is abandoned and retried. */
@@ -45,6 +43,8 @@ interface MetaDoc {
   sourceUrl?: string;
   sourceNote?: string;
   retrieved?: string;
+  /** Index only these top-level sections (e.g. ["Part 5.3", "Glossary of Terms"]); all when absent. */
+  includeSections?: string[];
 }
 interface Meta {
   operator: string;
@@ -54,25 +54,6 @@ interface Meta {
   documents: MetaDoc[];
 }
 
-export interface PolicyChunk {
-  chunkId: string;
-  docKey: string;
-  text: string;
-  heading: string;
-  page: number | null;
-  embedding: number[];
-  scope: 'operator' | 'provincial';
-  operatorId: string;
-  operatorName: string;
-  appliesToCentreIds: string[];
-  docTitle: string;
-  sourceUrl: string | null;
-  sourceNote: string | null;
-  retrieved: string | null;
-  embeddingModel: string;
-  embeddingDimensions: number;
-  createdAt: string;
-}
 
 interface SummaryRow {
   operator: string;
@@ -81,6 +62,8 @@ interface SummaryRow {
   indexed: number;
   pages: number;
   htmlDocs: number;
+  /** Chunks stored without embeddings (keyword search only). */
+  keywordOnly: number;
   chunks: number;
   skipped: string[];
 }
@@ -105,10 +88,6 @@ async function extract(filePath: string): Promise<PageText[]> {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-const normalise = (v: number[]) => {
-  const n = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1;
-  return v.map((x) => Number((x / n).toFixed(6)));
-};
 
 /** "Retry in 31s" / retryDelay "31s" in a Gemini error -> milliseconds. */
 const retryDelayOf = (msg: string) => {
@@ -205,7 +184,7 @@ export const vectorIndexDefinition = {
 };
 
 async function ensureVectorIndex(client: MongoClient, dbName: string) {
-  const coll = client.db(dbName).collection('policyChunks');
+  const coll = client.db(dbName).collection(POLICY_CHUNKS);
   const pasteable = JSON.stringify({ name: VECTOR_INDEX_NAME, type: 'vectorSearch', definition: vectorIndexDefinition }, null, 2);
   try {
     const existing = (await coll.listSearchIndexes(VECTOR_INDEX_NAME).toArray())[0] as { latestDefinition?: unknown; status?: string } | undefined;
@@ -258,9 +237,9 @@ function loadMetas(): { folder: string; scope: 'operator' | 'provincial'; dir: s
 }
 
 function printSummary(rows: SummaryRow[]) {
-  const header = ['Operator', 'Scope', 'Docs', 'Pages', 'Chunks', 'Skipped'];
-  const body = rows.map((r) => [r.operator, r.scope, `${r.indexed}/${r.documents}`, r.htmlDocs ? (r.pages ? `${r.pages} + HTML` : 'HTML') : String(r.pages), String(r.chunks), r.skipped.join('; ') || '-']);
-  const total = ['TOTAL', '', `${rows.reduce((n, r) => n + r.indexed, 0)}/${rows.reduce((n, r) => n + r.documents, 0)}`, String(rows.reduce((n, r) => n + r.pages, 0)), String(rows.reduce((n, r) => n + r.chunks, 0)), ''];
+  const header = ['Operator', 'Scope', 'Docs', 'Pages', 'Chunks', 'Keyword-only', 'Skipped'];
+  const body = rows.map((r) => [r.operator, r.scope, `${r.indexed}/${r.documents}`, r.htmlDocs ? (r.pages ? `${r.pages} + HTML` : 'HTML') : String(r.pages), String(r.chunks), String(r.keywordOnly), r.skipped.join('; ') || '-']);
+  const total = ['TOTAL', '', `${rows.reduce((n, r) => n + r.indexed, 0)}/${rows.reduce((n, r) => n + r.documents, 0)}`, String(rows.reduce((n, r) => n + r.pages, 0)), String(rows.reduce((n, r) => n + r.chunks, 0)), String(rows.reduce((n, r) => n + r.keywordOnly, 0)), ''];
   const all = [header, ...body, total];
   const widths = header.map((_, i) => Math.min(60, Math.max(...all.map((r) => r[i].length))));
   const line = (r: string[]) => r.map((c, i) => (c.length > widths[i] ? c.slice(0, widths[i] - 1) + '…' : c.padEnd(widths[i]))).join(' | ');
@@ -281,7 +260,7 @@ async function main() {
   }
   const ai = DRY_RUN ? null : new GoogleGenAI({ apiKey });
   const client = DRY_RUN ? null : new MongoClient(uri!, { serverSelectionTimeoutMS: 10000 });
-  const coll = client ? (await client.connect(), client.db(dbName).collection<PolicyChunk>('policyChunks')) : null;
+  const coll = client ? (await client.connect(), client.db(dbName).collection<PolicyChunk>(POLICY_CHUNKS)) : null;
   if (coll) {
     await coll.createIndexes([{ key: { chunkId: 1 }, unique: true }, { key: { docKey: 1 } }, { key: { scope: 1, appliesToCentreIds: 1 } }]);
   }
@@ -310,7 +289,7 @@ async function main() {
   console.log(`${DRY_RUN ? 'DRY RUN (no embeddings, no database). ' : ''}Embedding model: ${EMBED_MODEL}, ${EMBED_DIMENSIONS} dimensions${dbName && !DRY_RUN ? `, database: ${dbName}` : ''}\n`);
 
   for (const { folder, scope, dir, meta } of loadMetas()) {
-    const row: SummaryRow = { operator: meta.operator, scope, documents: meta.documents.length, indexed: 0, pages: 0, htmlDocs: 0, chunks: 0, skipped: [] };
+    const row: SummaryRow = { operator: meta.operator, scope, documents: meta.documents.length, indexed: 0, pages: 0, htmlDocs: 0, chunks: 0, keywordOnly: 0, skipped: [] };
     rows.push(row);
     for (const doc of meta.documents) {
       const filePath = path.join(dir, doc.file);
@@ -332,7 +311,16 @@ async function main() {
         row.skipped.push(`${doc.file}: too little text (${amount.totalChars} chars, ${amount.avgPerPage}/page; scanned?)`);
         continue;
       }
-      const chunks = chunkPages(cleaned, doc.title);
+      let chunks = chunkPages(cleaned, doc.title);
+      if (doc.includeSections?.length) {
+        const all = chunks.length;
+        const selected = selectSections(chunks, doc.includeSections);
+        chunks = selected.chunks;
+        console.log(`${docKey}: keeping ${chunks.length} of ${all} chunks in ${selected.kept.length} sections:`);
+        for (const s of selected.kept) console.log(`    PDF p.${String(s.page).padEnd(4)} ${String(s.chunks).padStart(3)} chunks  ${s.section}`);
+        const missing = doc.includeSections.filter((w) => !selected.kept.some((s) => s.section.toLowerCase().startsWith(w.toLowerCase())));
+        if (missing.length) row.skipped.push(`${doc.file}: sections not found: ${missing.join(', ')}`);
+      }
       const pageCount = pages[0]?.page == null ? 0 : pages.length;
       console.log(`${docKey}: ${pageCount || 'HTML'} ${pageCount ? 'pages' : ''}, ${amount.totalChars} chars -> ${chunks.length} chunks`);
 
@@ -360,14 +348,15 @@ async function main() {
           console.log(`  embedded ${Math.min(b + BATCH_SIZE, todo.length)}/${todo.length} (${((Date.now() - started) / 1000).toFixed(1)}s)`);
           await sleep(BATCH_PAUSE_MS);
         }
+        // Chunks that couldn't be embedded (quota) are still stored with embedding: null. Retrieval finds
+        // them by keyword; the next run retries them (cache miss) and they switch to vector search.
+        const vectors = keys.map((k) => cache.get(k) ?? null);
+        const missing = vectors.filter((v) => !v).length;
         if (quotaHit) {
-          // Keep this document's existing chunks (if any); the embeddings done so far are cached
-          const done = keys.filter((k) => cache.has(k)).length;
-          console.log(`  ${quotaHit}: ${done}/${chunks.length} embedded and cached; run again later to finish`);
-          row.skipped.push(`${doc.file}: ${quotaHit} (${done}/${chunks.length} embedded; re-run to resume)`);
-          continue;
+          console.log(`  ${quotaHit}: storing ${missing}/${chunks.length} chunks without embeddings (keyword search only); re-run later to add them`);
+          row.skipped.push(`${doc.file}: ${missing}/${chunks.length} chunks without embeddings (keyword only; ${quotaHit})`);
         }
-        const vectors = keys.map((k) => cache.get(k)!);
+        row.keywordOnly += missing;
         const records: PolicyChunk[] = chunks.map((c, i) => ({
           chunkId: `${docKey}#${c.index}`,
           docKey,
@@ -387,7 +376,7 @@ async function main() {
           embeddingDimensions: EMBED_DIMENSIONS,
           createdAt,
         }));
-        // Replace this document's chunks only after all its embeddings succeeded
+        // Replace this document's chunks (no duplicates)
         await coll!.deleteMany({ docKey });
         if (records.length) await coll!.insertMany(records.map((r) => ({ ...r })));
       }

@@ -6,7 +6,22 @@
       "file": "licensing-manual.pdf",
       "title": "Child Care Centre Licensing Manual",
       "sourceUrl": "https://www.ontario.ca/document/child-care-centre-licensing-manual",
-      "retrieved": "2026-11-06"
+      "retrieved": "2026-11-06",
+      "includeSections": [
+        "Glossary of Terms",
+        "Part 1.5",
+        "Part 2",
+        "Part 3.1",
+        "Part 3.2",
+        "Part 3.3",
+        "Part 3.4",
+        "Part 3.7",
+        "Part 5.3",
+        "Part 7.1",
+        "Part 7.2",
+        "Part 10.4",
+        "Part 11.6"
+      ]
     }
   ]
 }

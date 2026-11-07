@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CHUNK_MAX, chunkPages, cleanPages, htmlToText, isHeading, splitSentences, tooLittleText } from './policyText';
+import { CHUNK_MAX, chunkPages, cleanPages, htmlToText, isHeading, selectSections, splitSentences, tooLittleText } from './policyText';
 
 const sentence = (i: number) => `Sentence number ${i} explains one rule about enrolment and the documents families provide to the centre.`;
 
@@ -21,6 +21,16 @@ test('cleanPages removes print stamps, URL footers, page numbers, TOC lines and 
   for (const p of cleaned) {
     assert.equal(p.text, `Real content on page ${p.page}. It stays.`);
   }
+});
+
+test('cleanPages removes tables of contents with ellipsis leaders, including entries run together', () => {
+  const [p] = cleanPages([
+    {
+      page: 2,
+      text: ['Program Statement ………………………………………… 13', 'Days ……………… 13 Holiday Fees ……………… 13 Statutory Holidays ……', 'Real sentence stays. Ends with a period.'].join('\n'),
+    },
+  ]);
+  assert.equal(p.text, 'Real sentence stays. Ends with a period.');
 });
 
 test('cleanPages joins words hyphenated across lines and keeps short documents intact', () => {
@@ -110,4 +120,17 @@ test('htmlToText keeps the handbook body and headings; drops nav, scripts, foote
   assert.ok(admission?.text.includes('To apply for Daycare a waiting list application form must be filled out.'));
   assert.equal(admission?.page, null);
   assert.ok(chunks.some((c) => c.heading === '9. Waiting list Policy' && c.text.includes('Call the office')));
+});
+
+test('selectSections keeps whole top-level parts (with their sub-sections) and prefixes the part to the heading', () => {
+  const mk = (heading: string, i: number) => ({ index: i, heading, page: i + 1, text: `text ${i}` });
+  const chunks = ['Glossary of Terms', 'Part 2 — Canada-Wide', 'Intent', 'Part 2.3 Base Fees', 'Part 3.2 Ratios', 'Part 20 Imaginary', 'Part 5.3 Immunization of Children', 'Clarifying guidance', 'Part 5.4 Daily Observation', 'Intent'].map(mk);
+  const { chunks: kept, kept: sections } = selectSections(chunks, ['Part 2', 'Part 5.3']);
+  assert.deepEqual(
+    kept.map((c) => c.heading),
+    ['Part 2 — Canada-Wide', 'Part 2 — Canada-Wide › Intent', 'Part 2.3 Base Fees', 'Part 5.3 Immunization of Children', 'Part 5.3 Immunization of Children › Clarifying guidance']
+  );
+  assert.deepEqual(kept.map((c) => c.index), [0, 1, 2, 3, 4]);
+  assert.equal(kept[4].page, 8);
+  assert.deepEqual(sections.map((s) => s.section), ['Part 2 — Canada-Wide', 'Part 2.3 Base Fees', 'Part 5.3 Immunization of Children']);
 });
