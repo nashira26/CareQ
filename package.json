@@ -13,7 +13,8 @@
     "import:ontario": "tsx scripts/import-ontario-data.ts",
     "test": "node --import tsx --test src/lib/*.test.ts server/*.test.ts",
     "seed": "tsx scripts/seed.ts",
-    "reset": "tsx scripts/reset.ts"
+    "reset": "tsx scripts/reset.ts",
+    "build:index": "tsx scripts/build-index.ts"
   },
   "dependencies": {
     "@google/genai": "^2.32.0",
@@ -40,6 +41,8 @@
     "@types/react-dom": "^19.3.0",
     "autoprefixer": "^10.4.21",
     "esbuild": "^0.28.0",
+    "node-html-parser": "^9.0.7",
+    "pdf-parse": "^2.4.5",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2"
   }

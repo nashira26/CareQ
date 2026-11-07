@@ -79,6 +79,26 @@ npm run reset -- https://your-app.onrender.com # deployed demo, e.g. before pres
 
 `npm run reset` sends `RESET_TOKEN` from your `.env` as the `X-Reset-Token` header. In the app, "Reset demo" is hidden from normal users: a seeded demo account sees "Admin reset", enters the token once (kept for that browser tab), and can then reset.
 
+### Building the policy index (handbooks → MongoDB)
+
+The published handbooks and the Ontario licensing manual are split into passages, embedded with Gemini and stored in MongoDB for retrieval. Do this once per database (and again when a document changes):
+
+1. Get the PDFs/HTML from the team shared drive into `data/policies/<operator>/` and `data/provincial/<doc>/`, next to each `meta.json` (they are git-ignored; the repo is public).
+2. Run:
+
+```bash
+npm run build:index                              # all documents, into MONGODB_DB
+npm run build:index -- --dry-run                 # extract and chunk only (no Gemini calls, no database writes)
+npm run build:index -- --only=rolph-road-day-care  # one folder
+```
+
+What it does: extracts text (PDF with page numbers; HTML without menus/scripts/footers), removes running headers/footers, page numbers and print stamps, splits by section heading into ~800–1,200-character passages (one-sentence overlap), embeds them with `gemini-embedding-2` at 768 dimensions (override with `GEMINI_EMBED_MODEL`), and stores them in the `policyChunks` collection. Re-running replaces each document's chunks (no duplicates). It also creates the Atlas Vector Search index `policy_chunks_vector` (cosine, filters `scope` and `appliesToCentreIds`); if your cluster refuses, it prints the index JSON to paste into Atlas (*Search Indexes → Create → Atlas Vector Search → JSON editor*). Finally it writes `data/index/policyChunks.json` (chunks + embeddings, git-ignored) for local mode, and prints a summary table.
+
+- Files with too little extractable text (e.g. scanned PDFs) are reported and skipped, not indexed.
+- **Quota:** the Gemini free tier allows a limited number of embedding requests per day (each passage counts). If the quota runs out, that document is reported as skipped and the run still finishes; embeddings already made are cached in `data/index/.cache/`, so running `npm run build:index` again later resumes where it stopped.
+- `npm run reset` and `npm run seed` never touch `policyChunks`: the index survives a demo reset.
+- The deployed app uses the MongoDB index (the JSON file isn't deployed). Build the index into each database you use (e.g. `careq_dev`, then `careq_demo` before deploying).
+
 ## What it does
 
 **Parents:** find licensed centres on a map, apply with a checklist built from each centre's policy, track status and queue position (as reported by the centre), accept an offer and withdraw the rest, and message centres.
