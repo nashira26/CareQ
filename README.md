@@ -132,7 +132,7 @@ Live check: `npm run eval:docs -- http://localhost:3000` (Prepare with AI at two
 
 - Questions about the user's own position, wait, spot or availability ("Where am I on the list?", "When will I get a spot?", "Is there a space next week?") never reach Gemini: anonymous users, centre accounts and parents without an application at that centre get the exact refusal; a parent with one gets the server-written application lines ("From your application · Simulated"). Logged as mode `rule`.
 
-- With a centre ("Ask about this centre" on Find and Track cards): that operator's handbook first, plus at most one provincial passage when it clearly answers better. Without a centre (the floating button): the licensing manual and the Help FAQ.
+- With a centre ("Ask about this centre" on Find and Track cards, for every centre with indexed documents: the published handbooks and centres' own uploads, from `GET /api/document-centres`): that operator's handbook first, plus at most one provincial passage when it clearly answers better. Without a centre (the floating button): the licensing manual and the Help FAQ.
 - Every fact carries a citation (operator, document, "PDF p.N" or section, link, a quote of at most 25 words). The server checks each quote word for word against the retrieved passage and drops any sentence it can't support. Provincial passages say "General Ontario rule; check with the centre."
 - Positions, waits and availability are never stated unless the parent's own application has them; then the server writes who reported it, when, and "Simulated".
 - Fallback without Gemini: the top 2 passages with their sources under "Here's what the handbook says:".

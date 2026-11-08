@@ -17,7 +17,7 @@ import type { Area, FsaCentroids } from './src/lib/rankCentres';
 import { createDataApi } from './server/api';
 import { connectMongo, ensureIndexes, isEmpty, reseed, mongo, pingMongo, MongoRepo } from './server/db';
 import { AskCache, AskModelCall, AskUser, AppFact, askCacheKey, runAskAgent } from './server/askAgent';
-import { MemoryQueryStore, MongoQueryStore, RetrieverDeps, StoredChunk, geminiQueryEmbedder, memoryChunkSource, mongoChunkSource } from './server/retrieval';
+import { MemoryQueryStore, MongoQueryStore, RetrieverDeps, StoredChunk, documentCentreIds, geminiQueryEmbedder, memoryChunkSource, mongoChunkSource } from './server/retrieval';
 import { actorOf, type AccountRecord } from './src/lib/world';
 import type { Centre } from './src/data/mockData';
 import { canReadApplication } from './src/lib/access';
@@ -988,6 +988,21 @@ If it is respectful, calm, neutral, professional, or standard:
     );
     askCache.set(cacheKey, question, result);
     return res.json({ success: true, ...result });
+  });
+
+  // Centres with indexed documents (handbooks + uploads): which cards show "Ask about this centre".
+  // Ids only; a distinct query in mongo mode, so no passages or embeddings are loaded.
+  app.get('/api/document-centres', async (_req: Request, res: Response) => {
+    try {
+      const db = DATA_MODE === 'mongo' ? mongo.db : null;
+      const centreIds = db
+        ? ((await db.collection<PolicyChunk>(POLICY_CHUNKS).distinct('appliesToCentreIds', { scope: 'operator' })) as string[]).sort()
+        : documentCentreIds(await getRetrieverDeps().source.all());
+      res.json({ centreIds });
+    } catch (e) {
+      console.warn('[document-centres] failed:', (e as Error).message);
+      res.json({ centreIds: [] });
+    }
   });
 
   // Unknown /api routes are JSON 404s (never the HTML app)

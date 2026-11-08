@@ -6,7 +6,8 @@ import { fallbackCandidates, gatherRequirementChunks, verifyCandidates } from '.
 import { buildFollowUpContext, fallbackFollowUp, finaliseFollowUp, handbookQuery, stripSimulatedWord } from './followUp';
 import { namesMatch, verifyLicence } from './licence';
 import { quoteIsVerbatim } from './askAgent';
-import { MemoryQueryStore, RetrieverDeps, StoredChunk, memoryChunkSource } from './retrieval';
+import { MemoryQueryStore, RetrieverDeps, StoredChunk, documentCentreIds, memoryChunkSource } from './retrieval';
+import { SAMPLE_DOCX_CENTRE_NAME, SAMPLE_DOCX_PARAGRAPHS, sampleDocx } from '../scripts/fixtures/sampleDocx';
 import type { PolicyChunk } from './policyIndexConfig';
 
 const NEW_CENTRE = 'c-self-test';
@@ -82,6 +83,45 @@ test('upload: HTML works; unsupported, empty, scanned-like or fake files get pla
   await assert.rejects(ingestUpload({ ...base, fileName: 'empty.pdf', data: Buffer.alloc(0) }, coll), /empty/);
   await assert.rejects(ingestUpload({ ...base, fileName: 'fake.pdf', data: Buffer.from('not a pdf at all') }, coll), /couldn't read/);
   await assert.rejects(ingestUpload({ ...base, fileName: 'short.pdf', data: makePdf([['Hi.']]) }, coll), /too little text/);
+});
+
+test('upload: a Word .docx goes through mammoth into keyword-searchable chunks for this centre only', async () => {
+  const pages = await extractPages('policy.docx', sampleDocx());
+  assert.equal(pages.length, 1);
+  assert.equal(pages[0].page, null);
+  for (const p of SAMPLE_DOCX_PARAGRAPHS) assert.ok(pages[0].text.includes(p), `missing paragraph: ${p}`);
+
+  const { docs, coll } = fakeCollection();
+  const result = await ingestUpload(
+    { centreId: NEW_CENTRE, centreName: SAMPLE_DOCX_CENTRE_NAME, fileName: 'Birchwood Policy.docx', title: 'Admission Policy', data: sampleDocx() },
+    coll
+  );
+  assert.equal(result.docTitle, 'Admission Policy');
+  assert.equal(result.keywordOnly, result.chunks);
+  assert.ok(result.chunks >= 1 && docs.length === result.chunks);
+  for (const c of docs) {
+    assert.equal(c.scope, 'operator');
+    assert.deepEqual(c.appliesToCentreIds, [NEW_CENTRE]);
+    assert.equal(c.page, null);
+  }
+  assert.ok(docs.some((c) => /birth certificate and an up-to-date immunization record/.test(c.text)));
+  assert.deepEqual(documentCentreIds(docs), [NEW_CENTRE]);
+
+  // A broken .docx is a plain-language error, not a crash
+  await assert.rejects(
+    ingestUpload({ centreId: NEW_CENTRE, centreName: 'X', title: 'X', fileName: 'broken.docx', data: Buffer.from('PK not really a zip') }, coll),
+    /couldn't read/
+  );
+});
+
+test('document centres: operator chunks only (handbooks and uploads), each centre once', () => {
+  const ids = documentCentreIds([
+    { scope: 'operator', appliesToCentreIds: ['on-2', 'on-1'] },
+    { scope: 'operator', appliesToCentreIds: ['on-1', 'c-self-1'] },
+    { scope: 'provincial', appliesToCentreIds: [] },
+    { scope: 'help', appliesToCentreIds: ['ignored'] },
+  ] as any);
+  assert.deepEqual(ids, ['c-self-1', 'on-1', 'on-2']);
 });
 
 // ---------------- Requirements from documents ----------------

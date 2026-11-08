@@ -2,10 +2,11 @@ import React from 'react';
 import { MessageCircleQuestion } from 'lucide-react';
 import { coverageFor } from '../data/policyCoverage';
 import { openAskCareQ } from '../lib/askCareQ';
+import { useHasDocuments } from '../lib/documentCoverage';
 
 /**
- * "Ask about this centre" for centres whose operator handbook is indexed; otherwise
- * "No published documents for this centre yet." (or nothing, with hideWhenUncovered).
+ * "Ask about this centre" for centres whose operator handbook is indexed, or which uploaded their own
+ * documents (server list); otherwise "No published documents for this centre yet." (or nothing, with hideWhenUncovered).
  */
 export const AskAboutCentre: React.FC<{ centreId: string; centreName: string; hideWhenUncovered?: boolean; className?: string }> = ({
   centreId,
@@ -13,7 +14,8 @@ export const AskAboutCentre: React.FC<{ centreId: string; centreName: string; hi
   hideWhenUncovered = false,
   className = '',
 }) => {
-  if (!coverageFor(centreId)) {
+  const hasDocuments = useHasDocuments(centreId);
+  if (!coverageFor(centreId) && !hasDocuments) {
     return hideWhenUncovered ? null : <p className={`text-[11px] text-[#7A8A84] ${className}`}>No published documents for this centre yet.</p>;
   }
   return (

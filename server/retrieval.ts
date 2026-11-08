@@ -215,7 +215,11 @@ export function mongoChunkSource(db: Db, ttlMs = 10 * 60_000): ChunkSource {
 }
 
 /** Chunks from a list already in memory (data/index/policyChunks.json in local mode, tests). */
-export const memoryChunkSource = (chunks: StoredChunk[]): ChunkSource => ({ all: async () => chunks });
+/** Centres with operator documents (published handbooks or a centre's own uploads), sorted. */
+export const documentCentreIds = (chunks: Pick<StoredChunk, 'scope' | 'appliesToCentreIds'>[]): string[] =>
+  [...new Set(chunks.filter((c) => c.scope === 'operator').flatMap((c) => c.appliesToCentreIds ?? []))].sort();
+
+export const memoryChunkSource =(chunks: StoredChunk[]): ChunkSource => ({ all: async () => chunks });
 
 // ---------------- Scoring ----------------
 

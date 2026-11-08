@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Building2, ImagePlus, Sparkles, CheckCircle2, X, FileUp, Loader2, ShieldCheck } from 'lucide-react';
 import { aiPost } from '../../lib/aiFetch';
+import { refreshDocumentCentres } from '../../lib/documentCoverage';
 import { Card, PrimaryButton, GhostButton } from '../ui/CareUI';
 import { AgeGroup, Centre } from '../../data/mockData';
 import {
@@ -150,8 +151,10 @@ export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, onRegis
       dataBase64: await toBase64(file),
     });
     setUploading(false);
-    if (result.ok) setUploaded((u) => [...u.filter((d) => d.docKey !== result.data.docKey), result.data]);
-    else setUploadError(result.message);
+    if (result.ok) {
+      setUploaded((u) => [...u.filter((d) => d.docKey !== result.data.docKey), result.data]);
+      void refreshDocumentCentres(); // "Ask about this centre" now appears for this centre
+    } else setUploadError(result.message);
   };
 
   if (registered) {
