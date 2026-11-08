@@ -84,8 +84,20 @@ const fallbackReasonFor = (err: unknown): 'timeout' | 'error' =>
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Where demo data lives: "mongo" (default, shared across devices) or "local" (each browser keeps its own).
-const DATA_MODE: 'mongo' | 'local' = process.env.DATA_MODE === 'local' ? 'local' : 'mongo';
+/**
+ * Where demo data lives: "mongo" (shared across devices) or "local" (each browser keeps its own).
+ * DATA_MODE=local -> local. No MONGODB_URI -> local automatically (instead of 503s on every call).
+ * MONGODB_URI set but unreachable -> stays mongo: connectMongo retries and the API answers 503 until it's up.
+ */
+const resolveDataMode = (): { mode: 'mongo' | 'local'; reason: string } => {
+  if (process.env.DATA_MODE === 'local') return { mode: 'local', reason: 'DATA_MODE=local' };
+  if (!process.env.MONGODB_URI?.trim()) return { mode: 'local', reason: 'MONGODB_URI is not set' };
+  return { mode: 'mongo', reason: 'MONGODB_URI is set' };
+};
+const { mode: DATA_MODE, reason: DATA_MODE_REASON } = resolveDataMode();
+if (DATA_MODE === 'local' && process.env.DATA_MODE !== 'local') {
+  console.warn(`[data] ${DATA_MODE_REASON}: starting in local mode (each browser keeps its own demo data). Set MONGODB_URI and MONGODB_DB to share data across devices.`);
+}
 const ALLOW_RESET = process.env.ALLOW_RESET === 'true';
 const RESET_TOKEN = process.env.RESET_TOKEN || undefined;
 
@@ -100,8 +112,12 @@ async function startServer() {
 
   // ---------------- Data mode, health, data API ----------------
 
+  const modeInfo = () => ({ dataMode: DATA_MODE, dataModeReason: DATA_MODE_REASON, mongo: DATA_MODE === 'mongo' ? mongo.status : 'not used' });
   app.get('/api/config', (_req, res) => {
-    res.json({ dataMode: DATA_MODE, resetAvailable: DATA_MODE === 'mongo' && ALLOW_RESET && Boolean(RESET_TOKEN) });
+    res.json({ ...modeInfo(), resetAvailable: DATA_MODE === 'mongo' && ALLOW_RESET && Boolean(RESET_TOKEN) });
+  });
+  app.get('/api/mode', (_req, res) => {
+    res.json(modeInfo());
   });
 
   // Health for Render: MongoDB reachable (mongo mode) and a Gemini key configured (never the key itself)
@@ -112,6 +128,7 @@ async function startServer() {
     res.status(ok ? 200 : 503).json({
       status: ok ? 'ok' : 'degraded',
       dataMode: DATA_MODE,
+      dataModeReason: DATA_MODE_REASON,
       mongo: DATA_MODE === 'mongo' ? (mongoUp ? 'up' : 'down') : 'not used',
       geminiKeyConfigured,
     });
@@ -1026,7 +1043,7 @@ If it is respectful, calm, neutral, professional, or standard:
 
   console.log(`[ai] models: ${AI_ENDPOINTS.map((e) => `${e} ${modelsFor(e).primary} (backup ${modelsFor(e).backup})`).join('; ')}`);
   app.listen(Number(port), () => {
-    console.log(`CareQ server running at http://localhost:${port} (${process.env.NODE_ENV === 'production' ? 'production' : 'development'}, data: ${DATA_MODE})`);
+    console.log(`CareQ server running at http://localhost:${port} (${process.env.NODE_ENV === 'production' ? 'production' : 'development'}, data: ${DATA_MODE} · ${DATA_MODE_REASON})`);
   });
 }
 

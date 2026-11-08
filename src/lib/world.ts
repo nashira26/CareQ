@@ -197,3 +197,24 @@ export const EMPTY_SNAPSHOT: Snapshot = {
   supportRequests: [],
   preparedDrafts: {},
 };
+
+/**
+ * Any value -> a Snapshot the app can render: lists default to [], maps to {}, and an account
+ * without an id or a known role is treated as signed out. Used on every snapshot the app commits.
+ */
+export function normaliseSnapshot(raw: unknown): Snapshot {
+  const s = (raw && typeof raw === 'object' ? raw : {}) as Partial<Record<keyof Snapshot, unknown>>;
+  const list = <T>(v: unknown): T[] => (Array.isArray(v) ? (v.filter((x) => x && typeof x === 'object') as T[]) : []);
+  const map = <T>(v: unknown): T => (v && typeof v === 'object' && !Array.isArray(v) ? v : {}) as T;
+  const a = s.account as Partial<PublicAccount> | null | undefined;
+  const account = a && typeof a === 'object' && typeof a.id === 'string' && (a.role === 'parent' || a.role === 'centre') ? (a as PublicAccount) : null;
+  return {
+    account,
+    centres: list<Centre>(s.centres),
+    applications: list<Application>(s.applications),
+    conversations: map<ConversationsMap>(s.conversations),
+    notifications: list<InAppNotification>(s.notifications),
+    supportRequests: list<SupportRequest>(s.supportRequests),
+    preparedDrafts: map<Record<string, PreparedDraft>>(s.preparedDrafts),
+  };
+}

@@ -33,7 +33,7 @@ npm run dev
 
 Open http://localhost:3000 (or the port in your `PORT` variable). If the database is empty, the server fills it with the demo data on start (or run `npm run seed`).
 
-**No database?** Set `DATA_MODE=local`: each browser keeps its own demo data in localStorage, exactly like before (nothing is shared between devices).
+**No database?** Set `DATA_MODE=local`: each browser keeps its own demo data in localStorage, exactly like before (nothing is shared between devices). If `MONGODB_URI` is not set at all, the server starts in local mode by itself, logs why, and the app shows a small "Demo mode" notice. If `MONGODB_URI` is set but Atlas can't be reached, it stays in mongo mode, keeps retrying, and the app shows the offline banner. `GET /api/mode` (also in `/api/config` and `/api/health`) reports `dataMode`, `dataModeReason` and the MongoDB status. If the browser can't reach the server at all, the app opens an offline demo in that browser instead of failing.
 
 **AI settings:** `GEMINI_TIMEOUT_MS` (default 15000) sets how long to wait for Gemini. If the main model times out or is overloaded, CareQ retries once with `GEMINI_FALLBACK_MODEL` (default `gemini-3.5-flash-lite`, 10s timeout) before using the basic fallback. Successful AI answers are cached in memory for 30 minutes. Each endpoint's models can be set separately with `GEMINI_MODEL_<ENDPOINT>` / `GEMINI_BACKUP_MODEL_<ENDPOINT>` (see `.env.example`); Ask CareQ starts with the fast model and keeps `GEMINI_MODEL` as its backup. Every AI response logs `[ai] <endpoint>: <mode> · model <name> · <ms>ms` and returns `latencyMs`.
 

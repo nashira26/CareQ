@@ -35,7 +35,7 @@ import { CentreRegistration } from './components/Onboarding/CentreRegistration';
 import { Child, CentreFormInput, ageInMonths } from './lib/family';
 import type { Area, FsaCentroids } from './lib/rankCentres';
 import { ApiStore, CentreStatus, DemoStore, LocalStore, StoreError, fetchConfig, isOutage } from './lib/store';
-import { EMPTY_SNAPSHOT, Snapshot } from './lib/world';
+import { EMPTY_SNAPSHOT, Snapshot, normaliseSnapshot } from './lib/world';
 import type { DraftChange, ExtractedFromInput, RequirementCitationInput } from './lib/service';
 import torontoAreas from './data/torontoAreas.json';
 import fsaCentroids from './data/fsaCentroids.json';
@@ -71,23 +71,49 @@ export default function App() {
   const [store, setStore] = useState<DemoStore | null>(null);
   const [resetAvailable, setResetAvailable] = useState(false);
   const [bootError, setBootError] = useState<string | null>(null);
-  const [snapshot, setSnapshot] = useState<Snapshot>(EMPTY_SNAPSHOT);
+  const [snapshot, setRawSnapshot] = useState<Snapshot>(EMPTY_SNAPSHOT);
   const [outage, setOutage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  // Offline / demo-mode notice (local mode chosen automatically, or the server couldn't be reached)
+  const [modeNotice, setModeNotice] = useState<string | null>(null);
 
+  /** Every snapshot the app shows goes through here: missing lists become [], maps {}. */
+  const commit = useCallback((s: unknown) => setRawSnapshot(normaliseSnapshot(s)), []);
+  /** Functional updates (typing), on an already-normalised snapshot. */
+  const updateSnapshot = useCallback((fn: (s: Snapshot) => Snapshot) => setRawSnapshot((s) => normaliseSnapshot(fn(s))), []);
+
+  // Always ends with a store and a valid snapshot: never a blank or crashed screen
   const boot = useCallback(async () => {
     setBootError(null);
+    let config: Awaited<ReturnType<typeof fetchConfig>>;
     try {
-      const config = await fetchConfig();
-      const s: DemoStore = config.dataMode === 'local' ? new LocalStore() : new ApiStore();
-      setResetAvailable(config.resetAvailable);
-      setSnapshot(await s.load());
-      setStore(s);
+      config = await fetchConfig();
+    } catch {
+      // Server unreachable: run the offline demo in this browser instead of failing
+      const local = new LocalStore();
+      commit(await local.load().catch(() => EMPTY_SNAPSHOT));
+      setResetAvailable(false);
+      setModeNotice("Can't reach the CareQ server. Offline demo: data stays in this browser. Reload to reconnect.");
+      setStore(local);
+      return;
+    }
+    const s: DemoStore = config.dataMode === 'local' ? new LocalStore() : new ApiStore();
+    setResetAvailable(config.resetAvailable);
+    // DATA_MODE=local is a deliberate choice; tell people only when the server fell back to it
+    setModeNotice(
+      config.dataMode === 'local' && config.dataModeReason && config.dataModeReason !== 'DATA_MODE=local'
+        ? `Demo mode (${config.dataModeReason}): data stays in this browser and isn't shared between devices.`
+        : null
+    );
+    try {
+      commit(await s.load());
       setOutage(null);
     } catch (e) {
-      setBootError(e instanceof StoreError ? e.message : "Can't reach the CareQ server.");
+      commit(EMPTY_SNAPSHOT);
+      setOutage(isOutage(e) ? (e as StoreError).message : "CareQ data couldn't be loaded.");
     }
-  }, []);
+    setStore(s);
+  }, [commit]);
   useEffect(() => {
     boot();
   }, [boot]);
@@ -100,19 +126,19 @@ export default function App() {
       if (isOutage(e)) {
         setOutage((e as StoreError).message);
       } else if (e instanceof StoreError && e.status === 401 && store) {
-        setSnapshot(await store.load().catch(() => EMPTY_SNAPSHOT)); // session ended: back to login
+        commit(await store.load().catch(() => EMPTY_SNAPSHOT)); // session ended: back to login
       } else {
         setActionError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
       }
     },
-    [store]
+    [store, commit]
   );
 
   /** Runs a store call and shows its result (or a plain-language error). */
   const run = useCallback(
     async (p: Promise<Snapshot>): Promise<boolean> => {
       try {
-        setSnapshot(await p);
+        commit(await p);
         setOutage(null);
         return true;
       } catch (e) {
@@ -120,7 +146,7 @@ export default function App() {
         return false;
       }
     },
-    [handleStoreError]
+    [handleStoreError, commit]
   );
 
   // Mongo mode: refresh every 10 s and when the window regains focus, so other devices' changes show up
@@ -129,7 +155,7 @@ export default function App() {
     const refresh = async () => {
       if (pendingWrites.current.size > 0 || document.visibilityState === 'hidden') return;
       try {
-        setSnapshot(await store.load());
+        commit(await store.load());
         setOutage(null);
       } catch (e) {
         if (isOutage(e)) setOutage((e as StoreError).message);
@@ -165,7 +191,16 @@ export default function App() {
   };
 
   // ---------------- What the signed-in user can see (already scoped by the store) ----------------
-  const { account: currentAccount, centres, applications, conversations, notifications, supportRequests, preparedDrafts } = snapshot;
+  // Defaults even though commit() normalises: a missing list must never crash a screen
+  const {
+    account: currentAccount = null,
+    centres = [],
+    applications = [],
+    conversations = {},
+    notifications = [],
+    supportRequests = [],
+    preparedDrafts = {},
+  } = snapshot ?? EMPTY_SNAPSHOT;
 
   const [parentTab, setParentTab] = useState<ParentTab>('home');
   const [centreTab, setCentreTab] = useState<CentreTab>('home');
@@ -180,7 +215,7 @@ export default function App() {
   const currentRole = currentAccount ? currentAccount.role : 'parent';
 
   // The signed-in parent and their active child (the first child for now)
-  const myChildren: Child[] = currentAccount?.role === 'parent' ? currentAccount.children ?? [] : [];
+  const myChildren: Child[] = currentAccount?.role === 'parent' ? currentAccount?.children ?? [] : [];
   const activeChild: Child | undefined = myChildren[0];
   const activeParentProfile: ParentProfile = activeChild
     ? {
@@ -204,7 +239,7 @@ export default function App() {
   const handleLogIn = async (input: { role: 'parent' | 'centre'; email: string; password: string }): Promise<string | null> => {
     if (!store) return "Can't reach the CareQ server.";
     try {
-      setSnapshot(await store.logIn(input));
+      commit(await store.logIn(input));
       setParentTab('home');
       setCentreTab('home');
       setIsTrustPageOpen(false);
@@ -217,7 +252,7 @@ export default function App() {
   const handleSignUp = async (input: { role: 'parent' | 'centre'; name: string; email: string; password: string }): Promise<string | null> => {
     if (!store) return "Can't reach the CareQ server.";
     try {
-      setSnapshot(await store.signUp(input));
+      commit(await store.signUp(input));
       setParentTab('home');
       setCentreTab('home');
       setIsTrustPageOpen(false);
@@ -245,8 +280,8 @@ export default function App() {
   const handleSelectCentre = async (centreId: string) => {
     if (!store) return;
     try {
-      const { snapshot: s } = await store.createDraft(centreId);
-      setSnapshot(s);
+      const created = await store.createDraft(centreId);
+      commit(created?.snapshot);
       setParentTab('apply');
     } catch (e) {
       await handleStoreError(e);
@@ -261,11 +296,11 @@ export default function App() {
 
   // Typing: show at once, save after a short pause
   const handleUpdateNoteToCentre = (applicationId: string, note: string) => {
-    setSnapshot((s) => ({ ...s, applications: s.applications.map((a) => (a.id === applicationId ? { ...a, noteToCentre: note } : a)) }));
+    updateSnapshot((s) => ({ ...s, applications: (s.applications ?? []).map((a) => (a.id === applicationId ? { ...a, noteToCentre: note } : a)) }));
     if (store) scheduleWrite(`note:${applicationId}`, () => store.updateDraft(applicationId, { kind: 'noteToCentre', note }));
   };
   const handleUpdatePreparedDraft = (applicationId: string, draft: PreparedDraft) => {
-    setSnapshot((s) => ({ ...s, preparedDrafts: { ...s.preparedDrafts, [applicationId]: draft } }));
+    updateSnapshot((s) => ({ ...s, preparedDrafts: { ...(s.preparedDrafts ?? {}), [applicationId]: draft } }));
     if (store) scheduleWrite(`draft:${applicationId}`, () => store.updateDraft(applicationId, { kind: 'preparedDraft', draft }));
   };
 
@@ -296,8 +331,8 @@ export default function App() {
     if (!store) return { error: "Can't reach the CareQ server." };
     try {
       setRegistrationScreenOpen(true);
-      const s = await store.registerCentre(form, photoDataUrl);
-      setSnapshot(s);
+      const s = normaliseSnapshot(await store.registerCentre(form, photoDataUrl));
+      setRawSnapshot(s);
       return { centre: s.centres.find((c) => c.id === s.account?.centreId) };
     } catch (e) {
       setRegistrationScreenOpen(false);
@@ -334,7 +369,7 @@ export default function App() {
     ? applications.find((a) => a.id === activeChatModal.applicationId) ?? enquiryFor(activeChatModal.centreId, activeChatModal.applicationId)
     : null;
   const activeChatCentre = activeChatModal ? centres.find((c) => c.id === activeChatModal.centreId) ?? activeSingleCentre : activeSingleCentre;
-  const activeMessages = activeChatModal && activeChatApp ? conversations[conversationKey(activeChatModal.centreId, activeChatApp.childId)] ?? [] : [];
+  const activeMessages = activeChatModal && activeChatApp ? conversations?.[conversationKey(activeChatModal.centreId, activeChatApp.childId)] ?? [] : [];
 
   const handleSendMessage = (text: string, aiAssisted: boolean, fromSimulatedDraft = false) => {
     if (!store || !activeChatModal || !activeChatApp) return;
@@ -373,6 +408,15 @@ export default function App() {
   // ---------------- Banners ----------------
   const banners = (
     <>
+      {modeNotice && !outage && (
+        <div role="status" className="fixed bottom-4 left-4 z-[65] max-w-sm rounded-xl bg-[#F3EBDD] border border-[#E7D6A8] shadow-lg p-3 pr-9 text-xs text-[#5B4A2E] flex items-start gap-2">
+          <WifiOff className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{modeNotice}</span>
+          <button type="button" onClick={() => setModeNotice(null)} aria-label="Dismiss" className="absolute top-2 right-2 p-1 cursor-pointer">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
       {outage && (
         <div role="alert" className="fixed top-0 inset-x-0 z-[70] bg-[#A4543A] text-white text-xs sm:text-sm px-4 py-2 flex items-center justify-center gap-2">
           <WifiOff className="w-4 h-4 shrink-0" />
@@ -440,7 +484,7 @@ export default function App() {
           onDone={(next, opts) => {
             setRegistrationScreenOpen(false);
             if (next === 'policy') {
-              const text = centres.find((c) => c.id === currentAccount.centreId)?.registration?.policyText;
+              const text = centres.find((c) => c.id === currentAccount?.centreId)?.registration?.policyText;
               if (opts?.docKey) setDocToRead(opts.docKey);
               else setPolicyToRead(text ?? null);
               setCentreTab('policy');

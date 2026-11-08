@@ -219,10 +219,14 @@ export class LocalStore implements DemoStore {
   advanceConcern = (id: string) => this.run((r, a) => svc.advanceConcern(r, actorOf(a), id));
 }
 
-/** Asks the server which data mode it runs in (defaults to mongo if the answer is missing). */
-export async function fetchConfig(): Promise<{ dataMode: DataMode; resetAvailable: boolean }> {
+/** Asks the server which data mode it runs in, and why (defaults to mongo if the answer is missing). */
+export async function fetchConfig(): Promise<{ dataMode: DataMode; dataModeReason: string | null; resetAvailable: boolean }> {
   const res = await fetch('/api/config');
   if (!res.ok) throw new StoreError(res.status, "Can't reach the CareQ server.");
-  const data = (await res.json()) as { dataMode?: string; resetAvailable?: boolean };
-  return { dataMode: data.dataMode === 'local' ? 'local' : 'mongo', resetAvailable: Boolean(data.resetAvailable) };
+  const data = ((await res.json()) ?? {}) as { dataMode?: string; dataModeReason?: unknown; resetAvailable?: boolean };
+  return {
+    dataMode: data.dataMode === 'local' ? 'local' : 'mongo',
+    dataModeReason: typeof data.dataModeReason === 'string' ? data.dataModeReason.slice(0, 80) : null,
+    resetAvailable: Boolean(data.resetAvailable),
+  };
 }
