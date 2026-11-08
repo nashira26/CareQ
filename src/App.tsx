@@ -25,6 +25,7 @@ import { CentreMessages } from './components/CentreView/CentreMessages';
 import { ConversationModal } from './components/ConversationModal';
 import { TrustTransparencyPage } from './components/TrustTransparencyPage';
 import { AuthPage } from './components/AuthPage';
+import { LandingPage } from './components/LandingPage';
 import { HelpTab } from './components/HelpTab';
 import { AskCareQAssistant } from './components/AskCareQAssistant';
 import type { SupportRequest } from './data/helpData';
@@ -208,6 +209,9 @@ export default function App() {
   const [parentTab, setParentTab] = useState<ParentTab>('home');
   const [centreTab, setCentreTab] = useState<CentreTab>('home');
   const [isTrustPageOpen, setIsTrustPageOpen] = useState<boolean>(false);
+  const [loggedOutView, setLoggedOutView] = useState<'landing' | 'auth'>('landing');
+  const [authInitialMode, setAuthInitialMode] = useState<'login' | 'signup'>('signup');
+  const [authInitialRole, setAuthInitialRole] = useState<'parent' | 'centre'>('parent');
   // Centre registration: show the success screen until the centre chooses where to go next
   const [registrationScreenOpen, setRegistrationScreenOpen] = useState(false);
   // Policy text the centre asked AI to read right after registering
@@ -269,6 +273,7 @@ export default function App() {
     await flushWrites();
     setIsTrustPageOpen(false);
     setRegistrationScreenOpen(false);
+    setLoggedOutView('landing');
     if (store) await run(store.logOut());
   };
 
@@ -501,7 +506,7 @@ export default function App() {
     );
   }
 
-  // If not logged in, render separate Parent / Centre Login & Sign-up Portal
+  // If not logged in, render LandingPage first, or AuthPage / TrustTransparencyPage
   if (!currentAccount) {
     if (isTrustPageOpen) {
       return (
@@ -516,7 +521,7 @@ export default function App() {
                   onClick={() => setIsTrustPageOpen(false)}
                   className="text-xs font-semibold text-[#0B4A52] hover:text-[#45B5A5] underline cursor-pointer"
                 >
-                  Back to Sign-in
+                  {loggedOutView === 'landing' ? '← Back to Home' : 'Back to Sign-in'}
                 </button>
               </div>
             </header>
@@ -532,10 +537,44 @@ export default function App() {
       );
     }
 
+    if (loggedOutView === 'auth') {
+      return (
+        <ResetContext.Provider value={resetCtx}>
+          {banners}
+          <AuthPage
+            initialMode={authInitialMode}
+            initialRole={authInitialRole}
+            onLogIn={handleLogIn}
+            onSignUp={handleSignUp}
+            onOpenTrustPage={() => setIsTrustPageOpen(true)}
+            onBackToLanding={() => setLoggedOutView('landing')}
+          />
+          <AskCareQAssistant />
+        </ResetContext.Provider>
+      );
+    }
+
     return (
       <ResetContext.Provider value={resetCtx}>
         {banners}
-        <AuthPage onLogIn={handleLogIn} onSignUp={handleSignUp} onOpenTrustPage={() => setIsTrustPageOpen(true)} />
+        <LandingPage
+          onGetStarted={() => {
+            setAuthInitialRole('parent');
+            setAuthInitialMode('signup');
+            setLoggedOutView('auth');
+          }}
+          onLogIn={() => {
+            setAuthInitialRole('parent');
+            setAuthInitialMode('login');
+            setLoggedOutView('auth');
+          }}
+          onRegisterCentre={() => {
+            setAuthInitialRole('centre');
+            setAuthInitialMode('signup');
+            setLoggedOutView('auth');
+          }}
+          onOpenTrust={() => setIsTrustPageOpen(true)}
+        />
         <AskCareQAssistant />
       </ResetContext.Provider>
     );

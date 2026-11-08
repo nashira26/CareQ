@@ -37,6 +37,9 @@ interface AuthPageProps {
   onLogIn: (input: { role: 'parent' | 'centre'; email: string; password: string }) => Promise<string | null>;
   onSignUp: (input: { role: 'parent' | 'centre'; name: string; email: string; password: string }) => Promise<string | null>;
   onOpenTrustPage: () => void;
+  initialMode?: 'login' | 'signup';
+  initialRole?: 'parent' | 'centre';
+  onBackToLanding?: () => void;
 }
 
 const DEMO_PASSWORD = 'password';
@@ -54,13 +57,20 @@ const CENTRE_DEMOS = [
   },
 ];
 
-export const AuthPage: React.FC<AuthPageProps> = ({ onLogIn, onSignUp, onOpenTrustPage }) => {
+export const AuthPage: React.FC<AuthPageProps> = ({
+  onLogIn,
+  onSignUp,
+  onOpenTrustPage,
+  initialMode = 'login',
+  initialRole = 'parent',
+  onBackToLanding,
+}) => {
   const [busy, setBusy] = useState(false);
   // Selected Portal: "parent" | "centre"
-  const [targetRole, setTargetRole] = useState<'parent' | 'centre'>('parent');
+  const [targetRole, setTargetRole] = useState<'parent' | 'centre'>(initialRole);
 
   // Selected Mode: "login" | "signup"
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>(initialMode);
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState<string>('priya@example.ca');
@@ -128,7 +138,18 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogIn, onSignUp, onOpenTru
       {/* Top Row: Logo on left, Trust & Support link on right */}
       <header className="w-full">
         <div className="max-w-6xl mx-auto px-6 pt-6 flex justify-between items-center">
-          <LogoFull size={44} />
+          <div className="flex items-center gap-4">
+            {onBackToLanding && (
+              <button
+                type="button"
+                onClick={onBackToLanding}
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1E4A4E] hover:underline cursor-pointer"
+              >
+                <span>← Back</span>
+              </button>
+            )}
+            <LogoFull size={44} />
+          </div>
           <button
             type="button"
             onClick={onOpenTrustPage}
