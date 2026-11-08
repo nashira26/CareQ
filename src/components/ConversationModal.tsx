@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Centre, Application, ChatMessage } from '../data/mockData';
 import { StatusBadge } from './StatusBadge';
 import { AiFallbackNote, AiMode, AiNotice, SimTag } from './ui/CareUI';
-import { aiPost, isUserFacingAiError } from '../lib/aiFetch';
+import { AI_OFFLINE_STATUS, aiPost, isUserFacingAiError } from '../lib/aiFetch';
 import {
   X,
   Send,
@@ -177,6 +177,9 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
       setAiDraft(result.data.draftMessage);
       setDraftAiMode(result.data.aiMode ?? null);
       setDraftContext({ facts: result.data.facts ?? [], citation: result.data.citation ?? null, simulated: Boolean(result.data.simulated) });
+    } else if (!result.ok && result.status === AI_OFFLINE_STATUS) {
+      setDraftAiMode('fallback');
+      setAiNotice('Offline demo: AI drafting is unavailable (basic mode). You can type your message yourself.');
     } else if (!result.ok && isUserFacingAiError(result.status)) {
       setAiNotice(`${result.message} You can still type your message yourself.`);
     }
@@ -197,7 +200,8 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
       );
       if (!result.ok) {
         // Tone check unavailable: the message is still sent (the sender decides), and we say so
-        if (isUserFacingAiError(result.status)) setAiNotice(`Tone check skipped: ${result.message}`);
+        if (result.status === AI_OFFLINE_STATUS) setToneAiMode('fallback');
+        else if (isUserFacingAiError(result.status)) setAiNotice(`Tone check skipped: ${result.message}`);
         throw new Error(result.message);
       }
       const data = result.data;

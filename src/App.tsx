@@ -40,6 +40,7 @@ import type { DraftChange, ExtractedFromInput, RequirementCitationInput } from '
 import torontoAreas from './data/torontoAreas.json';
 import fsaCentroids from './data/fsaCentroids.json';
 import { LogoFull } from './components/Logo';
+import { setAiOffline } from './lib/aiFetch';
 import { CentreDemoBanner } from './components/ui/CareUI';
 import {
   Search,
@@ -93,10 +94,12 @@ export default function App() {
       const local = new LocalStore();
       commit(await local.load().catch(() => EMPTY_SNAPSHOT));
       setResetAvailable(false);
-      setModeNotice("Can't reach the CareQ server. Offline demo: data stays in this browser. Reload to reconnect.");
+      setAiOffline(true); // every AI feature uses its basic mode, with a note instead of an error
+      setModeNotice('Offline demo: saved in this browser only; AI features unavailable. Reload to reconnect.');
       setStore(local);
       return;
     }
+    setAiOffline(false);
     const s: DemoStore = config.dataMode === 'local' ? new LocalStore() : new ApiStore();
     setResetAvailable(config.resetAvailable);
     // DATA_MODE=local is a deliberate choice; tell people only when the server fell back to it

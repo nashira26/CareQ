@@ -13,6 +13,7 @@ import {
   MAX_TOOL_CALLS,
   NO_INFO,
   askCacheKey,
+  checkSource,
   finaliseAnswer,
   isCacheable,
   isQueueQuestion,
@@ -334,6 +335,41 @@ test('with a centre: at most 1 provincial passage, only when it beats the operat
   assert.deepEqual(r2.passages.map((p) => p.chunkId), ['telccs#20']);
   const r3 = await retrieveForAsk('notice', JK, vectorDeps([{ ...JK_WITHDRAW, embedding: vec(0.2) }, prov('m1', 0.5)])); // both below threshold
   assert.deepEqual(r3.passages, []);
+});
+
+test('with a centre: a clear keyword match (2+ terms) in its own handbook is kept even below the vector cutoff', async () => {
+  // Debug run 2026-11-08: "registration documents" scored 0.815–0.820 on every JK passage (cutoff 0.82)
+  const admission = chunk('telccs#28', {
+    operatorId: 'toronto-early-learning-child-care-services',
+    appliesToCentreIds: [JK],
+    heading: 'ADMISSION PROCEDURES',
+    text: 'Before your child starts, complete the registration forms in the Child Admission Package; the supervisor reviews the documents with you.',
+    embedding: vec(0.62), // (1+0.62)/2 = 0.81, below 0.82
+  });
+  const unrelated = chunk('telccs#90', { appliesToCentreIds: [JK], heading: 'OUTDOOR PLAY', text: 'Children play outside twice a day.', embedding: vec(0.6) });
+  const otherCentre = { ...MAC_WITHDRAW, text: 'Registration documents for Macaulay are listed in the admission forms.', embedding: vec(0.6) };
+  const r = await retrieveForAsk('registration documents', JK, vectorDeps([admission, unrelated, otherCentre]));
+  assert.deepEqual(r.passages.map((p) => p.chunkId), ['telccs#28']);
+  assert.equal(r.passages[0].matchedBy, 'keyword');
+  // One term is not enough evidence on its own
+  assert.deepEqual((await retrieveForAsk('registration', JK, vectorDeps([admission]))).passages, []);
+});
+
+test('drop reasons: no source, wrong chunk, too short, quote not found; a verbatim quote passes', () => {
+  const passages = new Map<string, AskPassage>([[JK_WITHDRAW.chunkId, { ...JK_WITHDRAW, score: 1, matchedBy: 'vector' } as AskPassage]]);
+  assert.deepEqual(checkSource({}, passages), { reason: 'no source' });
+  assert.deepEqual(checkSource({ chunkId: 'telccs#20', quote: '  ' }, passages), { reason: 'no source' });
+  assert.deepEqual(checkSource({ chunkId: 'macaulay#9', quote: 'two weeks written notice' }, passages), { reason: 'wrong chunk' });
+  assert.deepEqual(checkSource({ chunkId: 'telccs#20', quote: 'notice' }, passages), { reason: 'too short' });
+  assert.deepEqual(checkSource({ chunkId: 'telccs#20', quote: 'one month written notice' }, passages), { reason: 'quote not found' });
+  const ok = checkSource({ chunkId: 'telccs#20', quote: 'two weeks written notice' }, passages);
+  assert.ok('citation' in ok && ok.citation.quote === 'two weeks written notice');
+});
+
+test('a refusal is never cached (it may be a one-off model miss)', () => {
+  const base = { citations: [], toolsUsed: ['search_documents'], retrievalMode: 'vector' as const, aiMode: 'gemini' as const, modelUsed: 'm' };
+  assert.equal(isCacheable('What documents do I need to register?', { ...base, answer: NO_INFO }), false);
+  assert.equal(isCacheable('What documents do I need to register?', { ...base, answer: 'Complete the Child Admission Package.' }), true);
 });
 
 test('without a centre: provincial passages + the CareQ Help FAQ, no operator handbooks', async () => {

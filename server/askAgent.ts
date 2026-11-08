@@ -23,6 +23,7 @@ import {
   RetrievedPassage,
   RetrieverDeps,
   StoredChunk,
+  keywordHits,
   keywordSearch,
   keywordTerms,
   normaliseQuestion,
@@ -46,6 +47,20 @@ export const MIN_QUOTE_WORDS = 2;
  */
 export const OPERATOR_MIN_SCORE = 0.82;
 export const PROVINCIAL_MIN_SCORE = 0.85;
+/**
+ * With a centre, up to this many slots go to clear keyword matches in that centre's own handbook.
+ * Its embedding scores sit in a narrow band (0.79–0.85 in the 2026-11-08 debug runs), so a short query
+ * like "registration documents" left every passage just under 0.82, and the section that answers
+ * "What documents do I need to register?" (ADMISSION PROCEDURES) wasn't in the vector top 4 at all.
+ * Every sentence still needs a verbatim quote from a passage that was retrieved.
+ */
+export const OPERATOR_KEYWORD_SLOTS = 2;
+
+/** ASK_DEBUG=1: log retrieval scores, the model's raw sentences/quotes and why each source was dropped. */
+const askDebug = (...args: unknown[]) => {
+  if (process.env.ASK_DEBUG === '1') console.log('[ask-debug]', ...args);
+};
+const short = (s: string, n = 140) => (s.length > n ? `${s.slice(0, n)}…` : s);
 
 // ---------------- Types ----------------
 
@@ -210,10 +225,21 @@ export async function retrieveForAsk(
   deps: RetrieverDeps
 ): Promise<{ passages: AskPassage[]; mode: RetrievalResult['method']; notice?: string }> {
   if (centreId) {
-    const op = await retrieve(question, { centreId, scope: 'operator', limit: ASK_TOP }, deps);
-    const prov = await retrieve(question, { scope: 'provincial', limit: 1 }, deps);
-    const ops = op.passages.filter((p) => passesOperator(p, op.method));
+    const [op, prov, kw] = await Promise.all([
+      retrieve(question, { centreId, scope: 'operator', limit: ASK_TOP }, deps),
+      retrieve(question, { scope: 'provincial', limit: 1 }, deps),
+      keywordHits(question, { centreId, scope: 'operator' }, deps, OPERATOR_KEYWORD_SLOTS).catch(() => [] as RetrievedPassage[]),
+    ]);
+    const vectorOps = op.passages.filter((p) => passesOperator(p, op.method));
+    // Keyword matches the vector search missed get reserved slots; vector passages fill the rest
+    const extra = kw.filter((k) => !vectorOps.some((v) => v.chunkId === k.chunkId));
+    // Order: best vector passage, keyword additions, other vector passages (a provincial passage replaces the last)
+    const ops = [...vectorOps.slice(0, 1), ...extra, ...vectorOps.slice(1, ASK_TOP - extra.length)];
+    for (const k of kw) askDebug(`  operator ${k.chunkId} keyword score ${k.score.toFixed(2)} ${extra.includes(k) ? 'added' : 'already found'} · ${short(k.heading, 60)}`);
+    for (const p of op.passages)
+      askDebug(`  operator ${p.chunkId} ${p.matchedBy} score ${vectorScore(p, op.method).toFixed(3)} ${passesOperator(p, op.method) ? 'kept' : `below ${OPERATOR_MIN_SCORE}`} · ${short(p.heading, 60)}`);
     const top = prov.passages[0];
+    if (top) askDebug(`  provincial ${top.chunkId} ${top.matchedBy} score ${vectorScore(top, prov.method).toFixed(3)} ${passesProvincial(question, top, prov.method) ? 'passes' : 'fails'} threshold`);
     let provincial: RetrievedPassage | undefined;
     if (top && passesProvincial(question, top, prov.method)) {
       const comparable = top.matchedBy === 'vector' && ops[0]?.matchedBy === 'vector';
@@ -314,6 +340,21 @@ const applicationCitation = (a: AppFact, lines: string[]): Citation => ({
 
 // ---------------- Post-processing ----------------
 
+/** Why a model source was rejected (ASK_DEBUG), or the verified citation. */
+export type SourceCheck = { citation: Citation } | { reason: 'no source' | 'wrong chunk' | 'too short' | 'too long' | 'quote not found' };
+
+export function checkSource(src: { chunkId?: string; quote?: string }, passages: Map<string, AskPassage>): SourceCheck {
+  if (!src?.chunkId || typeof src.quote !== 'string' || !src.quote.trim()) return { reason: 'no source' };
+  const p = passages.get(src.chunkId);
+  if (!p) return { reason: 'wrong chunk' };
+  const quote = verifiedQuote(src.quote, p.text);
+  if (quote) return { citation: citationFor(p, quote) };
+  const n = wordCount(normaliseQuote(src.quote));
+  if (n < MIN_QUOTE_WORDS) return { reason: 'too short' };
+  if (n > MAX_QUOTE_WORDS && !normaliseQuote(p.text).includes(normaliseQuote(src.quote))) return { reason: 'quote not found' };
+  return { reason: n > MAX_QUOTE_WORDS ? 'too long' : 'quote not found' };
+}
+
 export interface ModelSentence {
   text: string;
   sources?: { chunkId?: string; quote?: string }[];
@@ -366,15 +407,22 @@ export function finaliseAnswer(
       wantsApplication = true; // replaced by the server-written lines below
       continue;
     }
-    if (WAIT_CLAIM.test(s.text)) continue;
-    const valid: Citation[] = [];
-    for (const src of s.sources ?? []) {
-      const p = src.chunkId ? passages.get(src.chunkId) : undefined;
-      const quote = p && typeof src.quote === 'string' ? verifiedQuote(src.quote, p.text) : null;
-      if (!p || !quote) continue;
-      valid.push(citationFor(p, quote));
+    if (WAIT_CLAIM.test(s.text)) {
+      askDebug(`  dropped (wait claim): ${short(s.text)}`);
+      continue;
     }
-    if (!valid.length) continue;
+    const valid: Citation[] = [];
+    const reasons: string[] = [];
+    for (const src of s.sources ?? []) {
+      const r = checkSource(src, passages);
+      if ('citation' in r) valid.push(r.citation);
+      else reasons.push(`${r.reason} (${src?.chunkId ?? '-'}: "${short(String(src?.quote ?? ''), 80)}")`);
+    }
+    if (!valid.length) {
+      askDebug(`  dropped: ${short(s.text)} · ${reasons.length ? reasons.join('; ') : 'no source'}`);
+      continue;
+    }
+    askDebug(`  kept: ${short(s.text)} · ${valid.length} verified quote(s)`);
     kept.push(s.text);
     for (const c of valid) {
       const key = `${c.chunkId}|${normaliseQuote(c.quote)}`;
@@ -521,7 +569,9 @@ export async function runAskAgent(ctx: AskContext, model: AskModelCall, deadline
     if (call.name === 'search_documents') {
       const query = typeof call.args?.query === 'string' && call.args.query.trim() ? call.args.query.slice(0, 300) : ctx.question;
       // Scope comes from the request (ctx.centreId); any centre the model names is ignored.
+      askDebug(`search_documents("${query}") centre ${ctx.centreId ?? '-'}`);
       const r = await withDeadline(retrieveForAsk(query, ctx.centreId, ctx.deps), deadline);
+      askDebug(`  -> ${r.mode}: ${r.passages.map((p) => p.chunkId).join(', ') || 'no passages'}`);
       if (st.mode === 'none' || r.mode === 'keyword') st.mode = r.mode;
       st.notice = st.notice ?? r.notice;
       for (const p of r.passages) passages.set(p.chunkId, p);
@@ -568,11 +618,14 @@ export async function runAskAgent(ctx: AskContext, model: AskModelCall, deadline
       const calls = noMoreTools ? [] : response.functionCalls ?? [];
       if (!calls.length) {
         const parsed = parseModelAnswer(response.text);
+        askDebug(`model ${used} answer:`, parsed === null ? `unparseable: ${short(response.text ?? '', 300)}` : parsed.length ? '' : 'noInformation');
+        for (const ms of parsed ?? []) askDebug(`  sentence: ${short(ms.text)} · sources ${JSON.stringify(ms.sources ?? [])}`);
         if (parsed === null) throw new Error('Ask CareQ: the model did not return the answer JSON');
         // "No information" after a single search: ask once for another search with different words
         const searches = toolCallNames.filter((n) => n === 'search_documents').length;
         if (!parsed.length && !nudged && searches === 1 && toolCalls < MAX_TOOL_CALLS && !personalQuestion(ctx.question) && !AVAILABILITY_Q.test(ctx.question)) {
           nudged = true;
+          askDebug('nudge: asking for a second search with other words');
           contents.push(response.candidates?.[0]?.content ?? { role: 'model', parts: [{ text: response.text ?? '' }] });
           contents.push({ role: 'user', parts: [{ text: 'Those passages may use different words. Call search_documents once more with other words for the same question, then answer or reply {"noInformation": true}.' }] });
           continue;
@@ -611,6 +664,8 @@ export const askCacheKey = (user: AskUser, centreId: string | undefined, questio
 
 export const isCacheable = (question: string, result: AskResult) =>
   result.aiMode === 'gemini' &&
+  // A refusal may be a one-off model miss; don't let it stick for 30 minutes
+  result.answer !== NO_INFO &&
   !result.toolsUsed.includes('get_my_application') &&
   !UNCACHEABLE_Q.test(question) &&
   !POSITION_Q.test(question) &&

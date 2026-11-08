@@ -21,7 +21,7 @@ import {
   AiMode,
   AiNotice,
 } from '../ui/CareUI';
-import { aiPost, isUserFacingAiError } from '../../lib/aiFetch';
+import { AI_OFFLINE_STATUS, aiPost, isUserFacingAiError } from '../../lib/aiFetch';
 import {
   Sparkles,
   CheckCircle2,
@@ -221,6 +221,8 @@ A signed Photography & Media Consent Form is required for classroom developmenta
     if (result.ok && result.data.success && result.data.requirements) {
       setExtractedRequirements(result.data.requirements);
       setExtractAiMode(result.data.aiMode ?? null);
+    } else if (!result.ok && result.status === AI_OFFLINE_STATUS) {
+      setAiNotice('Offline demo: the AI policy reader is unavailable (basic mode). You can add requirements yourself.');
     } else if (!result.ok && isUserFacingAiError(result.status)) {
       setAiNotice(`${result.message} You can still add requirements yourself later.`);
     }

@@ -380,6 +380,21 @@ export interface RetrieverDeps {
   log?: (msg: string) => void;
 }
 
+/**
+ * Clear keyword matches in scope: at least 2 distinct question terms (synonyms count), as passages with
+ * matchedBy 'keyword'. Ask CareQ adds these next to vector results for a centre's own handbook, where
+ * embedding scores sit in a narrow band and a fixed cutoff can miss the right section.
+ */
+export async function keywordHits(question: string, opts: RetrieveOptions, deps: RetrieverDeps, limit: number): Promise<RetrievedPassage[]> {
+  const needed = 2;
+  if (new Set(keywordTerms(question)).size < needed) return [];
+  const chunks = (await deps.source.all().catch(() => [] as StoredChunk[])).filter((c) => inScope(c, opts));
+  return keywordSearch(question, chunks, limit * 3)
+    .filter((h) => h.matchedTerms >= needed)
+    .slice(0, limit)
+    .map(toPassage('keyword'));
+}
+
 export async function retrieve(question: string, opts: RetrieveOptions, deps: RetrieverDeps): Promise<RetrievalResult> {
   const limit = opts.limit ?? 6;
   const log = deps.log ?? (() => {});

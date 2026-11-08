@@ -1,4 +1,5 @@
 import React from 'react';
+import { isAiOffline } from '../../lib/aiFetch';
 import { ArrowRight, Sparkles } from 'lucide-react';
 
 export interface EyebrowProps {
@@ -177,13 +178,14 @@ export const AiFallbackNote: React.FC<{ aiMode?: AiMode | null; className?: stri
   className = '',
 }) =>
   aiMode === 'fallback' ? (
-    <p className={`text-[11px] text-[#7A8A84] ${className}`}>AI unavailable: basic mode used</p>
+    <p className={`text-[11px] text-[#7A8A84] ${className}`}>{isAiOffline() ? 'Offline demo: AI unavailable, basic mode used' : 'AI unavailable: basic mode used'}</p>
   ) : null;
 
 /** Plain-language notice when an AI feature can't run (rate limit, signed out, server unreachable). */
 export const AiNotice: React.FC<{ message?: string | null; className?: string }> = ({ message, className = '' }) =>
   message ? (
-    <p role="status" className={`text-[11px] font-medium text-[#A4543A] ${className}`}>
+    // Offline demo: the only notices are basic-mode notes, so they're grey like AiFallbackNote, not error-red
+    <p role="status" className={`text-[11px] ${isAiOffline() ? 'text-[#7A8A84]' : 'font-medium text-[#A4543A]'} ${className}`}>
       {message}
     </p>
   ) : null;

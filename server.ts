@@ -45,16 +45,26 @@ const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 15000;
 const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite';
 const GEMINI_FALLBACK_TIMEOUT_MS = Number(process.env.GEMINI_FALLBACK_TIMEOUT_MS) || 10000;
 
+// Ask CareQ: each turn of its first model is cut off after this, so a stalled call leaves time for the
+// backup inside the 15 s budget (flash-lite turns take 1–3 s; single calls stalled for 7–14 s in the
+// 2026-11-08 debug runs).
+const ASK_TURN_TIMEOUT_MS = Number(process.env.GEMINI_ASK_TURN_TIMEOUT_MS) || 5000;
+
 /**
  * Models per AI endpoint: GEMINI_MODEL_<ENDPOINT> (first) and GEMINI_BACKUP_MODEL_<ENDPOINT> (tried
  * once on timeout/429/503), e.g. GEMINI_MODEL_ASK_CAREQ, GEMINI_BACKUP_MODEL_PREPARE_APPLICATION.
- * Defaults: GEMINI_MODEL, then GEMINI_FALLBACK_MODEL; except Ask CareQ, which runs 2–3 model turns
- * inside 15 s, so it starts with the fast model (flash-lite answered correctly in ~2 s in the
- * 2026-11-07 eval) and keeps the main model as its backup. Policy extraction and Prepare with AI
- * keep the main model, where quality matters more than speed.
+ * Defaults: GEMINI_MODEL, then GEMINI_FALLBACK_MODEL; except the parent-facing endpoints where speed
+ * matters, which start with the fast model and keep the main model as backup:
+ *  - Ask CareQ runs 2–3 model turns inside 15 s (flash-lite answered correctly in ~2 s, 2026-11-07 eval);
+ *  - Prepare with AI and follow-up drafts: gemini-3.5-flash timed out at 15 s on Prepare in the
+ *    2026-11-08 eval (17.2 s with the backup); flash-lite produced the same checks.
+ * The centre-side policy readers keep the main model first, where quality matters more than speed.
  */
+const FAST_FIRST = { primary: GEMINI_FALLBACK_MODEL, backup: GEMINI_MODEL };
 const ENDPOINT_MODEL_DEFAULTS: Record<string, { primary: string; backup: string }> = {
-  'ask-careq': { primary: GEMINI_FALLBACK_MODEL, backup: GEMINI_MODEL },
+  'ask-careq': FAST_FIRST,
+  'prepare-application': FAST_FIRST,
+  'generate-message': FAST_FIRST,
 };
 const modelsFor = (endpoint: string) => {
   const key = endpoint.toUpperCase().replace(/-/g, '_');
@@ -976,7 +986,8 @@ If it is respectful, calm, neutral, professional, or standard:
         : undefined;
 
     const cacheKey = askCacheKey(user, centreId, question);
-    const cached = askCache.get(cacheKey);
+    // ASK_DEBUG=1: every question runs for real (so repeated runs show the full log)
+    const cached = process.env.ASK_DEBUG === '1' ? null : askCache.get(cacheKey);
     if (cached) {
       console.log('[gemini] ask-careq: cache hit');
       return res.json({ success: true, ...cached, cached: true });
@@ -988,13 +999,16 @@ If it is respectful, calm, neutral, professional, or standard:
     const askModel: AskModelCall = async (params, deadline) => {
       const remaining = () => deadline - Date.now();
       try {
-        const timeout = Math.min(current === primary ? GEMINI_TIMEOUT_MS : GEMINI_FALLBACK_TIMEOUT_MS, remaining());
+        const timeout = Math.min(current === primary ? ASK_TURN_TIMEOUT_MS : GEMINI_FALLBACK_TIMEOUT_MS, remaining());
         return { response: await callModel('ask-careq', current, params, timeout), modelUsed: current };
       } catch (err) {
         if (current !== primary || primary === backup || !isRetryable(err) || remaining() < 2000) throw err;
         console.warn(`[gemini] ask-careq: ${primary} failed (${err instanceof ApiError ? `HTTP ${err.status}` : 'timeout'}); retrying with ${backup}`);
         current = backup;
-        return { response: await callModel('ask-careq', current, params, Math.min(GEMINI_FALLBACK_TIMEOUT_MS, remaining())), modelUsed: current };
+        // A search already returned passages: the backup answers from them (no new search), so it fits in the time left
+        const hasPassages = params.contents.some((c) => c.parts?.some((p) => ((p.functionResponse?.response as any)?.result?.passages?.length ?? 0) > 0));
+        const retry = hasPassages ? { ...params, config: { ...params.config, toolConfig: { functionCallingConfig: { mode: 'NONE' as any } } } } : params;
+        return { response: await callModel('ask-careq', current, retry, Math.min(GEMINI_FALLBACK_TIMEOUT_MS, remaining())), modelUsed: current };
       }
     };
 

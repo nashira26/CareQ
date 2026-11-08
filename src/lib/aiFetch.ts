@@ -5,7 +5,18 @@
  */
 export type AiResult<T> = { ok: true; data: T } | { ok: false; status: number; message: string };
 
+/** Status for "offline demo" (the server couldn't be reached at start): no request is made. */
+export const AI_OFFLINE_STATUS = -1;
+export const OFFLINE_AI_MESSAGE = 'AI features are unavailable in the offline demo.';
+let aiOffline = false;
+/** Set once at start-up: the offline demo has no server, so every AI feature uses its basic mode. */
+export const setAiOffline = (v: boolean) => {
+  aiOffline = v;
+};
+export const isAiOffline = () => aiOffline;
+
 export async function aiPost<T>(url: string, body: unknown): Promise<AiResult<T>> {
+  if (aiOffline) return { ok: false, status: AI_OFFLINE_STATUS, message: OFFLINE_AI_MESSAGE };
   try {
     const res = await fetch(url, {
       method: 'POST',
@@ -27,5 +38,5 @@ export async function aiPost<T>(url: string, body: unknown): Promise<AiResult<T>
   }
 }
 
-/** Only these need to be shown to the user; other failures quietly use the basic fallback. */
+/** Only these need to be shown to the user; other failures (and the offline demo) quietly use the basic fallback. */
 export const isUserFacingAiError = (status: number) => status === 401 || status === 429 || status === 0;
