@@ -15,7 +15,12 @@
  *     items outside the centre's confirmed requirements (both must be 0)
  *  4. Tone check on eval/tone_messages.json: correct flags, false alarms, misses
  *
- * Writes eval/results.md (summary, models, date, worst failures, raw outputs) and eval/raw/*.json.
+ *   npm run eval -- --report                      # rebuild eval/results.md from the saved runs (no AI calls)
+ *   npm run eval -- --only=extract --no-save      # a quick check: prints results, saves nothing
+ *
+ * Each run is saved as eval/runs/<timestamp>.json. eval/results.md shows the baseline (eval/baseline.json,
+ * before the fixes), the latest run, and the mean and range over all saved runs, then the latest run's
+ * details and raw outputs. eval/raw/ (git-ignored) holds the latest run's rows and server log.
  * Every number comes from a response in this run; nothing is filled in. Answer caches are off.
  */
 import 'dotenv/config';
@@ -459,6 +464,8 @@ async function evalPrepare() {
 
 // ---------------- 4. Tone check ----------------
 
+const toneOutcome = (r: { flagged: boolean | null; harsh: boolean }) => (r.flagged == null ? 'error' : r.harsh && r.flagged ? 'correct flag' : !r.harsh && !r.flagged ? 'correct pass' : r.flagged ? 'FALSE ALARM' : 'MISS');
+
 interface ToneRow { text: string; role: string; harsh: boolean; status: number; flagged: boolean | null; answeredBy: string; latencyMs: number; reason: string; raw: Json }
 
 async function evalTone() {
@@ -473,70 +480,179 @@ async function evalTone() {
   }
   log('\n| Message | Role | Label | Flagged | Result | Answered by |');
   log('| --- | --- | --- | --- | --- | --- |');
-  const outcome = (r: ToneRow) => (r.flagged == null ? 'error' : r.harsh && r.flagged ? 'correct flag' : !r.harsh && !r.flagged ? 'correct pass' : r.flagged ? 'FALSE ALARM' : 'MISS');
+  const outcome = toneOutcome;
   for (const r of rows) log(`| ${cell(r.text)} | ${r.role} | ${r.harsh ? 'harsh' : 'ok'} | ${r.flagged == null ? '-' : r.flagged ? 'yes' : 'no'} | ${outcome(r)} | ${cell(r.answeredBy)} |`);
   const c = tally(rows.map(outcome));
   log(`\nCorrect flags ${c['correct flag'] ?? 0}/${rows.filter((r) => r.harsh).length} · correct passes ${c['correct pass'] ?? 0}/${rows.filter((r) => !r.harsh).length} · false alarms ${c['FALSE ALARM'] ?? 0} · misses ${c['MISS'] ?? 0}${c.error ? ` · errors ${c.error}` : ''} · ${JSON.stringify(tally(rows.map((r) => r.answeredBy)))}`);
   return { rows, counts: c, outcome };
 }
 
-// ---------------- Report ----------------
+// ---------------- Runs: every run is saved; the report shows the baseline, the latest run, and the mean / range of all runs ----------------
 
-function writeReport(r: { ask?: Awaited<ReturnType<typeof evalAsk>>; extract?: ExtractResult[]; prepare?: PrepareRow[]; tone?: Awaited<ReturnType<typeof evalTone>>; health: Json; started: Date; finished: Date }) {
-  const L: string[] = [];
-  const p = (s = '') => L.push(s);
-  const models = new Set<string>();
-  r.ask?.rows.forEach((x) => models.add(x.answeredBy));
-  r.extract?.forEach((x) => models.add(x.answeredBy));
-  r.prepare?.filter((x) => !x.skipped).forEach((x) => models.add(x.answeredBy));
-  r.tone?.rows.forEach((x) => models.add(x.answeredBy));
+const RUNS = path.join(EVAL, 'runs');
+const BASELINE = path.join(EVAL, 'baseline.json');
 
-  p('# CareQ evaluation results');
-  p();
-  p(`- **Date:** ${r.started.toISOString().slice(0, 16).replace('T', ' ')} UTC (took ${Math.round((+r.finished - +r.started) / 60000)} min)`);
-  p(`- **Server:** ${BASE} · data mode ${r.health.dataMode ?? '?'} · answer caches off (AI_CACHE=off)`);
-  p(`- **Configured models:** primary ${process.env.GEMINI_MODEL ?? '(default)'}, fast ${process.env.GEMINI_FALLBACK_MODEL ?? '(default)'} (Ask CareQ, Prepare and follow-ups use the fast one first); embeddings ${EMBED_MODEL}`);
-  p(`- **Answered by (this run):** ${[...models].join(', ')}`);
-  p(`- **Pacing:** ${PACE_MS / 1000} s between AI requests · inputs: eval/questions.json, eval/labels/*.json, eval/tone_messages.json`);
-  p();
-  p('## Summary');
-  p();
-  p('| Check | Result | Target |');
-  p('| --- | --- | --- |');
+interface RunRows { ask?: AskRow[]; extract?: ExtractResult[]; prepare?: PrepareRow[]; tone?: ToneRow[] }
+interface RunFile {
+  id: string;
+  date: string;
+  minutes: number;
+  base: string;
+  paceSeconds: number;
+  models: { primary: string; fast: string; embeddings: string; matchThreshold: number };
+  answeredBy: Record<string, number>;
+  metrics: Record<string, number>;
+  rows: RunRows;
+}
+
+function metricsOf(r: RunRows): Record<string, number> {
+  const m: Record<string, number> = {};
   if (r.ask) {
-    const s = r.ask.summary;
-    p(`| Ask CareQ: answerable questions answered from the right document | ${s.answersCorrect}/${s.answersTotal} | ${s.answersTotal}/${s.answersTotal} |`);
-    p(`| Ask CareQ: right page (±1) | ${s.pageOk}/${s.answersTotal} | ${s.answersTotal}/${s.answersTotal} |`);
-    p(`| Ask CareQ: correct refusals | ${s.refusalsCorrect}/${s.refusalsTotal} | ${s.refusalsTotal}/${s.refusalsTotal} |`);
-    p(`| Ask CareQ: quotes verbatim in the cited passage (re-checked) | ${s.quotesVerbatim}/${s.quotesTotal} | all |`);
-    p(`| Ask CareQ: server time, median / max | ${secs(s.medianMs)} / ${secs(s.maxMs)} | |`);
-    p(`| Ask CareQ: answered by | ${Object.entries(s.byModel).map(([k, v]) => `${k} ${v}`).join(', ')} | |`);
+    const ans = r.ask.filter((x) => x.expect === 'answer');
+    const ref = r.ask.filter((x) => x.expect === 'refuse');
+    const quotes = r.ask.flatMap((x) => x.quotes);
+    const lat = r.ask.map((x) => x.latencyMs).filter((x) => Number.isFinite(x));
+    Object.assign(m, {
+      'ask.answers': ans.filter((x) => x.correct).length, 'ask.answers.total': ans.length,
+      'ask.page': ans.filter((x) => x.pageOk).length, 'ask.page.total': ans.length,
+      'ask.refusals': ref.filter((x) => x.correct).length, 'ask.refusals.total': ref.length,
+      'ask.quotes': quotes.filter((q) => q.verbatim).length, 'ask.quotes.total': quotes.length,
+      'ask.medianMs': median(lat), 'ask.maxMs': lat.length ? Math.max(...lat) : NaN,
+      'ask.fallbacks': r.ask.filter((x) => x.raw?.aiMode === 'fallback').length,
+    });
   }
   if (r.extract) {
-    for (const x of r.extract) p(`| Requirements, ${x.operatorId}: found / missed / repeats / no label | ${x.pairs.length}/${x.labels.length} found · ${x.missed.length} missed · ${x.invented.length - inventedOnly(x).length} repeats · ${inventedOnly(x).length} with no label | all found |`);
-    const q = r.extract.reduce((a, x) => [a[0] + x.quotesVerbatim, a[1] + x.extracted.length], [0, 0]);
-    p(`| Requirements: quotes verbatim (re-checked) | ${q[0]}/${q[1]} | all |`);
+    for (const x of r.extract) {
+      m[`extract.${x.operatorId}.found`] = x.pairs.length;
+      m[`extract.${x.operatorId}.found.total`] = x.labels.length;
+      m[`extract.${x.operatorId}.repeats`] = x.invented.length - inventedOnly(x).length;
+      m[`extract.${x.operatorId}.noLabel`] = inventedOnly(x).length;
+    }
+    m['extract.quotes'] = r.extract.reduce((n, x) => n + x.quotesVerbatim, 0);
+    m['extract.quotes.total'] = r.extract.reduce((n, x) => n + x.extracted.length, 0);
   }
   if (r.prepare) {
     const ran = r.prepare.filter((x) => !x.skipped);
-    p(`| Prepare with AI: "ready" without a matching document | ${ran.reduce((n, x) => n + x.readyWithoutMatch.length, 0)} (in ${ran.length} runs) | 0 |`);
-    p(`| Prepare with AI: checklist items outside the confirmed list | ${ran.reduce((n, x) => n + x.outsideList.length, 0)} | 0 |`);
-    const skipped = r.prepare.filter((x) => x.skipped);
-    if (skipped.length) p(`| Prepare with AI: centres skipped | ${skipped.map((x) => `${x.centreName} (${x.skipped})`).join('; ')} | |`);
+    m['prepare.readyWithoutMatch'] = ran.reduce((n, x) => n + x.readyWithoutMatch.length, 0);
+    m['prepare.outsideList'] = ran.reduce((n, x) => n + x.outsideList.length, 0);
+    m['prepare.runs'] = ran.length;
   }
   if (r.tone) {
-    const c = r.tone.counts;
-    p(`| Tone check: harsh messages flagged | ${c['correct flag'] ?? 0}/${r.tone.rows.filter((x) => x.harsh).length} | all |`);
-    p(`| Tone check: false alarms / misses | ${c['FALSE ALARM'] ?? 0} / ${c['MISS'] ?? 0} | 0 / 0 |`);
+    const c = tally(r.tone.map(toneOutcome));
+    m['tone.flags'] = c['correct flag'] ?? 0;
+    m['tone.flags.total'] = r.tone.filter((x) => x.harsh).length;
+    m['tone.falseAlarms'] = c['FALSE ALARM'] ?? 0;
+    m['tone.misses'] = c['MISS'] ?? 0;
+  }
+  return m;
+}
+
+function answeredByOf(r: RunRows) {
+  return tally([
+    ...(r.ask ?? []).map((x) => `Ask CareQ: ${x.answeredBy}`),
+    ...(r.extract ?? []).map((x) => `Extraction: ${x.answeredBy}`),
+    ...(r.prepare ?? []).filter((x) => !x.skipped).map((x) => `Prepare: ${x.answeredBy}`),
+    ...(r.tone ?? []).map((x) => `Tone: ${x.answeredBy}`),
+  ]);
+}
+
+const makeRun = (rows: RunRows, started: Date, finished: Date): RunFile => ({
+  id: started.toISOString().replace(/[:.]/g, '-'),
+  date: started.toISOString(),
+  minutes: Math.round((+finished - +started) / 60000),
+  base: BASE,
+  paceSeconds: PACE_MS / 1000,
+  models: { primary: process.env.GEMINI_MODEL ?? '(default)', fast: process.env.GEMINI_FALLBACK_MODEL ?? '(default)', embeddings: EMBED_MODEL, matchThreshold: MATCH },
+  answeredBy: answeredByOf(rows),
+  metrics: metricsOf(rows),
+  rows,
+});
+
+const loadRuns = (): RunFile[] =>
+  fs.existsSync(RUNS)
+    ? fs.readdirSync(RUNS).filter((f) => f.endsWith('.json')).sort().map((f) => readJson(path.join(RUNS, f)) as RunFile)
+    : [];
+const loadBaseline = (): RunFile | null => (fs.existsSync(BASELINE) ? (readJson(BASELINE) as RunFile) : null);
+
+// ---------------- Report ----------------
+
+/** One summary row per metric; extraction rows are added per labelled operator. */
+type MetricRow = { label: string; key: string; target: string; kind: 'count' | 'ms' };
+function metricRows(keys: Set<string>): MetricRow[] {
+  const rows: MetricRow[] = [
+    { label: 'Ask CareQ: answerable questions answered from the right document', key: 'ask.answers', target: 'all', kind: 'count' },
+    { label: 'Ask CareQ: right page (±1)', key: 'ask.page', target: 'all', kind: 'count' },
+    { label: 'Ask CareQ: correct refusals', key: 'ask.refusals', target: 'all', kind: 'count' },
+    { label: 'Ask CareQ: quotes verbatim in the cited passage (re-checked)', key: 'ask.quotes', target: 'all', kind: 'count' },
+    { label: 'Ask CareQ: server time, median', key: 'ask.medianMs', target: '', kind: 'ms' },
+    { label: 'Ask CareQ: server time, max', key: 'ask.maxMs', target: '', kind: 'ms' },
+    { label: 'Ask CareQ: no-AI fallback answers', key: 'ask.fallbacks', target: '0', kind: 'count' },
+  ];
+  const ops = [...new Set([...keys].filter((k) => /^extract\..+\.found$/.test(k)).map((k) => k.slice(8, -6)))].sort();
+  for (const op of ops) {
+    rows.push({ label: `Requirements, ${op}: labels found`, key: `extract.${op}.found`, target: 'all', kind: 'count' });
+    rows.push({ label: `Requirements, ${op}: repeats of a found label`, key: `extract.${op}.repeats`, target: '', kind: 'count' });
+    rows.push({ label: `Requirements, ${op}: extracted with no label`, key: `extract.${op}.noLabel`, target: '', kind: 'count' });
+  }
+  rows.push(
+    { label: 'Requirements: quotes verbatim (re-checked)', key: 'extract.quotes', target: 'all', kind: 'count' },
+    { label: 'Prepare with AI: "ready" without a matching document', key: 'prepare.readyWithoutMatch', target: '0', kind: 'count' },
+    { label: 'Prepare with AI: checklist items outside the confirmed list', key: 'prepare.outsideList', target: '0', kind: 'count' },
+    { label: 'Tone check: harsh messages flagged', key: 'tone.flags', target: 'all', kind: 'count' },
+    { label: 'Tone check: false alarms', key: 'tone.falseAlarms', target: '0', kind: 'count' },
+    { label: 'Tone check: misses', key: 'tone.misses', target: '0', kind: 'count' },
+  );
+  return rows.filter((r) => keys.has(r.key));
+}
+
+const fmtValue = (row: MetricRow, m: Record<string, number> | undefined) => {
+  const v = m?.[row.key];
+  if (v == null || !Number.isFinite(v)) return '-';
+  if (row.kind === 'ms') return secs(v);
+  const total = m?.[`${row.key}.total`];
+  return total != null ? `${v}/${total}` : String(v);
+};
+const when = (iso: string) => `${iso.slice(0, 16).replace('T', ' ')} UTC`;
+
+function writeReport(runs: RunFile[], baseline: RunFile | null) {
+  const latest = runs.at(-1)!;
+  const r = latest.rows;
+  const L: string[] = [];
+  const p = (s = '') => L.push(s);
+
+  p('# CareQ evaluation results');
+  p();
+  p(`- **Runs:** ${runs.length} saved in eval/runs/ (mean and range are over all of them); latest ${when(latest.date)} (${latest.minutes} min)`);
+  if (baseline) p(`- **Baseline:** ${when(baseline.date)}, before the fixes (eval/baseline.json; full report in eval/results-baseline.md)`);
+  p(`- **Server:** ${latest.base} · answer caches off (AI_CACHE=off) · ${latest.paceSeconds} s between AI requests`);
+  p(`- **Configured models:** primary ${latest.models.primary}, fast ${latest.models.fast} (Ask CareQ, Prepare and follow-ups use the fast one first); embeddings ${latest.models.embeddings} (meaning match ≥ ${latest.models.matchThreshold})`);
+  p(`- **Answered by (latest run):** ${Object.entries(latest.answeredBy).map(([k, v]) => `${k} ×${v}`).join(', ')}`);
+  p('- **Inputs:** eval/questions.json, eval/labels/*.json, eval/tone_messages.json. Rebuild this file from the saved runs without calling any AI: `npm run eval -- --report`.');
+  p();
+  p('## Summary');
+  p();
+  const keys = new Set([...runs, ...(baseline ? [baseline] : [])].flatMap((x) => Object.keys(x.metrics)));
+  const rowsDef = metricRows(keys);
+  p(`| Check | Baseline | Latest run | Mean of ${runs.length} run${runs.length === 1 ? '' : 's'} | Range | Target |`);
+  p('| --- | --- | --- | --- | --- | --- |');
+  for (const row of rowsDef) {
+    const vals = runs.map((x) => x.metrics[row.key]).filter((v) => v != null && Number.isFinite(v));
+    const total = latest.metrics[`${row.key}.total`];
+    const mean = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : NaN;
+    const meanS = !vals.length ? '-' : row.kind === 'ms' ? secs(mean) : `${Number.isInteger(mean) ? mean : mean.toFixed(1)}${total != null ? `/${total}` : ''}`;
+    const lo = Math.min(...vals), hi = Math.max(...vals);
+    const rangeS = !vals.length ? '-' : row.kind === 'ms' ? (lo === hi ? secs(lo) : `${secs(lo)} – ${secs(hi)}`) : lo === hi ? String(lo) : `${lo} – ${hi}`;
+    const target = row.target === 'all' ? (total != null ? `${total}/${total}` : 'all') : row.target;
+    p(`| ${row.label} | ${fmtValue(row, baseline?.metrics)} | ${fmtValue(row, latest.metrics)} | ${meanS} | ${rangeS} | ${target} |`);
   }
   p();
 
-  // Worst failures: safety first, then wrong answers/refusals, then missed requirements, then tone
+  // Worst failures (latest run): safety first, then wrong answers/refusals, then missed requirements, then tone
   const failures: { severity: number; title: string; detail: string }[] = [];
   for (const x of r.prepare ?? [])
     for (const f of x.readyWithoutMatch) failures.push({ severity: 0, title: `Prepare with AI marked a requirement ready without a matching document (${x.centreName}, ${x.scenario})`, detail: `"${f.requirement}" ← ${f.matchedDocument ?? 'no file'}: ${f.why}. Answered by ${x.answeredBy}.` });
   for (const x of r.prepare ?? []) if (x.outsideList.length) failures.push({ severity: 0, title: `Prepare with AI listed requirements the centre never confirmed (${x.centreName})`, detail: x.outsideList.join('; ') });
-  for (const x of r.ask?.rows ?? []) {
+  for (const x of r.ask ?? []) {
     if (x.correct) continue;
     if (x.expect === 'refuse')
       failures.push({ severity: 1, title: `Ask CareQ answered a question it should refuse (${x.id}: "${x.question}")`, detail: `Got: "${x.answer.slice(0, 300)}" · sources: ${x.quotes.map((q) => `${q.operatorId} p.${q.page}`).join(', ') || 'none'} · ${x.answeredBy}` });
@@ -547,14 +663,14 @@ function writeReport(r: { ask?: Awaited<ReturnType<typeof evalAsk>>; extract?: E
         detail: `Expected ${x.source?.operatorId} p.${x.source?.pages.join('/')}. Got: "${x.answer.slice(0, 300)}" · sources: ${x.quotes.map((q) => `${q.operatorId} p.${q.page}`).join(', ') || 'none'} · ${x.answeredBy}, ${secs(x.latencyMs)}`,
       });
   }
-  for (const x of r.ask?.rows ?? []) for (const q of x.quotes) if (!q.verbatim) failures.push({ severity: 1, title: `Ask CareQ quote not found verbatim (${x.id})`, detail: `"${q.quote}" (chunk ${q.chunkId})` });
+  for (const x of r.ask ?? []) for (const q of x.quotes) if (!q.verbatim) failures.push({ severity: 1, title: `Ask CareQ quote not found verbatim (${x.id})`, detail: `"${q.quote}" (chunk ${q.chunkId})` });
   for (const x of r.extract ?? []) if (x.missed.length) failures.push({ severity: 3, title: `Policy reader missed ${x.missed.length}/${x.labels.length} labelled requirements (${x.operatorId})`, detail: x.missed.map((m) => `"${m.label}"${m.nearest ? ` (nearest extracted: "${m.nearest}", ${m.score!.toFixed(2)})` : ''}`).join('; ') + `. Answered by ${x.answeredBy}.` });
-  for (const x of r.tone?.rows ?? []) {
-    const o = r.tone!.outcome(x);
+  for (const x of r.tone ?? []) {
+    const o = toneOutcome(x);
     if (o === 'MISS' || o === 'FALSE ALARM') failures.push({ severity: o === 'MISS' ? 2 : 4, title: `Tone check ${o === 'MISS' ? 'missed a harsh message' : 'flagged a calm message'} (${x.role})`, detail: `"${x.text}"${x.reason ? ` · reason given: ${x.reason}` : ''} · ${x.answeredBy}` });
   }
   failures.sort((a, b) => a.severity - b.severity);
-  p('## Worst failures');
+  p('## Worst failures (latest run)');
   p();
   if (!failures.length) p('No failures in this run.');
   failures.slice(0, 3).forEach((f, i) => {
@@ -565,21 +681,21 @@ function writeReport(r: { ask?: Awaited<ReturnType<typeof evalAsk>>; extract?: E
   p();
 
   if (r.ask) {
-    p('## 1. Ask CareQ');
+    p('## 1. Ask CareQ (latest run)');
     p();
     p('Correct answer = answered with at least one citation from the labelled operator\'s document. Page ±1 = a citation from that document within one page of a labelled page. Correct refusal = the standard "I don\'t have that information" reply with no citations. Quotes are re-checked against the stored passage text in MongoDB (whitespace, curly quotes, dashes and case unified). The answer\'s wording is not graded.');
     p();
     p('| ID | Question | Expected | Answer | Sources (operator, page) | Doc | Page ±1 | Quotes | Answered by | Time | Pass |');
     p('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
     const yn = (b: boolean | null) => (b == null ? '-' : b ? 'yes' : 'no');
-    for (const x of r.ask.rows)
+    for (const x of r.ask)
       p(`| ${x.id} | ${cell(x.question)} | ${x.expect}${x.source ? ` (${x.source.operatorId} p.${x.source.pages.join('/')})` : ''} | ${cell(x.answer.slice(0, 220))}${x.answer.length > 220 ? '…' : ''} | ${cell([...new Set(x.quotes.map((q) => `${q.operatorId} p.${q.page}`))].join('; ') || '-')} | ${yn(x.sourceOk)} | ${yn(x.pageOk)} | ${x.quotes.length ? `${x.quotes.filter((q) => q.verbatim).length}/${x.quotes.length}` : '-'} | ${cell(x.answeredBy)} | ${secs(x.latencyMs)} | ${x.correct ? '✅' : '❌'} |`);
     p();
   }
   if (r.extract) {
-    p('## 2. Requirement extraction vs labels');
+    p('## 2. Requirement extraction vs labels (latest run)');
     p();
-    p(`Labels are matched to extracted requirements by meaning: ${EMBED_MODEL} embeddings (task SEMANTIC_SIMILARITY), cosine ≥ ${MATCH}, one-to-one, highest first. "Repeat" means an extra item that matches a label already paired (cosine ≥ the threshold). "No label" means an extracted requirement no label matched; the labels list documents only, so waitlist or registration steps the reader finds also land here. Every extracted item carries a quote verified verbatim in the handbook.`);
+    p(`Labels are matched to extracted requirements by meaning: ${latest.models.embeddings} embeddings (task SEMANTIC_SIMILARITY), cosine ≥ ${latest.models.matchThreshold}, one-to-one, highest first. "Repeat" means an extra item that matches a label already paired (cosine ≥ the threshold). "No label" means an extracted requirement no label matched; the labels list documents only, so waitlist or registration steps the reader finds also land here. Every extracted item carries a quote verified verbatim in the handbook.`);
     for (const x of r.extract) {
       p();
       p(`### ${x.operatorId} (signed in as the demo account of ${x.centreId}; ${x.answeredBy}, ${secs(x.latencyMs)})`);
@@ -593,7 +709,7 @@ function writeReport(r: { ask?: Awaited<ReturnType<typeof evalAsk>>; extract?: E
     p();
   }
   if (r.prepare) {
-    p('## 3. Prepare with AI safety');
+    p('## 3. Prepare with AI safety (latest run)');
     p();
     p(`Each demo centre runs twice, as Priya (simulated parent): with no documents, and with two unattached files: one named after the centre's first confirmed requirement and a decoy ("${DECOY}"). A "ready" counts as without a matching document if it has no file, a file that was not uploaded, the decoy, or the named file on a different requirement. Results are what the parent sees (after the app's guardrails in src/lib/prepareApplication.ts), not the raw model output.`);
     p();
@@ -606,17 +722,24 @@ function writeReport(r: { ask?: Awaited<ReturnType<typeof evalAsk>>; extract?: E
     p();
   }
   if (r.tone) {
-    p('## 4. Tone check');
+    p('## 4. Tone check (latest run)');
     p();
     p('| Message | Role | Label | Flagged | Result | Reason given | Answered by |');
     p('| --- | --- | --- | --- | --- | --- | --- |');
-    for (const x of r.tone.rows) p(`| ${cell(x.text)} | ${x.role} | ${x.harsh ? 'harsh' : 'ok'} | ${x.flagged == null ? '-' : x.flagged ? 'yes' : 'no'} | ${r.tone.outcome(x)} | ${cell(x.reason)} | ${cell(x.answeredBy)} |`);
+    for (const x of r.tone) p(`| ${cell(x.text)} | ${x.role} | ${x.harsh ? 'harsh' : 'ok'} | ${x.flagged == null ? '-' : x.flagged ? 'yes' : 'no'} | ${toneOutcome(x)} | ${cell(x.reason)} | ${cell(x.answeredBy)} |`);
     p();
   }
 
-  p('## Raw outputs');
+  p('## Every run');
   p();
-  p('Full responses as returned by the server (also in eval/raw/*.json; server log in eval/raw/server.log when the script started the server).');
+  p(`| Run | ${rowsDef.map((x) => cell(x.label)).join(' | ')} |`);
+  p(`| --- | ${rowsDef.map(() => '---').join(' | ')} |`);
+  for (const x of [...(baseline ? [baseline] : []), ...runs]) p(`| ${x === baseline ? 'baseline, ' : ''}${when(x.date)} | ${rowsDef.map((row) => fmtValue(row, x.metrics)).join(' | ')} |`);
+  p();
+
+  p('## Raw outputs (latest run)');
+  p();
+  p(`Full responses as returned by the server. Every run's responses are in eval/runs/<timestamp>.json (this one: eval/runs/${latest.id}.json); the latest server log is in eval/raw/server.log (not committed).`);
   const raw = (title: string, data: unknown) => {
     p();
     p(`<details><summary>${title}</summary>`);
@@ -627,16 +750,35 @@ function writeReport(r: { ask?: Awaited<ReturnType<typeof evalAsk>>; extract?: E
     p();
     p('</details>');
   };
-  if (r.ask) raw('Ask CareQ', r.ask.rows.map((x) => ({ id: x.id, question: x.question, centreId: x.centreId, response: x.raw })));
+  if (r.ask) raw('Ask CareQ', r.ask.map((x) => ({ id: x.id, question: x.question, centreId: x.centreId, response: x.raw })));
   if (r.extract) raw('Requirement extraction', r.extract.map((x) => ({ operatorId: x.operatorId, centreId: x.centreId, response: x.raw })));
   if (r.prepare) raw('Prepare with AI', r.prepare.map((x) => ({ centreId: x.centreId, scenario: x.scenario, documents: x.documents, skipped: x.skipped, response: x.raw })));
-  if (r.tone) raw('Tone check', r.tone.rows.map((x) => ({ text: x.text, role: x.role, label: x.harsh, response: x.raw })));
+  if (r.tone) raw('Tone check', r.tone.map((x) => ({ text: x.text, role: x.role, label: x.harsh, response: x.raw })));
   fs.writeFileSync(path.join(EVAL, 'results.md'), L.join('\n') + '\n');
 }
 
 // ---------------- Main ----------------
 
 async function main() {
+  // --report: rebuild eval/results.md from the saved runs only (no server, no AI calls)
+  if (args.includes('--report')) {
+    const runs = loadRuns();
+    if (!runs.length) throw new Error('no runs in eval/runs/ yet; run npm run eval first');
+    writeReport(runs, loadBaseline());
+    log(`Wrote eval/results.md from ${runs.length} saved run(s)`);
+    return;
+  }
+  // --baseline-from-raw: keep the run in eval/raw/*.json (written by the first version of this script) as eval/baseline.json
+  if (args.includes('--baseline-from-raw')) {
+    const rd = (n: string) => (fs.existsSync(path.join(EVAL, 'raw', `${n}.json`)) ? readJson(path.join(EVAL, 'raw', `${n}.json`)) : undefined);
+    const rows: RunRows = { ask: rd('ask'), extract: rd('extract'), prepare: rd('prepare'), tone: rd('tone') };
+    const started = new Date(opt('date') ?? fs.statSync(path.join(EVAL, 'raw', 'ask.json')).mtime);
+    const run = makeRun(rows, started, new Date(+started + Number(opt('minutes') ?? 0) * 60000));
+    fs.writeFileSync(BASELINE, JSON.stringify(run, null, 2));
+    log(`Wrote eval/baseline.json: ${JSON.stringify(run.metrics)}`);
+    return;
+  }
+
   const started = new Date();
   const server = await startServer();
   const done = () => {
@@ -646,18 +788,25 @@ async function main() {
   try {
     const health = await fetch(`${BASE}/api/health`).then((r) => r.json()).catch(() => ({}));
     if (health.dataMode !== 'mongo') throw new Error(`server is in ${health.dataMode} mode; the eval needs the shared MongoDB (policy index, demo accounts)`);
-    const ask = ONLY.has('ask') ? await evalAsk() : undefined;
-    const extract = ONLY.has('extract') ? await evalExtract() : undefined;
-    const prepare = ONLY.has('prepare') ? await evalPrepare() : undefined;
-    const tone = ONLY.has('tone') ? await evalTone() : undefined;
+    const rows: RunRows = {
+      ask: ONLY.has('ask') ? (await evalAsk()).rows : undefined,
+      extract: ONLY.has('extract') ? await evalExtract() : undefined,
+      prepare: ONLY.has('prepare') ? await evalPrepare() : undefined,
+      tone: ONLY.has('tone') ? (await evalTone()).rows : undefined,
+    };
+    const run = makeRun(rows, started, new Date());
+    // --no-save: a quick check that leaves eval/runs and eval/results.md untouched (it doesn't count as a run)
+    if (args.includes('--no-save')) {
+      log('\n(--no-save: nothing written)');
+      return;
+    }
+    fs.mkdirSync(RUNS, { recursive: true });
+    fs.writeFileSync(path.join(RUNS, `${run.id}.json`), JSON.stringify(run, null, 2));
     fs.mkdirSync(path.join(EVAL, 'raw'), { recursive: true });
-    const save = (n: string, d: unknown) => d && fs.writeFileSync(path.join(EVAL, 'raw', `${n}.json`), JSON.stringify(d, null, 2));
-    save('ask', ask?.rows);
-    save('extract', extract);
-    save('prepare', prepare);
-    save('tone', tone?.rows);
-    writeReport({ ask, extract, prepare, tone, health, started, finished: new Date() });
-    log(`\nWrote eval/results.md and eval/raw/*.json`);
+    for (const [n, d] of Object.entries(rows)) if (d) fs.writeFileSync(path.join(EVAL, 'raw', `${n}.json`), JSON.stringify(d, null, 2));
+    const runs = loadRuns();
+    writeReport(runs, loadBaseline());
+    log(`\nSaved eval/runs/${run.id}.json and wrote eval/results.md (${runs.length} run(s)${loadBaseline() ? ' + baseline' : ''})`);
   } finally {
     done();
     await mongo?.close();

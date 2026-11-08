@@ -153,6 +153,39 @@ const WAIT_Q = /\bhow long (is|will be) (the|my|our) wait|\bwait(ing)? time\b|\b
  */
 export const isQueueQuestion = (q: string) => personalQuestion(q) || AVAILABILITY_Q.test(q) || WAIT_Q.test(q);
 
+/**
+ * Predictions and guarantees no document can answer: future fees, "will … be approved", guarantees,
+ * skipping the waitlist, "how likely". Refused by the server without the model, because the handbook
+ * passages nearby (current fees, how approval works) answer a different question. Narrow on purpose:
+ * "How do I apply for a subsidy?", "Is there a waitlist fee?" and "How much notice before a fee
+ * increase?" still go to the handbook.
+ */
+const MONEY = '(fee|fees|cost|costs|price|prices|rate|rates|tuition)';
+export const PREDICTION_Q = new RegExp(
+  [
+    // future fees: "How much will fees be next year?", "Will fees go up?", "next year's fees"
+    `\\bhow much will\\b[^?]*\\b${MONEY}\\b`,
+    `\\bwill (the |our |my )?${MONEY} (go up|go down|increase|decrease|rise|change|be)\\b`,
+    `\\b${MONEY}\\b[^?]*\\bnext year\\b`,
+    `\\bnext year'?s ${MONEY}\\b`,
+    // outcomes: "Will my subsidy application be approved?", "Will we be accepted?"
+    `\\b(will|would) (i|we|my|our|the|his|her|their|it)\\b[^?]*\\b(be|get) (approved|accepted|admitted|granted|denied|rejected)\\b`,
+    // guarantees: "Can you guarantee a spot?", "Is my spot guaranteed?"
+    `\\b(can|could|will|would|do|does) (you|they|the centre|anyone) guarantee\\b`,
+    `\\bguarantee (me|us|that|i|we|my|our)\\b`,
+    `\\b(is|am|are|will)\\b[^?]*\\bguaranteed\\b`,
+    // queue jumping: "Can I skip the waitlist if I pay extra?"
+    `\\b(skip|jump|bypass|cut|get ahead (in|on|of)|move (up|ahead)( on| in)?) (the |our |my )?(wait ?list|waiting list|line|queue|list)\\b`,
+    `\\bpay (extra|more)\\b[^?]*\\b(spot|space|place|faster|sooner|priority|first|list|waitlist)\\b`,
+    // likelihood: "How likely…", "What are my chances…"
+    `\\bhow likely\\b`,
+    `\\b(what are|what's) (my|our|the) (chances|odds)\\b`,
+    `\\b(chances|odds|likelihood) (of|that)\\b`,
+  ].join('|'),
+  'i'
+);
+export const isPredictionQuestion = (q: string) => PREDICTION_Q.test(q);
+
 // ---------------- Retrieval rules ----------------
 
 const HELP_CHUNKS: StoredChunk[] = HELP_FAQS.map((f) => ({
@@ -359,6 +392,8 @@ export interface ModelSentence {
   text: string;
   sources?: { chunkId?: string; quote?: string }[];
   fromApplication?: boolean;
+  /** The model's own check: does this sentence directly answer what was asked? false = dropped. */
+  answersQuestion?: boolean;
 }
 
 /** Lenient: the model's JSON may come in a ```json fence or with text around it. */
@@ -377,6 +412,7 @@ export function parseModelAnswer(text: string | undefined): ModelSentence[] | nu
         text: String(s.text).trim().slice(0, 600),
         sources: Array.isArray(s.sources) ? s.sources.slice(0, 4) : [],
         fromApplication: s.fromApplication === true,
+        ...(typeof s.answersQuestion === 'boolean' ? { answersQuestion: s.answersQuestion } : {}),
       }));
   } catch {
     return null;
@@ -394,7 +430,7 @@ export function finaliseAnswer(
   passages: Map<string, AskPassage>,
   apps: AppFact[] | null
 ): { answer: string; citations: Citation[] } {
-  if (AVAILABILITY_Q.test(question)) return { answer: NO_INFO, citations: [] };
+  if (AVAILABILITY_Q.test(question) || isPredictionQuestion(question)) return { answer: NO_INFO, citations: [] };
   const hasApps = Boolean(apps?.length);
   if (personalQuestion(question) && !hasApps) return { answer: NO_INFO, citations: [] };
 
@@ -409,6 +445,11 @@ export function finaliseAnswer(
     }
     if (WAIT_CLAIM.test(s.text)) {
       askDebug(`  dropped (wait claim): ${short(s.text)}`);
+      continue;
+    }
+    // Related but not an answer (e.g. today's fees for "next year's fees?"): dropped even with a verified quote
+    if (s.answersQuestion === false) {
+      askDebug(`  dropped (does not answer the question): ${short(s.text)}`);
       continue;
     }
     const valid: Citation[] = [];
@@ -459,7 +500,7 @@ export async function askFallback(
 ): Promise<AskResult> {
   const base = { aiMode: 'fallback' as const, modelUsed: null, fallbackReason: reason };
   const q = ctx.question;
-  if (AVAILABILITY_Q.test(q)) return { ...base, answer: NO_INFO, citations: [], toolsUsed: [], retrievalMode: known?.mode ?? 'none' };
+  if (AVAILABILITY_Q.test(q) || isPredictionQuestion(q)) return { ...base, answer: NO_INFO, citations: [], toolsUsed: [], retrievalMode: known?.mode ?? 'none' };
   if (personalQuestion(q)) {
     const apps = known?.apps ?? (ctx.getApplications ? await ctx.getApplications().catch(() => []) : []);
     const used = ctx.getApplications ? ['get_my_application'] : [];
@@ -506,12 +547,13 @@ Rules:
 - Use ONLY the results of your tools. Never use your own knowledge. Call search_documents before answering any question about rules, documents, fees, withdrawal, immunization or waitlists.
 - For questions about the user's own application, position, wait or spot, call get_my_application. Never state or estimate a position, wait time or availability yourself; if get_my_application returns it, write one sentence with "fromApplication": true and the server will fill in the exact reported facts.
 - Every other sentence must have at least one source: the chunkId of a passage you were given and an exact quote copied character for character from that passage, at most 25 words.
+- Every sentence also has "answersQuestion": true only if it directly answers what was asked; false if it is related but answers a different question (e.g. today's fees when asked about next year's, or how approval works when asked whether an application will be approved). Sentences marked false are removed; if nothing directly answers the question, reply {"noInformation": true}.
 - Short, plain language (1–4 sentences). No legal advice. Never rank or compare families or centres.
 - If the first search doesn't answer the question, search again with different words (e.g. "admission package", "enrolment forms"; at most 2 searches in total).
 - If the passages still don't answer the question, reply {"noInformation": true}.
 
 Final reply: JSON only, no other text:
-{"sentences":[{"text":"…","sources":[{"chunkId":"…","quote":"…"}],"fromApplication":false}]}`;
+{"sentences":[{"text":"…","answersQuestion":true,"sources":[{"chunkId":"…","quote":"…"}],"fromApplication":false}]}`;
 
 class AskTimeout extends Error {}
 
@@ -539,11 +581,17 @@ const passageForModel = (p: AskPassage) => ({
 /**
  * Position / list / wait / spot / availability questions, without the model: the exact refusal for
  * anonymous users, centre accounts and parents with no application at this centre; otherwise the
- * server-written application lines ("From your application · Simulated"). Null for other questions.
+ * server-written application lines ("From your application · Simulated"). Predictions and guarantees
+ * (isPredictionQuestion) come first: always the exact refusal, even for a parent with an application
+ * ("Is my place guaranteed?"). Null for other questions.
  */
 export async function answerQueueQuestion(ctx: AskContext): Promise<AskResult | null> {
-  if (!isQueueQuestion(ctx.question)) return null;
   const base = { toolsUsed: [] as string[], retrievalMode: 'none' as const, aiMode: 'rule' as const, modelUsed: null };
+  if (isPredictionQuestion(ctx.question)) {
+    askDebug('rule: prediction / guarantee question -> refusal');
+    return { ...base, answer: NO_INFO, citations: [] };
+  }
+  if (!isQueueQuestion(ctx.question)) return null;
   if (!ctx.getApplications) return { ...base, answer: NO_INFO, citations: [] };
   const apps = await ctx.getApplications().catch(() => [] as AppFact[]);
   const toolsUsed = ['get_my_application'];
@@ -670,7 +718,8 @@ export const isCacheable = (question: string, result: AskResult) =>
   !UNCACHEABLE_Q.test(question) &&
   !POSITION_Q.test(question) &&
   !WHEN_Q.test(question) &&
-  !AVAILABILITY_Q.test(question);
+  !AVAILABILITY_Q.test(question) &&
+  !isPredictionQuestion(question);
 
 export class AskCache {
   private map = new Map<string, { result: AskResult; expiresAt: number }>();

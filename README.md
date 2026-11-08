@@ -137,8 +137,11 @@ Live check: `npm run eval:docs -- http://localhost:3000` (Prepare with AI at two
 - Every fact carries a citation (operator, document, "PDF p.N" or section, link, a quote of at most 25 words). The server checks each quote word for word against the retrieved passage and drops any sentence it can't support. Provincial passages say "General Ontario rule; check with the centre."
 - Positions, waits and availability are never stated unless the parent's own application has them; then the server writes who reported it, when, and "Simulated".
 - Fallback without Gemini: the top 2 passages with their sources under "Here's what the handbook says:".
+- Predictions and guarantees (future fees, "will … be approved", guarantees, skipping the waitlist, "how likely") get the exact refusal from a rule, without Gemini. Each model sentence also says whether it directly answers the question (`answersQuestion`); sentences that don't are dropped, even with a verified quote.
 - Answers are cached per user (anonymous / parent / centre account); questions about the parent's application, positions, lists, waits, spots or availability are never cached.
 - Live check against a running server (real Gemini and the MongoDB index): `npm run eval:ask -- http://localhost:3000` prints a results table.
+
+Evaluation for the results slide: `npm run eval` starts its own server with `AI_CACHE=off` (no response caching) and checks Ask CareQ, requirement extraction, Prepare with AI safety and the tone check against the hand-made files in `eval/`. Each run is saved in `eval/runs/`; `eval/results.md` shows the baseline (`eval/baseline.json`, before the fixes), the latest run and the mean and range over all runs. `npm run eval -- --report` rebuilds the report without calling any AI.
 
 Centre search ranking is plain code, not AI: `src/lib/rankCentres.ts` (distance 50, age/program fit 30, languages and checkable extras 20; demo centres get no bonus). Run its unit tests with `npm test`.
 

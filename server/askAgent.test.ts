@@ -16,6 +16,7 @@ import {
   checkSource,
   finaliseAnswer,
   isCacheable,
+  isPredictionQuestion,
   isQueueQuestion,
   quoteIsVerbatim,
   verifiedQuote,
@@ -255,6 +256,77 @@ test('questions about how waitlists work still go to the handbook (not the rule 
   for (const q of ['How does the waitlist work?', "What must a centre's waiting list policy include?", 'How do I withdraw?', 'What do I need to register?']) {
     assert.equal(isQueueQuestion(q), false, q);
   }
+});
+
+// ---------------- Predictions and guarantees ----------------
+
+const PREDICTION_QUESTIONS = [
+  'How much will fees be next year?',
+  "What are next year's fees?",
+  'Will fees go up in September?',
+  'Will my fee subsidy application be approved?',
+  'Will our child be accepted?',
+  'Can you guarantee a spot for my daughter?',
+  'Is my place guaranteed?',
+  'Can I skip the waitlist if I pay extra?',
+  'Can we jump the queue?',
+  'How likely is it that we get in this year?',
+  'What are my chances of getting a space?',
+];
+const HANDBOOK_QUESTIONS = [
+  'How do I apply for a subsidy?',
+  'Is there a waitlist fee?',
+  'How much notice do you give before a fee increase?',
+  'How do I pay fees?',
+  'What are the fees?',
+  'How do I put my child on the waitlist or apply for a fee subsidy?',
+  'How are families placed on the waitlist?',
+  'How long does my child stay on the waitlist?',
+  'What documents will be accepted as proof of address?',
+  'What documents do I need to register?',
+  'Is there a deposit to hold a spot?',
+  'How much notice do I need to give to withdraw my child?',
+  'How does the waitlist work?',
+];
+
+test('predictions and guarantees: refused by rule, without the model; handbook questions are not caught', async () => {
+  for (const question of PREDICTION_QUESTIONS) {
+    assert.ok(isPredictionQuestion(question), `should be refused: ${question}`);
+    for (const getApplications of [undefined, async () => [PRIYA_APP]]) {
+      const out = await runAskAgent({ question, centreId: JK, deps: keywordDeps([JK_WITHDRAW]), getApplications }, neverCalled);
+      assert.deepEqual([out.answer, out.aiMode, out.modelUsed, out.citations.length], [NO_INFO, 'rule', null, 0], question);
+    }
+  }
+  for (const question of HANDBOOK_QUESTIONS) assert.equal(isPredictionQuestion(question), false, `should reach the handbook: ${question}`);
+});
+
+test('answersQuestion: sentences marked false are dropped even with a verified quote; none left -> exact refusal', () => {
+  const passages = new Map<string, AskPassage>([[JK_WITHDRAW.chunkId, { ...JK_WITHDRAW, score: 1, matchedBy: 'keyword' } as AskPassage]]);
+  const src = [{ chunkId: 'telccs#20', quote: 'We require two weeks written notice if you plan to withdraw' }];
+  const mixed = finaliseAnswer(
+    'How do I withdraw?',
+    [
+      { text: 'Give two weeks written notice.', answersQuestion: true, sources: src },
+      { text: 'Notice is also needed for other changes.', answersQuestion: false, sources: src },
+    ],
+    passages,
+    null
+  );
+  assert.equal(mixed.answer, 'Give two weeks written notice.');
+  const nearby = finaliseAnswer('Do you offer swimming lessons?', [{ text: 'Give two weeks written notice.', answersQuestion: false, sources: src }], passages, null);
+  assert.deepEqual([nearby.answer, nearby.citations.length], [NO_INFO, 0]);
+  // The quote rule still applies to sentences marked true
+  const invented = finaliseAnswer('How do I withdraw?', [{ text: 'Call the office.', answersQuestion: true, sources: [{ chunkId: 'telccs#20', quote: 'Please call the office to withdraw' }] }], passages, null);
+  assert.equal(invented.answer, NO_INFO);
+});
+
+test('answersQuestion: read from the model JSON through the agent', async () => {
+  const { model } = scriptedModel([
+    () => ({ functionCalls: [{ name: 'search_documents', args: { query: 'withdraw notice' } }] }),
+    () => answerJson([{ text: 'Give two weeks written notice.', answersQuestion: false, sources: [{ chunkId: 'telccs#20', quote: 'We require two weeks written notice' }] }]),
+  ]);
+  const out = await runAskAgent({ question: 'Do you offer swimming lessons?', centreId: JK, deps: keywordDeps([JK_WITHDRAW]) }, model);
+  assert.deepEqual([out.answer, out.aiMode], [NO_INFO, 'gemini']);
 });
 
 test('get_my_application through the agent: nothing for anonymous users or centre accounts', async () => {

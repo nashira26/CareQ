@@ -19,11 +19,12 @@ export const REQUIREMENT_CATEGORIES: RequirementCategory[] = ['registration', 'a
 export const REQUIREMENT_QUERIES: { category: RequirementCategory; query: string }[] = [
   { category: 'registration', query: 'how to register or apply for a child care space, registration form' },
   { category: 'admission', query: 'admission requirements before the first day, admission package, enrolment' },
-  { category: 'documents', query: 'documents parents must provide: immunization record, birth certificate, health form, emergency contacts' },
+  { category: 'documents', query: 'documents and information parents must provide: immunization record, birth certificate, health form, emergency contacts, authorized pick-up persons' },
   { category: 'waitlist', query: 'waitlist policy: how spaces are offered, priority, how to stay on the waiting list' },
 ];
 export const MAX_CHUNKS = 14;
-export const MAX_REQUIREMENTS = 15;
+/** Lists are split into one requirement per item, so a handbook can yield more than before. */
+export const MAX_REQUIREMENTS = 20;
 
 export interface RequirementCandidate {
   requirement: string;
@@ -91,7 +92,8 @@ export const extractPrompt = (chunks: StoredChunk[]) => `From the centre's own p
 
 Rules:
 - Use ONLY these passages. Never add requirements from general knowledge.
-- One item per distinct requirement (documents, forms, steps, waitlist rules). At most ${MAX_REQUIREMENTS}.
+- One item per distinct requirement (documents, forms, information, steps, waitlist rules). At most ${MAX_REQUIREMENTS}.
+- Lists: when a passage lists several things a parent must provide or that will be collected (bullets, or a sentence such as "the package includes A, B, C and D" or "information such as A, B and C"), make EACH listed thing its own requirement (e.g. "Parent contact information", "Child's doctor's contact information"), not one item for the whole list. Give every item from that list the same quote: the words of the list itself, copied exactly.
 - requirement: a short title (e.g. "Immunization record", "Child Admission Package", "Two weeks written withdrawal notice").
 - quote: words copied exactly, character for character, from the passage with that chunkId; at most ${MAX_QUOTE_WORDS} words.
 - Skip passages about fees, staff, programming or anything else.

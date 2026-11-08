@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SAMPLE_CENTRE_NAME, makePdf, samplePdf } from '../scripts/fixtures/samplePdf';
 import { UPLOAD_SOURCE_NOTE, extractPages, ingestUpload } from './ingest';
-import { fallbackCandidates, gatherRequirementChunks, verifyCandidates } from './requirementsFromDocs';
+import { extractPrompt, fallbackCandidates, gatherRequirementChunks, verifyCandidates } from './requirementsFromDocs';
 import { buildFollowUpContext, fallbackFollowUp, finaliseFollowUp, handbookQuery, stripSimulatedWord } from './followUp';
 import { namesMatch, verifyLicence } from './licence';
 import { quoteIsVerbatim } from './askAgent';
@@ -166,6 +166,22 @@ test('requirements: AI items keep only verbatim quotes from chunks that were rea
     { requirement: out[0].requirement, page: out[0].page, docTitle: out[0].docTitle, sourceUrl: out[0].sourceUrl },
     { requirement: 'Birth certificate', page: 'PDF p.2', docTitle: 'Parent Handbook 2026', sourceUrl: null }
   );
+});
+
+test('requirements: items split from one list share the same verbatim quote and are all kept', () => {
+  const list = {
+    chunkId: 'telccs#28', docKey: 'telccs/handbook.pdf', docTitle: 'Parent Handbook', page: 13, heading: 'ADMISSION PROCEDURES', embedding: null,
+    scope: 'operator', operatorId: 'telccs', operatorName: 'TELCCS', appliesToCentreIds: ['on-00576'], sourceUrl: null, sourceNote: null,
+    text: 'During this meeting, the Centre Supervisor will review the Child Admission Package and gather information, such as parent contact information, your child’s doctor’s contact information, health related information, etc.',
+  } as unknown as StoredChunk;
+  const quote = 'such as parent contact information, your child’s doctor’s contact information, health related information';
+  const out = verifyCandidates(
+    ['Parent contact information', "Child's doctor's contact information", 'Health related information'].map((requirement) => ({ requirement, category: 'documents', chunkId: list.chunkId, quote })),
+    [list]
+  );
+  assert.deepEqual(out.map((r) => r.requirement), ['Parent contact information', "Child's doctor's contact information", 'Health related information']);
+  assert.ok(out.every((r) => r.quote === quote && r.page === 'PDF p.13'));
+  assert.match(extractPrompt([list]), /make EACH listed thing its own requirement/);
 });
 
 test('requirements fallback (no AI): requirement sentences, each quote verbatim, with page and title', async () => {

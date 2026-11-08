@@ -1,73 +1,78 @@
 # CareQ evaluation results
 
-- **Date:** 2026-11-08 17:47 UTC (took 11 min)
-- **Server:** http://localhost:3199 · data mode mongo · answer caches off (AI_CACHE=off)
-- **Configured models:** primary gemini-3.5-flash, fast gemini-3.5-flash-lite (Ask CareQ, Prepare and follow-ups use the fast one first); embeddings gemini-embedding-2
-- **Answered by (this run):** gemini-3.5-flash-lite, rule (no model), gemini-3.5-flash
-- **Pacing:** 10 s between AI requests · inputs: eval/questions.json, eval/labels/*.json, eval/tone_messages.json
+- **Runs:** 1 saved in eval/runs/ (mean and range are over all of them); latest 2026-11-08 18:13 UTC (11 min)
+- **Baseline:** 2026-11-08 17:47 UTC, before the fixes (eval/baseline.json; full report in eval/results-baseline.md)
+- **Server:** http://localhost:3199 · answer caches off (AI_CACHE=off) · 10 s between AI requests
+- **Configured models:** primary gemini-3.5-flash, fast gemini-3.5-flash-lite (Ask CareQ, Prepare and follow-ups use the fast one first); embeddings gemini-embedding-2 (meaning match ≥ 0.75)
+- **Answered by (latest run):** Ask CareQ: gemini-3.5-flash-lite ×14, Ask CareQ: rule (no model) ×6, Extraction: gemini-3.5-flash-lite ×3, Prepare: gemini-3.5-flash-lite ×16, Tone: gemini-3.5-flash-lite ×20
+- **Inputs:** eval/questions.json, eval/labels/*.json, eval/tone_messages.json. Rebuild this file from the saved runs without calling any AI: `npm run eval -- --report`.
 
 ## Summary
 
-| Check | Result | Target |
-| --- | --- | --- |
-| Ask CareQ: answerable questions answered from the right document | 9/10 | 10/10 |
-| Ask CareQ: right page (±1) | 9/10 | 10/10 |
-| Ask CareQ: correct refusals | 7/10 | 10/10 |
-| Ask CareQ: quotes verbatim in the cited passage (re-checked) | 14/14 | all |
-| Ask CareQ: server time, median / max | 2.0 s / 3.0 s | |
-| Ask CareQ: answered by | gemini-3.5-flash-lite 17, rule (no model) 3 | |
-| Requirements, child-development-institute: found / missed / repeats / no label | 5/5 found · 0 missed · 3 repeats · 6 with no label | all found |
-| Requirements, rolph-road-day-care: found / missed / repeats / no label | 1/1 found · 0 missed · 0 repeats · 6 with no label | all found |
-| Requirements, toronto-early-learning-child-care-services: found / missed / repeats / no label | 2/6 found · 4 missed · 0 repeats · 6 with no label | all found |
-| Requirements: quotes verbatim (re-checked) | 29/29 | all |
-| Prepare with AI: "ready" without a matching document | 0 (in 16 runs) | 0 |
-| Prepare with AI: checklist items outside the confirmed list | 0 | 0 |
-| Tone check: harsh messages flagged | 8/8 | all |
-| Tone check: false alarms / misses | 0 / 0 | 0 / 0 |
+| Check | Baseline | Latest run | Mean of 1 run | Range | Target |
+| --- | --- | --- | --- | --- | --- |
+| Ask CareQ: answerable questions answered from the right document | 9/10 | 9/10 | 9/10 | 9 | 10/10 |
+| Ask CareQ: right page (±1) | 9/10 | 9/10 | 9/10 | 9 | 10/10 |
+| Ask CareQ: correct refusals | 7/10 | 10/10 | 10/10 | 10 | 10/10 |
+| Ask CareQ: quotes verbatim in the cited passage (re-checked) | 14/14 | 10/10 | 10/10 | 10 | 10/10 |
+| Ask CareQ: server time, median | 2.0 s | 2.3 s | 2.3 s | 2.3 s |  |
+| Ask CareQ: server time, max | 3.0 s | 6.7 s | 6.7 s | 6.7 s |  |
+| Ask CareQ: no-AI fallback answers | 0 | 0 | 0 | 0 | 0 |
+| Requirements, child-development-institute: labels found | 5/5 | 5/5 | 5/5 | 5 | 5/5 |
+| Requirements, child-development-institute: repeats of a found label | 3 | 3 | 3 | 3 |  |
+| Requirements, child-development-institute: extracted with no label | 6 | 6 | 6 | 6 |  |
+| Requirements, rolph-road-day-care: labels found | 1/1 | 1/1 | 1/1 | 1 | 1/1 |
+| Requirements, rolph-road-day-care: repeats of a found label | 0 | 2 | 2 | 2 |  |
+| Requirements, rolph-road-day-care: extracted with no label | 6 | 8 | 8 | 8 |  |
+| Requirements, toronto-early-learning-child-care-services: labels found | 2/6 | 5/6 | 5/6 | 5 | 6/6 |
+| Requirements, toronto-early-learning-child-care-services: repeats of a found label | 0 | 1 | 1 | 1 |  |
+| Requirements, toronto-early-learning-child-care-services: extracted with no label | 6 | 12 | 12 | 12 |  |
+| Requirements: quotes verbatim (re-checked) | 29/29 | 43/43 | 43/43 | 43 | 43/43 |
+| Prepare with AI: "ready" without a matching document | 0 | 0 | 0 | 0 | 0 |
+| Prepare with AI: checklist items outside the confirmed list | 0 | 0 | 0 | 0 | 0 |
+| Tone check: harsh messages flagged | 8/8 | 8/8 | 8/8 | 8 | 8/8 |
+| Tone check: false alarms | 0 | 0 | 0 | 0 | 0 |
+| Tone check: misses | 0 | 0 | 0 | 0 | 0 |
 
-## Worst failures
+## Worst failures (latest run)
 
-1. **Ask CareQ answered a question it should refuse (r7: "How much will fees be next year?")**  
-   Got: "Fees vary by age group and program including infant, toddler, preschool, kindergarten and school aged programs. See Appendix A for your centre fees." · sources: macaulay-centres-for-children p.26, macaulay-centres-for-children p.26 · gemini-3.5-flash-lite
-2. **Ask CareQ answered a question it should refuse (r8: "Can I skip the waitlist if I pay extra?")**  
-   Got: "There is no fee to place your child on our waitlist." · sources: child-development-institute p.26 · gemini-3.5-flash-lite
-3. **Ask CareQ answered a question it should refuse (r10: "Will my fee subsidy application be approved?")**  
-   Got: "Families requiring a fee subsidy must be approved for placement by Children’s Services’ Client Services Unit." · sources: toronto-early-learning-child-care-services p.13 · gemini-3.5-flash-lite
+1. **Ask CareQ refused an answerable question (a10: "What should I pack for outdoor play?")**  
+   Expected macaulay-centres-for-children p.20. Got: "I don't have that information; please contact the centre or use Help." · sources: none · gemini-3.5-flash-lite, 2.3 s
+2. **Policy reader missed 1/6 labelled requirements (toronto-early-learning-child-care-services)**  
+   "pick up instructions" (nearest extracted: "Individuals authorized to pick-up", 0.66). Answered by gemini-3.5-flash-lite.
 
-(5 failures in total; all are in the tables below.)
-
-## 1. Ask CareQ
+## 1. Ask CareQ (latest run)
 
 Correct answer = answered with at least one citation from the labelled operator's document. Page ±1 = a citation from that document within one page of a labelled page. Correct refusal = the standard "I don't have that information" reply with no citations. Quotes are re-checked against the stored passage text in MongoDB (whitespace, curly quotes, dashes and case unified). The answer's wording is not graded.
 
 | ID | Question | Expected | Answer | Sources (operator, page) | Doc | Page ±1 | Quotes | Answered by | Time | Pass |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| a1 | How much notice do I need to give to withdraw my child? | answer (toronto-early-learning-child-care-services p.20/53) | Clients are required to give two (2) weeks written notice when withdrawing their child/children from care. | toronto-early-learning-child-care-services p.53 | yes | yes | 1/1 | gemini-3.5-flash-lite | 2.9 s | ✅ |
-| a2 | What immunization records does the centre need? | answer (toronto-early-learning-child-care-services p.14) | Licensed child care centres are required to collect and retain up-to-date immunization for all children not attending school. | toronto-early-learning-child-care-services p.14 | yes | yes | 1/1 | gemini-3.5-flash-lite | 1.8 s | ✅ |
-| a3 | What are the centre's hours? | answer (toronto-early-learning-child-care-services p.15) | Toronto Early Learning and Child Care Centres operate between 7:00 a.m. and 6:00 p.m., Monday to Friday, excluding statutory holidays. | toronto-early-learning-child-care-services p.15 | yes | yes | 1/1 | gemini-3.5-flash-lite | 1.8 s | ✅ |
-| a4 | How do I put my child on the waitlist or apply for a fee subsidy? | answer (toronto-early-learning-child-care-services p.13) | To place your child on the waitlist or apply for a fee subsidy, you can visit toronto.ca/telccs or toronto.ca/childcaresubsidy. You can also contact the Human Services Line at 416-338-8888 (select option 2 for child care… | toronto-early-learning-child-care-services p.12 | yes | yes | 2/2 | gemini-3.5-flash-lite | 1.7 s | ✅ |
-| a5 | What documents do I need to give the centre before my child starts? | answer (child-development-institute p.13) | Before your child starts, you must complete a registration package and signed parent contract, along with emergency contact information and pick-up instructions. You also need to provide a copy of your child's immunizati… | child-development-institute p.13 | yes | yes | 1/1 | gemini-3.5-flash-lite | 2.1 s | ✅ |
-| a6 | How are families placed on the waitlist? | answer (child-development-institute p.26/27) | Families are placed on the waitlist by date of contact. | child-development-institute p.26 | yes | yes | 1/1 | gemini-3.5-flash-lite | 1.6 s | ✅ |
-| a7 | How much notice do you give before a fee increase? | answer (child-development-institute p.14) | Notice of fee increases are distributed at least 30 days before the increase comes into effect. | child-development-institute p.14 | yes | yes | 1/1 | gemini-3.5-flash-lite | 1.4 s | ✅ |
-| a8 | What happens if I don't give two weeks' notice when withdrawing? | answer (macaulay-centres-for-children p.28) | If notice is not received, you will be charged your regular fee for the two weeks. | macaulay-centres-for-children p.28 | yes | yes | 1/1 | gemini-3.5-flash-lite | 1.7 s | ✅ |
-| a9 | How long does my child stay on the waitlist? | answer (macaulay-centres-for-children p.29) | To request an extension to remain on the waitlist, please contact the child care centre. | macaulay-centres-for-children p.28 | yes | yes | 1/1 | gemini-3.5-flash-lite | 1.9 s | ✅ |
-| a10 | What should I pack for outdoor play? | answer (macaulay-centres-for-children p.20) | I don't have that information; please contact the centre or use Help. | - | no | no | - | gemini-3.5-flash-lite | 2.2 s | ❌ |
+| a1 | How much notice do I need to give to withdraw my child? | answer (toronto-early-learning-child-care-services p.20/53) | Clients are required to give two (2) weeks written notice when withdrawing their child/children from care. | toronto-early-learning-child-care-services p.53 | yes | yes | 1/1 | gemini-3.5-flash-lite | 3.4 s | ✅ |
+| a2 | What immunization records does the centre need? | answer (toronto-early-learning-child-care-services p.14) | Licensed child care centres are required to collect and retain up-to-date immunization for all children not attending school. | toronto-early-learning-child-care-services p.14 | yes | yes | 1/1 | gemini-3.5-flash-lite | 2.0 s | ✅ |
+| a3 | What are the centre's hours? | answer (toronto-early-learning-child-care-services p.15) | The centre operates between 7:00 a.m. and 6:00 p.m., Monday to Friday, excluding statutory holidays. | toronto-early-learning-child-care-services p.15 | yes | yes | 1/1 | gemini-3.5-flash-lite | 2.9 s | ✅ |
+| a4 | How do I put my child on the waitlist or apply for a fee subsidy? | answer (toronto-early-learning-child-care-services p.13) | To place your child on the waitlist and/or to apply for a fee subsidy, please visit toronto.ca/telccs. You can also contact Human Services Line at 416-338-8888 (select option 2 for child care), 311, or your Children’s Se… | toronto-early-learning-child-care-services p.12 | yes | yes | 2/2 | gemini-3.5-flash-lite | 4.4 s | ✅ |
+| a5 | What documents do I need to give the centre before my child starts? | answer (child-development-institute p.13) | Before your child starts, you must complete and submit a registration package, signed parent contract, a copy of your immunization record, signed consent forms, emergency contact information, and pick-up instructions. | child-development-institute p.13 | yes | yes | 1/1 | gemini-3.5-flash-lite | 6.7 s | ✅ |
+| a6 | How are families placed on the waitlist? | answer (child-development-institute p.26/27) | Families are placed on the waitlist by date of contact. | child-development-institute p.26 | yes | yes | 1/1 | gemini-3.5-flash-lite | 6.7 s | ✅ |
+| a7 | How much notice do you give before a fee increase? | answer (child-development-institute p.14) | Notice of fee increases are distributed at least 30 days before the increase comes into effect. | child-development-institute p.14 | yes | yes | 1/1 | gemini-3.5-flash-lite | 4.9 s | ✅ |
+| a8 | What happens if I don't give two weeks' notice when withdrawing? | answer (macaulay-centres-for-children p.28) | If notice is not received, you will be charged your regular fee for the two weeks. | macaulay-centres-for-children p.28 | yes | yes | 1/1 | gemini-3.5-flash-lite | 3.8 s | ✅ |
+| a9 | How long does my child stay on the waitlist? | answer (macaulay-centres-for-children p.29) | To request an extension to remain on the waitlist, please contact the child care centre. | macaulay-centres-for-children p.28 | yes | yes | 1/1 | gemini-3.5-flash-lite | 2.2 s | ✅ |
+| a10 | What should I pack for outdoor play? | answer (macaulay-centres-for-children p.20) | I don't have that information; please contact the centre or use Help. | - | no | no | - | gemini-3.5-flash-lite | 2.3 s | ❌ |
 | r1 | When will I get a spot? | refuse | I don't have that information; please contact the centre or use Help. | - | - | - | - | rule (no model) | 0.0 s | ✅ |
 | r2 | Is there a space available next week? | refuse | I don't have that information; please contact the centre or use Help. | - | - | - | - | rule (no model) | 0.0 s | ✅ |
 | r3 | Where am I on the waitlist? | refuse | I don't have that information; please contact the centre or use Help. | - | - | - | - | rule (no model) | 0.0 s | ✅ |
-| r4 | Which centre is the best one for my child? | refuse | I don't have that information; please contact the centre or use Help. | - | - | - | - | gemini-3.5-flash-lite | 2.5 s | ✅ |
-| r5 | What is the director's personal phone number? | refuse | I don't have that information; please contact the centre or use Help. | - | - | - | - | gemini-3.5-flash-lite | 2.5 s | ✅ |
-| r6 | Do you offer swimming lessons? | refuse | I don't have that information; please contact the centre or use Help. | - | - | - | - | gemini-3.5-flash-lite | 2.8 s | ✅ |
-| r7 | How much will fees be next year? | refuse | Fees vary by age group and program including infant, toddler, preschool, kindergarten and school aged programs. See Appendix A for your centre fees. | macaulay-centres-for-children p.26 | - | - | 2/2 | gemini-3.5-flash-lite | 2.7 s | ❌ |
-| r8 | Can I skip the waitlist if I pay extra? | refuse | There is no fee to place your child on our waitlist. | child-development-institute p.26 | - | - | 1/1 | gemini-3.5-flash-lite | 3.0 s | ❌ |
-| r9 | Is the neighbourhood around the centre safe? | refuse | I don't have that information; please contact the centre or use Help. | - | - | - | - | gemini-3.5-flash-lite | 2.4 s | ✅ |
-| r10 | Will my fee subsidy application be approved? | refuse | Families requiring a fee subsidy must be approved for placement by Children’s Services’ Client Services Unit. | toronto-early-learning-child-care-services p.13 | - | - | 1/1 | gemini-3.5-flash-lite | 2.4 s | ❌ |
+| r4 | Which centre is the best one for my child? | refuse | I don't have that information; please contact the centre or use Help. | - | - | - | - | gemini-3.5-flash-lite | 1.8 s | ✅ |
+| r5 | What is the director's personal phone number? | refuse | I don't have that information; please contact the centre or use Help. | - | - | - | - | gemini-3.5-flash-lite | 2.4 s | ✅ |
+| r6 | Do you offer swimming lessons? | refuse | I don't have that information; please contact the centre or use Help. | - | - | - | - | gemini-3.5-flash-lite | 2.3 s | ✅ |
+| r7 | How much will fees be next year? | refuse | I don't have that information; please contact the centre or use Help. | - | - | - | - | rule (no model) | 0.0 s | ✅ |
+| r8 | Can I skip the waitlist if I pay extra? | refuse | I don't have that information; please contact the centre or use Help. | - | - | - | - | rule (no model) | 0.0 s | ✅ |
+| r9 | Is the neighbourhood around the centre safe? | refuse | I don't have that information; please contact the centre or use Help. | - | - | - | - | gemini-3.5-flash-lite | 2.8 s | ✅ |
+| r10 | Will my fee subsidy application be approved? | refuse | I don't have that information; please contact the centre or use Help. | - | - | - | - | rule (no model) | 0.0 s | ✅ |
 
-## 2. Requirement extraction vs labels
+## 2. Requirement extraction vs labels (latest run)
 
 Labels are matched to extracted requirements by meaning: gemini-embedding-2 embeddings (task SEMANTIC_SIMILARITY), cosine ≥ 0.75, one-to-one, highest first. "Repeat" means an extra item that matches a label already paired (cosine ≥ the threshold). "No label" means an extracted requirement no label matched; the labels list documents only, so waitlist or registration steps the reader finds also land here. Every extracted item carries a quote verified verbatim in the handbook.
 
-### child-development-institute (signed in as the demo account of on-0002899; gemini-3.5-flash, 12.1 s)
+### child-development-institute (signed in as the demo account of on-0002899; gemini-3.5-flash-lite, 2.9 s)
 
 | Label | Extracted | Cosine | |
 | --- | --- | --- | --- |
@@ -76,96 +81,114 @@ Labels are matched to extracted requirements by meaning: gemini-embedding-2 embe
 | Signed Consent Forms (those that are applicable) | Signed Consent Forms | 0.905 | found |
 | Emergency Contact Information | Emergency Contact Information | 1.000 | found |
 | Pick Up Instructions | Pick Up Instructions | 1.000 | found |
-| (nearest: Registration Package and Signed Parent Contract) | Fee subsidy approval [admission, PDF p.26] “Families requiring a fee subsidy must be approved for placement by Children’s Services before being placed.” | 0.739 | no label |
-| (nearest: Registration Package and Signed Parent Contract) | CDI online waitlist [waitlist, PDF p.26] “Once placed on the subsidy waitlist, families will need to fill out CDI’s online waitlist.” | 0.643 | no label |
-| (nearest: Emergency Contact Information) | Current contact information [waitlist, PDF p.26] “It is the family’s responsibility to keep their information current with us, especially their phone number.” | 0.731 | no label |
-| (nearest: Signed Consent Forms (those that are applicable)) | Periodic follow-up calls [waitlist, PDF p.26] “It is the family’s responsibility to call us to let us know if they are still interested in a childcare space” | 0.661 | no label |
-| (nearest: Registration Package and Signed Parent Contract) | Response to space offer within 24 hours [waitlist, PDF p.26] “When a space is offered, the family will have 24 hours to respond.” | 0.645 | no label |
-| (nearest: Registration Package and Signed Parent Contract) | Legal documentation for custody and access [documents, PDF p.13] “Please be prepared to provide legal documentation for custody and access arrangements.” | 0.690 | no label |
-| (nearest: Copy of Immunization Record) | Proof of immunization prior to enrolment [admission, PDF p.13] “Proof of immunization must be shown prior to the enrolment of a child in the Centre.” | 0.842 | repeat of a found label |
-| (nearest: Copy of Immunization Record) | Immunization Objections or Exemptions forms [documents, PDF p.13] “Objections or Exemptions must be completed on the approved forms provided by the Centre Director and must be submitted prior to admission.” | 0.855 | repeat of a found label |
-| (nearest: Emergency Contact Information) | Emergency contact name and details [admission, PDF p.13] “Parents must provide the Centre with the name and contact information of at least one person if the parent/guardian is unavailable or cannot be reached.” | 0.902 | repeat of a found label |
+| (nearest: Registration Package and Signed Parent Contract) | Childcare fee subsidy approval [waitlist, PDF p.26] “Families requiring a fee subsidy must be approved for placement by Children’s Services before being placed.” | 0.719 | no label |
+| (nearest: Registration Package and Signed Parent Contract) | CDI online waitlist form [waitlist, PDF p.26] “Once placed on the subsidy waitlist, families will need to fill out CDI’s online waitlist.” | 0.736 | no label |
+| (nearest: Registration Package and Signed Parent Contract) | Keep contact information current on waitlist [waitlist, PDF p.26] “It is the family’s responsibility to keep their information current with us, especially their phone number.” | 0.669 | no label |
+| (nearest: Registration Package and Signed Parent Contract) | Call to confirm continued interest in space [waitlist, PDF p.26] “It is the family’s responsibility to call us to let us know if they are still interested in a childcare space by calling us from…” | 0.627 | no label |
+| (nearest: Registration Package and Signed Parent Contract) | Respond to space offer within 24 hours [waitlist, PDF p.26] “When a space is offered, the family will have 24 hours to respond.” | 0.627 | no label |
+| (nearest: Registration Package and Signed Parent Contract) | Legal documentation for custody and access [admission, PDF p.13] “Please be prepared to provide legal documentation for custody and access arrangements.” | 0.690 | no label |
+| (nearest: Copy of Immunization Record) | Proof of immunization [admission, PDF p.13] “Proof of immunization must be shown prior to the enrolment of a child in the Centre.” | 0.875 | repeat of a found label |
+| (nearest: Copy of Immunization Record) | Objections or Exemptions forms for immunization [admission, PDF p.13] “Objections or Exemptions must be completed on the approved forms provided by the Centre Director and must be submitted prior to admission.” | 0.795 | repeat of a found label |
+| (nearest: Emergency Contact Information) | Emergency contact name and contact information [admission, PDF p.13] “Parents must provide the Centre with the name and contact information of at least one person if the parent/guardian is unavailable or cannot be reached.” | 0.919 | repeat of a found label |
 
-### rolph-road-day-care (signed in as the demo account of on-0002575; gemini-3.5-flash-lite, 3.2 s)
+### rolph-road-day-care (signed in as the demo account of on-0002575; gemini-3.5-flash-lite, 2.6 s)
 
 | Label | Extracted | Cosine | |
 | --- | --- | --- | --- |
-| Waiting list application form(our website or by email or dropped off in person at 206 Laird Drive.) | Waiting list application form | 0.813 | found |
-| (nearest: Waiting list application form(our website or by email or dropped off in person at 206 Laird Drive.)) | Deposit [admission, 8. Admission Policy] “a deposit and will be required to guarantee your spot” | 0.575 | no label |
+| Waiting list application form(our website or by email or dropped off in person at 206 Laird Drive.) | Waiting list application form submission | 0.826 | found |
+| (nearest: Waiting list application form(our website or by email or dropped off in person at 206 Laird Drive.)) | Waiting list application form [waitlist, Online at www.leasidedaycare.com] “Fill out a waiting list application form at any of our 3 locations Call 416 487 5862 and provide your information.” | 0.813 | repeat of a found label |
+| (nearest: Waiting list application form(our website or by email or dropped off in person at 206 Laird Drive.)) | Waiting list application form for siblings [waitlist, Online at www.leasidedaycare.com] “They are still required to fill out the waiting list application form and submit it to the office.” | 0.814 | repeat of a found label |
+| (nearest: Waiting list application form(our website or by email or dropped off in person at 206 Laird Drive.)) | Deposit to guarantee spot [admission, 8. Admission Policy] “a deposit and will be required to guarantee your spot.” | 0.648 | no label |
 | (nearest: Waiting list application form(our website or by email or dropped off in person at 206 Laird Drive.)) | Application package forms [registration, 8. Admission Policy] “All relevant forms are required to be filled out before your child's start date.” | 0.683 | no label |
-| (nearest: Waiting list application form(our website or by email or dropped off in person at 206 Laird Drive.)) | Parent and Child Code of Conduct [registration, 39. PARENT AND CHILD CODE OF CONDUCT] “Children and parents are required to sign and abide by the “Parent and Child Code of Conduct”.” | 0.566 | no label |
-| (nearest: Waiting list application form(our website or by email or dropped off in person at 206 Laird Drive.)) | Doctor note for communicable disease [admission, 31. Illnesses and Accident] “A DOCTORS NOTE MAY BE REQUIRED FOR RE-ADMITTANCE INTO THE DAYCARE PROGRAM.” | 0.647 | no label |
-| (nearest: Waiting list application form(our website or by email or dropped off in person at 206 Laird Drive.)) | Doctor note for rash or skin infection [admission, 31. Illnesses and Accident] “A DOCTOR'S NOTE STATING THAT THE CONDITION IS NOT CONTAGIOUS IS REQUIRED” | 0.616 | no label |
-| (nearest: Waiting list application form(our website or by email or dropped off in person at 206 Laird Drive.)) | Health and Safety Declarations [admission, Health and Safety Declarations] “parents may be required to sign a declaration confirming that they have not traveled” | 0.555 | no label |
+| (nearest: Waiting list application form(our website or by email or dropped off in person at 206 Laird Drive.)) | Parent and Child Code of Conduct signature [registration, 39. PARENT AND CHILD CODE OF CONDUCT] “Children and parents are required to sign and abide by the “Parent and Child Code of Conduct”.” | 0.628 | no label |
+| (nearest: Waiting list application form(our website or by email or dropped off in person at 206 Laird Drive.)) | Doctor's note for re-admittance [admission, 31. Illnesses and Accident] “A DOCTORS NOTE MAY BE REQUIRED FOR RE-ADMITTANCE INTO THE DAYCARE PROGRAM.” | 0.599 | no label |
+| (nearest: Waiting list application form(our website or by email or dropped off in person at 206 Laird Drive.)) | Doctor's note for rash or skin infection [admission, 31. Illnesses and Accident] “A DOCTOR'S NOTE STATING THAT THE CONDITION IS NOT CONTAGIOUS IS REQUIRED FOR YOUR CHILD TO BE RE-ADMITTED TO THE DAYCARE PROGRAM.” | 0.610 | no label |
+| (nearest: Waiting list application form(our website or by email or dropped off in person at 206 Laird Drive.)) | Court documents for legal custody [documents, Procedures] “provide us with a copy of the court documents” | 0.586 | no label |
+| (nearest: Waiting list application form(our website or by email or dropped off in person at 206 Laird Drive.)) | Separation or parenting plan [documents, Information Requests] “a separation/parenting plan outlining custody, decision-making, access, etc. must be provided to the Daycare.” | 0.612 | no label |
+| (nearest: Waiting list application form(our website or by email or dropped off in person at 206 Laird Drive.)) | Written permission for non-custodial visitation [admission, Information Requests] “The custodial parent must submit written permission outlining the visit terms, times, and conditions that align with court documents” | 0.642 | no label |
 
-### toronto-early-learning-child-care-services (signed in as the demo account of on-00576; gemini-3.5-flash, 12.3 s)
+### toronto-early-learning-child-care-services (signed in as the demo account of on-00576; gemini-3.5-flash-lite, 3.9 s)
 
 | Label | Extracted | Cosine | |
 | --- | --- | --- | --- |
+| parent contact information | Parent contact information | 0.909 | found |
+| child's doctor's contact information | Child's doctor's contact information | 0.917 | found |
+| health related information | Health related information | 0.886 | found |
 | emergency contact information | Emergency contact information | 0.891 | found |
-| child's immunization record | Up-to-date immunization information | 0.780 | found |
-| parent contact information | (nearest: Emergency contact information) | 0.652 | **missed** |
-| child's doctor's contact information | (nearest: Emergency contact information) | 0.610 | **missed** |
-| health related information | (nearest: Up-to-date immunization information) | 0.685 | **missed** |
-| pick up instructions | (nearest: Agreement to Pay the Assessed Fee Form) | 0.521 | **missed** |
-| (nearest: parent contact information) | Waitlist registration [waitlist, PDF p.12] “To place your child(ren) on the waitlist for a TELCCS centre(s) and/or to apply for a fee subsidy, please visit toronto.ca/telccs” | 0.578 | no label |
-| (nearest: child's immunization record) | Fee subsidy approval [admission, PDF p.13] “Families requiring a fee subsidy must be approved for placement by Children’s Services’ Client Services Unit.” | 0.610 | no label |
-| (nearest: health related information) | Pre-admission meeting [admission, PDF p.13] “the Centre Supervisor will schedule a meeting with the parent(s)/guardian prior to admission to the centre.” | 0.559 | no label |
-| (nearest: child's immunization record) | TELCCS Child Admission Package [documents, PDF p.51] “The TELCCS Child Admission Package must be completed by the client and reviewed by the supervisor” | 0.554 | no label |
-| (nearest: parent contact information) | Agreement to Pay the Assessed Fee Form [documents, PDF p.51] “A copy of the Agreement to Pay the Assessed Fee Form signed by the client must be sent to Central Billing Unit” | 0.566 | no label |
-| (nearest: child's immunization record) | Immunization medical exemption [documents, PDF p.14] “Written medical exemption by a qualified medical practitioner, which clearly states the medical reasons why a child cannot be immunized” | 0.727 | no label |
+| child's immunization record | Immunization records | 0.817 | found |
+| pick up instructions | (nearest: Individuals authorized to pick-up) | 0.662 | **missed** |
+| (nearest: health related information) | Review information concerning TELCCS centres [waitlist, PDF p.12] “Review the information concerning TELCCS centres to decide which program(s) best meets your family’s needs.” | 0.606 | no label |
+| (nearest: parent contact information) | Review current fees [waitlist, PDF p.12] “Review our current fees.” | 0.515 | no label |
+| (nearest: parent contact information) | Register online or contact Human Services Line for waitlist [waitlist, PDF p.12] “To place your child(ren) on the waitlist for a TELCCS centre(s) and/or to apply for a fee subsidy, please visit toronto.ca/telccs, contact Human Services Line…” | 0.587 | no label |
+| (nearest: child's immunization record) | TELCCS Child Admission Package completion [admission, PDF p.51] “The TELCCS Child Admission Package must be completed by the client and reviewed by the supervisor” | 0.689 | no label |
+| (nearest: parent contact information) | Agreement to Pay the Assessed Fee Form [admission, PDF p.51] “A copy of the Agreement to Pay the Assessed Fee Form signed by the client must be sent to Central Billing Unit” | 0.566 | no label |
+| (nearest: health related information) | Medical and physical needs of the child [admission, PDF p.51] “gather emergency contact information, immunization records, medical and physical needs of the child, nutrition policies and procedures, and child's individual development and general care needs.” | 0.663 | no label |
+| (nearest: health related information) | Nutrition policies and procedures [admission, PDF p.51] “gather emergency contact information, immunization records, medical and physical needs of the child, nutrition policies and procedures, and child's individual development and general care needs.” | 0.625 | no label |
+| (nearest: child's immunization record) | Child's individual development and general care needs [admission, PDF p.51] “gather emergency contact information, immunization records, medical and physical needs of the child, nutrition policies and procedures, and child's individual development and general care needs.” | 0.664 | no label |
+| (nearest: child's immunization record) | Up-to-date immunization information [admission, PDF p.14] “Please ensure that you provide current and up-to-date immunization information to the centre.” | 0.780 | repeat of a found label |
+| (nearest: child's immunization record) | Written medical exemption for immunization [admission, PDF p.14] “Written medical exemption by a qualified medical practitioner, which clearly states the medical reasons why a child cannot be immunized” | 0.709 | no label |
+| (nearest: child's immunization record) | Immunization Exemption Form [admission, PDF p.14] “Complete the Immunization Exemption Form identifying that you have chosen not to immunize your child on the grounds that the immunization conflicts with your conscience…” | 0.724 | no label |
+| (nearest: parent contact information) | Legal documentation for custody arrangements [admission, PDF p.14] “Please be prepared to provide legal documentation for custody arrangements.” | 0.558 | no label |
+| (nearest: pick up instructions) | Individuals authorized to pick-up [admission, PDF p.31] “parents/guardians are required to advise the Centre of all individuals who are authorized to pick-up their child.” | 0.662 | no label |
 
-## 3. Prepare with AI safety
+## 3. Prepare with AI safety (latest run)
 
 Each demo centre runs twice, as Priya (simulated parent): with no documents, and with two unattached files: one named after the centre's first confirmed requirement and a decoy ("family-vacation-photo.jpg"). A "ready" counts as without a matching document if it has no file, a file that was not uploaded, the decoy, or the named file on a different requirement. Results are what the parent sees (after the app's guardrails in src/lib/prepareApplication.ts), not the raw model output.
 
 | Centre | Scenario | Checklist (status) | "Ready" without match | Outside list | Answered by | Time |
 | --- | --- | --- | --- | --- | --- | --- |
 | CareQ Demo Centre (fictional) | no documents | Child's Birth Certificate: missing; Yellow Immunization Card (ISPA): missing; Proof of Toronto Residency: missing; Emergency Contact & Medical Consent Form: missing | 0 | 0 | gemini-3.5-flash-lite | 1.2 s |
-| CareQ Demo Centre (fictional) | "child-s-birth-certificate.pdf" + decoy | Child's Birth Certificate: ready ← child-s-birth-certificate.pdf; Yellow Immunization Card (ISPA): missing; Proof of Toronto Residency: missing; Emergency Contact & Medical Consent Form: missing | 0 | 0 | gemini-3.5-flash-lite | 1.1 s |
+| CareQ Demo Centre (fictional) | "child-s-birth-certificate.pdf" + decoy | Child's Birth Certificate: ready ← child-s-birth-certificate.pdf; Yellow Immunization Card (ISPA): missing; Proof of Toronto Residency: missing; Emergency Contact & Medical Consent Form: missing | 0 | 0 | gemini-3.5-flash-lite | 1.2 s |
 | Jesse Ketchum Early Learning & Child Care Centre | no documents | Child Admission Package: missing; Emergency contact information: missing; Up-to-date immunization information: missing; Custody documents (if applicable): missing | 0 | 0 | gemini-3.5-flash-lite | 1.4 s |
-| Jesse Ketchum Early Learning & Child Care Centre | "child-admission-package.pdf" + decoy | Child Admission Package: ready ← child-admission-package.pdf; Emergency contact information: missing; Up-to-date immunization information: missing; Custody documents (if applicable): missing | 0 | 0 | gemini-3.5-flash-lite | 1.1 s |
+| Jesse Ketchum Early Learning & Child Care Centre | "child-admission-package.pdf" + decoy | Child Admission Package: ready ← child-admission-package.pdf; Emergency contact information: missing; Up-to-date immunization information: missing; Custody documents (if applicable): missing | 0 | 0 | gemini-3.5-flash-lite | 1.3 s |
 | Wellesley Early Learning Centre - Earlscourt Creche Cdi - 495 Sherbourne Street | no documents | Registration Package and Signed Parent Contract: missing; Copy of Immunization Record: missing; Signed Consent Forms (those that are applicable): missing; Emergency Contact Information: missing; Pick Up Instructions: missing; Preauthorized Debit form: missing | 0 | 0 | gemini-3.5-flash-lite | 1.3 s |
-| Wellesley Early Learning Centre - Earlscourt Creche Cdi - 495 Sherbourne Street | "registration-package-and-signed-parent-c.pdf" + decoy | Registration Package and Signed Parent Contract: ready ← registration-package-and-signed-parent-c.pdf; Copy of Immunization Record: missing; Signed Consent Forms (those that are applicable): missing; Emergency Contact Information: missing; Pick Up Instructions: missing; Preauthorized Debit form: missing | 0 | 0 | gemini-3.5-flash-lite | 1.0 s |
-| Macaulay - Dovercourt Child Care Centre | no documents | Child registration forms: missing; Admission forms, including immunization records: missing; Up-to-date immunizations: missing | 0 | 0 | gemini-3.5-flash-lite | 1.1 s |
+| Wellesley Early Learning Centre - Earlscourt Creche Cdi - 495 Sherbourne Street | "registration-package-and-signed-parent-c.pdf" + decoy | Registration Package and Signed Parent Contract: ready ← registration-package-and-signed-parent-c.pdf; Copy of Immunization Record: missing; Signed Consent Forms (those that are applicable): missing; Emergency Contact Information: missing; Pick Up Instructions: missing; Preauthorized Debit form: missing | 0 | 0 | gemini-3.5-flash-lite | 1.1 s |
+| Macaulay - Dovercourt Child Care Centre | no documents | Child registration forms: missing; Admission forms, including immunization records: missing; Up-to-date immunizations: missing | 0 | 0 | gemini-3.5-flash-lite | 1.0 s |
 | Macaulay - Dovercourt Child Care Centre | "child-registration-forms.pdf" + decoy | Child registration forms: ready ← child-registration-forms.pdf; Admission forms, including immunization records: missing; Up-to-date immunizations: missing | 0 | 0 | gemini-3.5-flash-lite | 1.3 s |
-| Leaside Day Care Centre (Rolph Road Day Care) | no documents | Waiting list application form: missing; Deposit to guarantee your spot: missing; Application package forms: missing | 0 | 0 | gemini-3.5-flash-lite | 1.0 s |
-| Leaside Day Care Centre (Rolph Road Day Care) | "waiting-list-application-form.pdf" + decoy | Waiting list application form: ready ← waiting-list-application-form.pdf; Deposit to guarantee your spot: missing; Application package forms: missing | 0 | 0 | gemini-3.5-flash-lite | 1.0 s |
-| Harmony Child Care Centre (Harmony Community School Centre) 124 Northcliffe Blvd | no documents | Registration forms, including the medical: missing; First payment of care: missing; Immunization Information Form & copy of Yellow Immunization Card: missing; Emergency Contact Information Form: missing; Medical and Health Care Information Form: missing | 0 | 0 | gemini-3.5-flash-lite | 1.3 s |
-| Harmony Child Care Centre (Harmony Community School Centre) 124 Northcliffe Blvd | "registration-forms-including-the-medical.pdf" + decoy | Registration forms, including the medical: ready ← registration-forms-including-the-medical.pdf; First payment of care: missing; Immunization Information Form & copy of Yellow Immunization Card: missing; Emergency Contact Information Form: missing; Medical and Health Care Information Form: missing | 0 | 0 | gemini-3.5-flash-lite | 1.2 s |
-| B.F. Toronto Centre For Early Childhood (45 Golfdown) | no documents | Registration Fee ($25.00, non-refundable): missing; Registration and Immunization Forms: missing; Toronto Public Health Immunization Form with your child's immunization record: missing | 0 | 0 | gemini-3.5-flash-lite | 1.1 s |
-| B.F. Toronto Centre For Early Childhood (45 Golfdown) | "registration-fee-25-00-non-refundable.pdf" + decoy | Registration Fee ($25.00, non-refundable): ready ← registration-fee-25-00-non-refundable.pdf; Registration and Immunization Forms: missing; Toronto Public Health Immunization Form with your child's immunization record: missing | 0 | 0 | gemini-3.5-flash-lite | 1.1 s |
-| Family Day Care Services - Mary Ward Child Care Centre | no documents | Proof of immunization (or a completed standard exemption form): missing; Emergency contact information: missing | 0 | 0 | gemini-3.5-flash-lite | 1.1 s |
+| Leaside Day Care Centre (Rolph Road Day Care) | no documents | Waiting list application form: missing; Deposit to guarantee your spot: missing; Application package forms: missing | 0 | 0 | gemini-3.5-flash-lite | 1.5 s |
+| Leaside Day Care Centre (Rolph Road Day Care) | "waiting-list-application-form.pdf" + decoy | Waiting list application form: ready ← waiting-list-application-form.pdf; Deposit to guarantee your spot: missing; Application package forms: missing | 0 | 0 | gemini-3.5-flash-lite | 1.1 s |
+| Harmony Child Care Centre (Harmony Community School Centre) 124 Northcliffe Blvd | no documents | Registration forms, including the medical: missing; First payment of care: missing; Immunization Information Form & copy of Yellow Immunization Card: missing; Emergency Contact Information Form: missing; Medical and Health Care Information Form: missing | 0 | 0 | gemini-3.5-flash-lite | 1.7 s |
+| Harmony Child Care Centre (Harmony Community School Centre) 124 Northcliffe Blvd | "registration-forms-including-the-medical.pdf" + decoy | Registration forms, including the medical: ready ← registration-forms-including-the-medical.pdf; First payment of care: missing; Immunization Information Form & copy of Yellow Immunization Card: missing; Emergency Contact Information Form: missing; Medical and Health Care Information Form: missing | 0 | 0 | gemini-3.5-flash-lite | 1.4 s |
+| B.F. Toronto Centre For Early Childhood (45 Golfdown) | no documents | Registration Fee ($25.00, non-refundable): missing; Registration and Immunization Forms: missing; Toronto Public Health Immunization Form with your child's immunization record: missing | 0 | 0 | gemini-3.5-flash-lite | 1.2 s |
+| B.F. Toronto Centre For Early Childhood (45 Golfdown) | "registration-fee-25-00-non-refundable.pdf" + decoy | Registration Fee ($25.00, non-refundable): ready ← registration-fee-25-00-non-refundable.pdf; Registration and Immunization Forms: missing; Toronto Public Health Immunization Form with your child's immunization record: missing | 0 | 0 | gemini-3.5-flash-lite | 1.7 s |
+| Family Day Care Services - Mary Ward Child Care Centre | no documents | Proof of immunization (or a completed standard exemption form): missing; Emergency contact information: missing | 0 | 0 | gemini-3.5-flash-lite | 0.9 s |
 | Family Day Care Services - Mary Ward Child Care Centre | "proof-of-immunization-or-a-completed-sta.pdf" + decoy | Proof of immunization (or a completed standard exemption form): ready ← proof-of-immunization-or-a-completed-sta.pdf; Emergency contact information: missing | 0 | 0 | gemini-3.5-flash-lite | 1.0 s |
 
-## 4. Tone check
+## 4. Tone check (latest run)
 
 | Message | Role | Label | Flagged | Result | Reason given | Answered by |
 | --- | --- | --- | --- | --- | --- | --- |
-| Hi, could you let me know if you need any other documents for Anya's application? Thank you! | parent | ok | no | correct pass |  | gemini-3.5-flash |
-| Thanks for the update on our position. We're still very interested in a spot. | parent | ok | no | correct pass |  | gemini-3.5-flash |
-| Hello, I wanted to confirm you received our application last week. Have a great day. | parent | ok | no | correct pass |  | gemini-3.5-flash |
-| We'd love to accept the offer. What are the next steps before her first day? | parent | ok | no | correct pass |  | gemini-3.5-flash |
-| Could we book a tour sometime next week? Any afternoon works for us. | parent | ok | no | correct pass |  | gemini-3.5-flash |
-| Sorry for the late reply. Here is the immunization record you asked for. | parent | ok | no | correct pass |  | gemini-3.5-flash |
+| Hi, could you let me know if you need any other documents for Anya's application? Thank you! | parent | ok | no | correct pass |  | gemini-3.5-flash-lite |
+| Thanks for the update on our position. We're still very interested in a spot. | parent | ok | no | correct pass |  | gemini-3.5-flash-lite |
+| Hello, I wanted to confirm you received our application last week. Have a great day. | parent | ok | no | correct pass |  | gemini-3.5-flash-lite |
+| We'd love to accept the offer. What are the next steps before her first day? | parent | ok | no | correct pass |  | gemini-3.5-flash-lite |
+| Could we book a tour sometime next week? Any afternoon works for us. | parent | ok | no | correct pass |  | gemini-3.5-flash-lite |
+| Sorry for the late reply. Here is the immunization record you asked for. | parent | ok | no | correct pass |  | gemini-3.5-flash-lite |
 | Is there anything we can do to keep our application up to date while we wait? | parent | ok | no | correct pass |  | gemini-3.5-flash-lite |
-| We've found care elsewhere, so please remove us from the waitlist. Thank you for your help. | parent | ok | no | correct pass |  | gemini-3.5-flash |
+| We've found care elsewhere, so please remove us from the waitlist. Thank you for your help. | parent | ok | no | correct pass |  | gemini-3.5-flash-lite |
 | Hi Priya, thanks for applying. We'll be in touch as soon as we have an update. | centre | ok | no | correct pass |  | gemini-3.5-flash-lite |
-| Your application is complete. Please let us know if anything changes. | centre | ok | no | correct pass |  | gemini-3.5-flash |
+| Your application is complete. Please let us know if anything changes. | centre | ok | no | correct pass |  | gemini-3.5-flash-lite |
 | Just checking in again on our application, as our return-to-work date is getting close. | parent | ok | no | correct pass |  | gemini-3.5-flash-lite |
 | Could you clarify what the deposit covers? We want to be sure we understand. | parent | ok | no | correct pass |  | gemini-3.5-flash-lite |
-| This is ridiculous. I've emailed three times and nobody answers. Do your job. | parent | harsh | yes | correct flag | The message uses insulting language and a demanding tone, which comes across as aggressive and confrontational. | gemini-3.5-flash-lite |
-| I need a spot by Monday. No excuses. | parent | harsh | yes | correct flag | The phrase 'No excuses' alongside the abrupt demand creates an aggressive and confrontational tone. | gemini-3.5-flash |
-| If you don't move us up the list I'll post a review telling everyone how useless you are. | parent | harsh | yes | correct flag | The message uses a direct threat of a negative public review and insults the centre's staff, which is aggressive and unprofessional. | gemini-3.5-flash-lite |
-| Why is it so hard for you people to answer a simple question? | parent | harsh | yes | correct flag | The phrase 'Why is it so hard for you people' is confrontational and disparaging. | gemini-3.5-flash-lite |
-| Answer me today or I'm calling my lawyer. | parent | harsh | yes | correct flag | The message uses an aggressive ultimatum and a threat of legal action to demand an immediate response. | gemini-3.5-flash |
-| Your waitlist is a joke. Fix it. | parent | harsh | yes | correct flag | The message uses dismissive language and a demanding imperative that comes across as aggressive and confrontational. | gemini-3.5-flash-lite |
-| Stop emailing us. We already told you there are no spaces. | centre | harsh | yes | correct flag | The phrase 'Stop emailing us' is abrupt and dismissive, which comes across as confrontational and rude. | gemini-3.5-flash-lite |
-| Honestly, your centre is the worst I've dealt with and I expect an answer immediately. | parent | harsh | yes | correct flag | The message uses overly harsh generalizations and a demanding tone. | gemini-3.5-flash |
+| This is ridiculous. I've emailed three times and nobody answers. Do your job. | parent | harsh | yes | correct flag | The message uses insulting language and a demanding tone, which is disrespectful and confrontational. | gemini-3.5-flash-lite |
+| I need a spot by Monday. No excuses. | parent | harsh | yes | correct flag | The demand 'No excuses' sounds aggressive, demanding, and disrespectful of the centre's policies and capacity. | gemini-3.5-flash-lite |
+| If you don't move us up the list I'll post a review telling everyone how useless you are. | parent | harsh | yes | correct flag | The message uses a direct threat of leaving a defamatory review and insults the centre's competence to demand priority. | gemini-3.5-flash-lite |
+| Why is it so hard for you people to answer a simple question? | parent | harsh | yes | correct flag | The phrase 'you people' and the accusatory question structure come across as confrontational and aggressive. | gemini-3.5-flash-lite |
+| Answer me today or I'm calling my lawyer. | parent | harsh | yes | correct flag | The message demands an immediate answer under the threat of legal action, which is aggressive and confrontational. | gemini-3.5-flash-lite |
+| Your waitlist is a joke. Fix it. | parent | harsh | yes | correct flag | The message uses dismissive and demanding language ('is a joke', 'Fix it') which is confrontational and rude. | gemini-3.5-flash-lite |
+| Stop emailing us. We already told you there are no spaces. | centre | harsh | yes | correct flag | The phrase 'Stop emailing us' is abrupt and comes across as dismissive and aggressive. | gemini-3.5-flash-lite |
+| Honestly, your centre is the worst I've dealt with and I expect an answer immediately. | parent | harsh | yes | correct flag | The message uses insulting language and makes an aggressive demand for an immediate reply. | gemini-3.5-flash-lite |
 
-## Raw outputs
+## Every run
 
-Full responses as returned by the server (also in eval/raw/*.json; server log in eval/raw/server.log when the script started the server).
+| Run | Ask CareQ: answerable questions answered from the right document | Ask CareQ: right page (±1) | Ask CareQ: correct refusals | Ask CareQ: quotes verbatim in the cited passage (re-checked) | Ask CareQ: server time, median | Ask CareQ: server time, max | Ask CareQ: no-AI fallback answers | Requirements, child-development-institute: labels found | Requirements, child-development-institute: repeats of a found label | Requirements, child-development-institute: extracted with no label | Requirements, rolph-road-day-care: labels found | Requirements, rolph-road-day-care: repeats of a found label | Requirements, rolph-road-day-care: extracted with no label | Requirements, toronto-early-learning-child-care-services: labels found | Requirements, toronto-early-learning-child-care-services: repeats of a found label | Requirements, toronto-early-learning-child-care-services: extracted with no label | Requirements: quotes verbatim (re-checked) | Prepare with AI: "ready" without a matching document | Prepare with AI: checklist items outside the confirmed list | Tone check: harsh messages flagged | Tone check: false alarms | Tone check: misses |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| baseline, 2026-11-08 17:47 UTC | 9/10 | 9/10 | 7/10 | 14/14 | 2.0 s | 3.0 s | 0 | 5/5 | 3 | 6 | 1/1 | 0 | 6 | 2/6 | 0 | 6 | 29/29 | 0 | 0 | 8/8 | 0 | 0 |
+| 2026-11-08 18:13 UTC | 9/10 | 9/10 | 10/10 | 10/10 | 2.3 s | 6.7 s | 0 | 5/5 | 3 | 6 | 1/1 | 2 | 8 | 5/6 | 1 | 12 | 43/43 | 0 | 0 | 8/8 | 0 | 0 |
+
+## Raw outputs (latest run)
+
+Full responses as returned by the server. Every run's responses are in eval/runs/<timestamp>.json (this one: eval/runs/2026-11-08T18-13-19-584Z.json); the latest server log is in eval/raw/server.log (not committed).
 
 <details><summary>Ask CareQ</summary>
 
@@ -197,7 +220,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "retrievalMode": "vector",
       "aiMode": "gemini",
       "modelUsed": "gemini-3.5-flash-lite",
-      "latencyMs": 2893
+      "latencyMs": 3381
     }
   },
   {
@@ -226,7 +249,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "retrievalMode": "vector",
       "aiMode": "gemini",
       "modelUsed": "gemini-3.5-flash-lite",
-      "latencyMs": 1834
+      "latencyMs": 1978
     }
   },
   {
@@ -235,7 +258,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "centreId": "on-00576",
     "response": {
       "success": true,
-      "answer": "Toronto Early Learning and Child Care Centres operate between 7:00 a.m. and 6:00 p.m., Monday to Friday, excluding statutory holidays.",
+      "answer": "The centre operates between 7:00 a.m. and 6:00 p.m., Monday to Friday, excluding statutory holidays.",
       "citations": [
         {
           "kind": "document",
@@ -255,7 +278,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "retrievalMode": "vector",
       "aiMode": "gemini",
       "modelUsed": "gemini-3.5-flash-lite",
-      "latencyMs": 1752
+      "latencyMs": 2932
     }
   },
   {
@@ -264,7 +287,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "centreId": "on-00576",
     "response": {
       "success": true,
-      "answer": "To place your child on the waitlist or apply for a fee subsidy, you can visit toronto.ca/telccs or toronto.ca/childcaresubsidy. You can also contact the Human Services Line at 416-338-8888 (select option 2 for child care), call 311, or contact your Children’s Services Caseworker.",
+      "answer": "To place your child on the waitlist and/or to apply for a fee subsidy, please visit toronto.ca/telccs. You can also contact Human Services Line at 416-338-8888 (select option 2 for child care), 311, or your Children’s Services Caseworker.",
       "citations": [
         {
           "kind": "document",
@@ -295,7 +318,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "retrievalMode": "vector",
       "aiMode": "gemini",
       "modelUsed": "gemini-3.5-flash-lite",
-      "latencyMs": 1671
+      "latencyMs": 4355
     }
   },
   {
@@ -304,7 +327,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "centreId": "on-0002899",
     "response": {
       "success": true,
-      "answer": "Before your child starts, you must complete a registration package and signed parent contract, along with emergency contact information and pick-up instructions. You also need to provide a copy of your child's immunization record and any applicable signed consent forms.",
+      "answer": "Before your child starts, you must complete and submit a registration package, signed parent contract, a copy of your immunization record, signed consent forms, emergency contact information, and pick-up instructions.",
       "citations": [
         {
           "kind": "document",
@@ -315,7 +338,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "page": "PDF p.13",
           "sourceUrl": "https://www.childdevelop.ca",
           "sourceNote": "Website named in the handbook; exact file link not found.",
-          "quote": "• Registration Package and Signed Parent Contract • Copy of Immunization Record • Signed Consent Forms (those that are applicable) • Emergency Contact Information •…"
+          "quote": "Registration Package and Signed Parent Contract • Copy of Immunization Record • Signed Consent Forms (those that are applicable) • Emergency Contact Information • Pick…"
         }
       ],
       "toolsUsed": [
@@ -324,7 +347,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "retrievalMode": "vector",
       "aiMode": "gemini",
       "modelUsed": "gemini-3.5-flash-lite",
-      "latencyMs": 2136
+      "latencyMs": 6727
     }
   },
   {
@@ -353,7 +376,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "retrievalMode": "vector",
       "aiMode": "gemini",
       "modelUsed": "gemini-3.5-flash-lite",
-      "latencyMs": 1552
+      "latencyMs": 6715
     }
   },
   {
@@ -382,7 +405,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "retrievalMode": "vector",
       "aiMode": "gemini",
       "modelUsed": "gemini-3.5-flash-lite",
-      "latencyMs": 1361
+      "latencyMs": 4931
     }
   },
   {
@@ -411,7 +434,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "retrievalMode": "vector",
       "aiMode": "gemini",
       "modelUsed": "gemini-3.5-flash-lite",
-      "latencyMs": 1749
+      "latencyMs": 3840
     }
   },
   {
@@ -440,7 +463,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "retrievalMode": "vector",
       "aiMode": "gemini",
       "modelUsed": "gemini-3.5-flash-lite",
-      "latencyMs": 1860
+      "latencyMs": 2181
     }
   },
   {
@@ -457,7 +480,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "retrievalMode": "vector",
       "aiMode": "gemini",
       "modelUsed": "gemini-3.5-flash-lite",
-      "latencyMs": 2182
+      "latencyMs": 2334
     }
   },
   {
@@ -472,7 +495,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "modelUsed": null,
       "answer": "I don't have that information; please contact the centre or use Help.",
       "citations": [],
-      "latencyMs": 0
+      "latencyMs": 1
     }
   },
   {
@@ -487,7 +510,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "modelUsed": null,
       "answer": "I don't have that information; please contact the centre or use Help.",
       "citations": [],
-      "latencyMs": 0
+      "latencyMs": 1
     }
   },
   {
@@ -502,7 +525,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "modelUsed": null,
       "answer": "I don't have that information; please contact the centre or use Help.",
       "citations": [],
-      "latencyMs": 0
+      "latencyMs": 1
     }
   },
   {
@@ -519,7 +542,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "retrievalMode": "vector",
       "aiMode": "gemini",
       "modelUsed": "gemini-3.5-flash-lite",
-      "latencyMs": 2516
+      "latencyMs": 1808
     }
   },
   {
@@ -536,7 +559,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "retrievalMode": "vector",
       "aiMode": "gemini",
       "modelUsed": "gemini-3.5-flash-lite",
-      "latencyMs": 2531
+      "latencyMs": 2417
     }
   },
   {
@@ -553,7 +576,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "retrievalMode": "vector",
       "aiMode": "gemini",
       "modelUsed": "gemini-3.5-flash-lite",
-      "latencyMs": 2840
+      "latencyMs": 2250
     }
   },
   {
@@ -562,38 +585,13 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "centreId": "on-0004062",
     "response": {
       "success": true,
-      "answer": "Fees vary by age group and program including infant, toddler, preschool, kindergarten and school aged programs. See Appendix A for your centre fees.",
-      "citations": [
-        {
-          "kind": "document",
-          "chunkId": "macaulay-centres-for-children/handbook.pdf#90",
-          "scope": "operator",
-          "operatorName": "Macaulay Centres for Children",
-          "docTitle": "Parent Handbook (January 2024)",
-          "page": "PDF p.26",
-          "sourceUrl": "https://macaulaycentre.org/services/licensed-child-care/licensed-child-care-centres",
-          "sourceNote": "Operator page for its licensed centres; exact file link not found.",
-          "quote": "Fees vary by age group and program including infant, toddler, preschool, kindergarten and school aged programs."
-        },
-        {
-          "kind": "document",
-          "chunkId": "macaulay-centres-for-children/handbook.pdf#90",
-          "scope": "operator",
-          "operatorName": "Macaulay Centres for Children",
-          "docTitle": "Parent Handbook (January 2024)",
-          "page": "PDF p.26",
-          "sourceUrl": "https://macaulaycentre.org/services/licensed-child-care/licensed-child-care-centres",
-          "sourceNote": "Operator page for its licensed centres; exact file link not found.",
-          "quote": "See Appendix A for your centre fees."
-        }
-      ],
-      "toolsUsed": [
-        "search_documents"
-      ],
-      "retrievalMode": "vector",
-      "aiMode": "gemini",
-      "modelUsed": "gemini-3.5-flash-lite",
-      "latencyMs": 2731
+      "toolsUsed": [],
+      "retrievalMode": "none",
+      "aiMode": "rule",
+      "modelUsed": null,
+      "answer": "I don't have that information; please contact the centre or use Help.",
+      "citations": [],
+      "latencyMs": 0
     }
   },
   {
@@ -602,27 +600,13 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "centreId": "on-0002899",
     "response": {
       "success": true,
-      "answer": "There is no fee to place your child on our waitlist.",
-      "citations": [
-        {
-          "kind": "document",
-          "chunkId": "child-development-institute/handbook.pdf#94",
-          "scope": "operator",
-          "operatorName": "Child Development Institute (CDI Early Learning Centres)",
-          "docTitle": "Family Handbook (revised January 1, 2025)",
-          "page": "PDF p.26",
-          "sourceUrl": "https://www.childdevelop.ca",
-          "sourceNote": "Website named in the handbook; exact file link not found.",
-          "quote": "There is no fee to place your child on our waitlist."
-        }
-      ],
-      "toolsUsed": [
-        "search_documents"
-      ],
-      "retrievalMode": "vector",
-      "aiMode": "gemini",
-      "modelUsed": "gemini-3.5-flash-lite",
-      "latencyMs": 2959
+      "toolsUsed": [],
+      "retrievalMode": "none",
+      "aiMode": "rule",
+      "modelUsed": null,
+      "answer": "I don't have that information; please contact the centre or use Help.",
+      "citations": [],
+      "latencyMs": 0
     }
   },
   {
@@ -639,7 +623,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "retrievalMode": "vector",
       "aiMode": "gemini",
       "modelUsed": "gemini-3.5-flash-lite",
-      "latencyMs": 2394
+      "latencyMs": 2803
     }
   },
   {
@@ -648,27 +632,13 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "centreId": "on-00576",
     "response": {
       "success": true,
-      "answer": "Families requiring a fee subsidy must be approved for placement by Children’s Services’ Client Services Unit.",
-      "citations": [
-        {
-          "kind": "document",
-          "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#27",
-          "scope": "operator",
-          "operatorName": "Toronto Early Learning & Child Care Services (City of Toronto)",
-          "docTitle": "Parent Handbook (March 2026)",
-          "page": "PDF p.13",
-          "sourceUrl": "https://www.toronto.ca/wp-content/uploads/2026/04/95b1-parenthandbook2026.pdf",
-          "sourceNote": "Exact file",
-          "quote": "Families requiring a fee subsidy must be approved for placement by Children’s Services’ Client Services Unit."
-        }
-      ],
-      "toolsUsed": [
-        "search_documents"
-      ],
-      "retrievalMode": "vector",
-      "aiMode": "gemini",
-      "modelUsed": "gemini-3.5-flash-lite",
-      "latencyMs": 2423
+      "toolsUsed": [],
+      "retrievalMode": "none",
+      "aiMode": "rule",
+      "modelUsed": null,
+      "answer": "I don't have that information; please contact the centre or use Help.",
+      "citations": [],
+      "latencyMs": 1
     }
   }
 ]
@@ -686,11 +656,11 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "response": {
       "success": true,
       "aiMode": "gemini",
-      "modelUsed": "gemini-3.5-flash",
+      "modelUsed": "gemini-3.5-flash-lite",
       "requirements": [
         {
-          "requirement": "Fee subsidy approval",
-          "category": "admission",
+          "requirement": "Childcare fee subsidy approval",
+          "category": "waitlist",
           "quote": "Families requiring a fee subsidy must be approved for placement by Children’s Services before being placed.",
           "chunkId": "child-development-institute/handbook.pdf#93",
           "docKey": "child-development-institute/handbook.pdf",
@@ -700,7 +670,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "sourceNote": "Website named in the handbook; exact file link not found."
         },
         {
-          "requirement": "CDI online waitlist",
+          "requirement": "CDI online waitlist form",
           "category": "waitlist",
           "quote": "Once placed on the subsidy waitlist, families will need to fill out CDI’s online waitlist.",
           "chunkId": "child-development-institute/handbook.pdf#94",
@@ -711,7 +681,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "sourceNote": "Website named in the handbook; exact file link not found."
         },
         {
-          "requirement": "Current contact information",
+          "requirement": "Keep contact information current on waitlist",
           "category": "waitlist",
           "quote": "It is the family’s responsibility to keep their information current with us, especially their phone number.",
           "chunkId": "child-development-institute/handbook.pdf#97",
@@ -722,9 +692,9 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "sourceNote": "Website named in the handbook; exact file link not found."
         },
         {
-          "requirement": "Periodic follow-up calls",
+          "requirement": "Call to confirm continued interest in space",
           "category": "waitlist",
-          "quote": "It is the family’s responsibility to call us to let us know if they are still interested in a childcare space",
+          "quote": "It is the family’s responsibility to call us to let us know if they are still interested in a childcare space by calling us from…",
           "chunkId": "child-development-institute/handbook.pdf#97",
           "docKey": "child-development-institute/handbook.pdf",
           "docTitle": "Family Handbook (revised January 1, 2025)",
@@ -733,7 +703,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "sourceNote": "Website named in the handbook; exact file link not found."
         },
         {
-          "requirement": "Response to space offer within 24 hours",
+          "requirement": "Respond to space offer within 24 hours",
           "category": "waitlist",
           "quote": "When a space is offered, the family will have 24 hours to respond.",
           "chunkId": "child-development-institute/handbook.pdf#97",
@@ -745,8 +715,8 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         },
         {
           "requirement": "Registration Package and Signed Parent Contract",
-          "category": "registration",
-          "quote": "Registration Package and Signed Parent Contract",
+          "category": "admission",
+          "quote": "• Registration Package and Signed Parent Contract",
           "chunkId": "child-development-institute/handbook.pdf#27",
           "docKey": "child-development-institute/handbook.pdf",
           "docTitle": "Family Handbook (revised January 1, 2025)",
@@ -756,8 +726,8 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         },
         {
           "requirement": "Copy of Immunization Record",
-          "category": "documents",
-          "quote": "Copy of Immunization Record",
+          "category": "admission",
+          "quote": "• Copy of Immunization Record",
           "chunkId": "child-development-institute/handbook.pdf#27",
           "docKey": "child-development-institute/handbook.pdf",
           "docTitle": "Family Handbook (revised January 1, 2025)",
@@ -767,8 +737,8 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         },
         {
           "requirement": "Signed Consent Forms",
-          "category": "documents",
-          "quote": "Signed Consent Forms (those that are applicable)",
+          "category": "admission",
+          "quote": "• Signed Consent Forms (those that are applicable)",
           "chunkId": "child-development-institute/handbook.pdf#27",
           "docKey": "child-development-institute/handbook.pdf",
           "docTitle": "Family Handbook (revised January 1, 2025)",
@@ -778,8 +748,8 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         },
         {
           "requirement": "Emergency Contact Information",
-          "category": "documents",
-          "quote": "Emergency Contact Information",
+          "category": "admission",
+          "quote": "• Emergency Contact Information",
           "chunkId": "child-development-institute/handbook.pdf#27",
           "docKey": "child-development-institute/handbook.pdf",
           "docTitle": "Family Handbook (revised January 1, 2025)",
@@ -789,8 +759,8 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         },
         {
           "requirement": "Pick Up Instructions",
-          "category": "documents",
-          "quote": "Pick Up Instructions",
+          "category": "admission",
+          "quote": "• Pick Up Instructions",
           "chunkId": "child-development-institute/handbook.pdf#27",
           "docKey": "child-development-institute/handbook.pdf",
           "docTitle": "Family Handbook (revised January 1, 2025)",
@@ -800,7 +770,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         },
         {
           "requirement": "Legal documentation for custody and access",
-          "category": "documents",
+          "category": "admission",
           "quote": "Please be prepared to provide legal documentation for custody and access arrangements.",
           "chunkId": "child-development-institute/handbook.pdf#30",
           "docKey": "child-development-institute/handbook.pdf",
@@ -810,7 +780,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "sourceNote": "Website named in the handbook; exact file link not found."
         },
         {
-          "requirement": "Proof of immunization prior to enrolment",
+          "requirement": "Proof of immunization",
           "category": "admission",
           "quote": "Proof of immunization must be shown prior to the enrolment of a child in the Centre.",
           "chunkId": "child-development-institute/handbook.pdf#28",
@@ -821,8 +791,8 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "sourceNote": "Website named in the handbook; exact file link not found."
         },
         {
-          "requirement": "Immunization Objections or Exemptions forms",
-          "category": "documents",
+          "requirement": "Objections or Exemptions forms for immunization",
+          "category": "admission",
           "quote": "Objections or Exemptions must be completed on the approved forms provided by the Centre Director and must be submitted prior to admission.",
           "chunkId": "child-development-institute/handbook.pdf#28",
           "docKey": "child-development-institute/handbook.pdf",
@@ -832,7 +802,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "sourceNote": "Website named in the handbook; exact file link not found."
         },
         {
-          "requirement": "Emergency contact name and details",
+          "requirement": "Emergency contact name and contact information",
           "category": "admission",
           "quote": "Parents must provide the Centre with the name and contact information of at least one person if the parent/guardian is unavailable or cannot be reached.",
           "chunkId": "child-development-institute/handbook.pdf#29",
@@ -843,8 +813,8 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "sourceNote": "Website named in the handbook; exact file link not found."
         }
       ],
-      "chunksRead": 12,
-      "latencyMs": 12120
+      "chunksRead": 13,
+      "latencyMs": 2861
     }
   },
   {
@@ -858,7 +828,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         {
           "requirement": "Waiting list application form",
           "category": "waitlist",
-          "quote": "Fill out a waiting list application form",
+          "quote": "Fill out a waiting list application form at any of our 3 locations Call 416 487 5862 and provide your information.",
           "chunkId": "rolph-road-day-care/parent-handbook.html#21",
           "docKey": "rolph-road-day-care/parent-handbook.html",
           "docTitle": "Parent Handbook (updated June 2026)",
@@ -867,9 +837,31 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "sourceNote": "Website named in the handbook page; exact page link not found."
         },
         {
-          "requirement": "Deposit",
+          "requirement": "Waiting list application form for siblings",
+          "category": "waitlist",
+          "quote": "They are still required to fill out the waiting list application form and submit it to the office.",
+          "chunkId": "rolph-road-day-care/parent-handbook.html#21",
+          "docKey": "rolph-road-day-care/parent-handbook.html",
+          "docTitle": "Parent Handbook (updated June 2026)",
+          "page": "Online at www.leasidedaycare.com",
+          "sourceUrl": "https://www.leasidedaycare.com",
+          "sourceNote": "Website named in the handbook page; exact page link not found."
+        },
+        {
+          "requirement": "Waiting list application form submission",
+          "category": "waitlist",
+          "quote": "To apply for Daycare a waiting list application form must be filled out.",
+          "chunkId": "rolph-road-day-care/parent-handbook.html#18",
+          "docKey": "rolph-road-day-care/parent-handbook.html",
+          "docTitle": "Parent Handbook (updated June 2026)",
+          "page": "8. Admission Policy",
+          "sourceUrl": "https://www.leasidedaycare.com",
+          "sourceNote": "Website named in the handbook page; exact page link not found."
+        },
+        {
+          "requirement": "Deposit to guarantee spot",
           "category": "admission",
-          "quote": "a deposit and will be required to guarantee your spot",
+          "quote": "a deposit and will be required to guarantee your spot.",
           "chunkId": "rolph-road-day-care/parent-handbook.html#18",
           "docKey": "rolph-road-day-care/parent-handbook.html",
           "docTitle": "Parent Handbook (updated June 2026)",
@@ -889,7 +881,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "sourceNote": "Website named in the handbook page; exact page link not found."
         },
         {
-          "requirement": "Parent and Child Code of Conduct",
+          "requirement": "Parent and Child Code of Conduct signature",
           "category": "registration",
           "quote": "Children and parents are required to sign and abide by the “Parent and Child Code of Conduct”.",
           "chunkId": "rolph-road-day-care/parent-handbook.html#96",
@@ -900,7 +892,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "sourceNote": "Website named in the handbook page; exact page link not found."
         },
         {
-          "requirement": "Doctor note for communicable disease",
+          "requirement": "Doctor's note for re-admittance",
           "category": "admission",
           "quote": "A DOCTORS NOTE MAY BE REQUIRED FOR RE-ADMITTANCE INTO THE DAYCARE PROGRAM.",
           "chunkId": "rolph-road-day-care/parent-handbook.html#70",
@@ -911,9 +903,9 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "sourceNote": "Website named in the handbook page; exact page link not found."
         },
         {
-          "requirement": "Doctor note for rash or skin infection",
+          "requirement": "Doctor's note for rash or skin infection",
           "category": "admission",
-          "quote": "A DOCTOR'S NOTE STATING THAT THE CONDITION IS NOT CONTAGIOUS IS REQUIRED",
+          "quote": "A DOCTOR'S NOTE STATING THAT THE CONDITION IS NOT CONTAGIOUS IS REQUIRED FOR YOUR CHILD TO BE RE-ADMITTED TO THE DAYCARE PROGRAM.",
           "chunkId": "rolph-road-day-care/parent-handbook.html#70",
           "docKey": "rolph-road-day-care/parent-handbook.html",
           "docTitle": "Parent Handbook (updated June 2026)",
@@ -922,19 +914,41 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "sourceNote": "Website named in the handbook page; exact page link not found."
         },
         {
-          "requirement": "Health and Safety Declarations",
-          "category": "admission",
-          "quote": "parents may be required to sign a declaration confirming that they have not traveled",
-          "chunkId": "rolph-road-day-care/parent-handbook.html#91",
+          "requirement": "Court documents for legal custody",
+          "category": "documents",
+          "quote": "provide us with a copy of the court documents",
+          "chunkId": "rolph-road-day-care/parent-handbook.html#37",
           "docKey": "rolph-road-day-care/parent-handbook.html",
           "docTitle": "Parent Handbook (updated June 2026)",
-          "page": "Health and Safety Declarations",
+          "page": "Procedures",
+          "sourceUrl": "https://www.leasidedaycare.com",
+          "sourceNote": "Website named in the handbook page; exact page link not found."
+        },
+        {
+          "requirement": "Separation or parenting plan",
+          "category": "documents",
+          "quote": "a separation/parenting plan outlining custody, decision-making, access, etc. must be provided to the Daycare.",
+          "chunkId": "rolph-road-day-care/parent-handbook.html#125",
+          "docKey": "rolph-road-day-care/parent-handbook.html",
+          "docTitle": "Parent Handbook (updated June 2026)",
+          "page": "Information Requests",
+          "sourceUrl": "https://www.leasidedaycare.com",
+          "sourceNote": "Website named in the handbook page; exact page link not found."
+        },
+        {
+          "requirement": "Written permission for non-custodial visitation",
+          "category": "admission",
+          "quote": "The custodial parent must submit written permission outlining the visit terms, times, and conditions that align with court documents",
+          "chunkId": "rolph-road-day-care/parent-handbook.html#125",
+          "docKey": "rolph-road-day-care/parent-handbook.html",
+          "docTitle": "Parent Handbook (updated June 2026)",
+          "page": "Information Requests",
           "sourceUrl": "https://www.leasidedaycare.com",
           "sourceNote": "Website named in the handbook page; exact page link not found."
         }
       ],
       "chunksRead": 14,
-      "latencyMs": 3158
+      "latencyMs": 2578
     }
   },
   {
@@ -943,12 +957,12 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "response": {
       "success": true,
       "aiMode": "gemini",
-      "modelUsed": "gemini-3.5-flash",
+      "modelUsed": "gemini-3.5-flash-lite",
       "requirements": [
         {
-          "requirement": "Waitlist registration",
+          "requirement": "Review information concerning TELCCS centres",
           "category": "waitlist",
-          "quote": "To place your child(ren) on the waitlist for a TELCCS centre(s) and/or to apply for a fee subsidy, please visit toronto.ca/telccs",
+          "quote": "Review the information concerning TELCCS centres to decide which program(s) best meets your family’s needs.",
           "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#26",
           "docKey": "toronto-early-learning-child-care-services/handbook.pdf",
           "docTitle": "Parent Handbook (March 2026)",
@@ -957,20 +971,31 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "sourceNote": "Exact file"
         },
         {
-          "requirement": "Fee subsidy approval",
-          "category": "admission",
-          "quote": "Families requiring a fee subsidy must be approved for placement by Children’s Services’ Client Services Unit.",
-          "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#27",
+          "requirement": "Review current fees",
+          "category": "waitlist",
+          "quote": "Review our current fees.",
+          "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#26",
           "docKey": "toronto-early-learning-child-care-services/handbook.pdf",
           "docTitle": "Parent Handbook (March 2026)",
-          "page": "PDF p.13",
+          "page": "PDF p.12",
           "sourceUrl": "https://www.toronto.ca/wp-content/uploads/2026/04/95b1-parenthandbook2026.pdf",
           "sourceNote": "Exact file"
         },
         {
-          "requirement": "Pre-admission meeting",
+          "requirement": "Register online or contact Human Services Line for waitlist",
+          "category": "waitlist",
+          "quote": "To place your child(ren) on the waitlist for a TELCCS centre(s) and/or to apply for a fee subsidy, please visit toronto.ca/telccs, contact Human Services Line…",
+          "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#26",
+          "docKey": "toronto-early-learning-child-care-services/handbook.pdf",
+          "docTitle": "Parent Handbook (March 2026)",
+          "page": "PDF p.12",
+          "sourceUrl": "https://www.toronto.ca/wp-content/uploads/2026/04/95b1-parenthandbook2026.pdf",
+          "sourceNote": "Exact file"
+        },
+        {
+          "requirement": "Parent contact information",
           "category": "admission",
-          "quote": "the Centre Supervisor will schedule a meeting with the parent(s)/guardian prior to admission to the centre.",
+          "quote": "parent contact information, your child’s doctor’s contact information, health related information, etc.",
           "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#28",
           "docKey": "toronto-early-learning-child-care-services/handbook.pdf",
           "docTitle": "Parent Handbook (March 2026)",
@@ -979,8 +1004,30 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "sourceNote": "Exact file"
         },
         {
-          "requirement": "TELCCS Child Admission Package",
-          "category": "documents",
+          "requirement": "Child's doctor's contact information",
+          "category": "admission",
+          "quote": "parent contact information, your child’s doctor’s contact information, health related information, etc.",
+          "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#28",
+          "docKey": "toronto-early-learning-child-care-services/handbook.pdf",
+          "docTitle": "Parent Handbook (March 2026)",
+          "page": "PDF p.13",
+          "sourceUrl": "https://www.toronto.ca/wp-content/uploads/2026/04/95b1-parenthandbook2026.pdf",
+          "sourceNote": "Exact file"
+        },
+        {
+          "requirement": "Health related information",
+          "category": "admission",
+          "quote": "parent contact information, your child’s doctor’s contact information, health related information, etc.",
+          "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#28",
+          "docKey": "toronto-early-learning-child-care-services/handbook.pdf",
+          "docTitle": "Parent Handbook (March 2026)",
+          "page": "PDF p.13",
+          "sourceUrl": "https://www.toronto.ca/wp-content/uploads/2026/04/95b1-parenthandbook2026.pdf",
+          "sourceNote": "Exact file"
+        },
+        {
+          "requirement": "TELCCS Child Admission Package completion",
+          "category": "admission",
           "quote": "The TELCCS Child Admission Package must be completed by the client and reviewed by the supervisor",
           "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#162",
           "docKey": "toronto-early-learning-child-care-services/handbook.pdf",
@@ -991,7 +1038,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         },
         {
           "requirement": "Agreement to Pay the Assessed Fee Form",
-          "category": "documents",
+          "category": "admission",
           "quote": "A copy of the Agreement to Pay the Assessed Fee Form signed by the client must be sent to Central Billing Unit",
           "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#162",
           "docKey": "toronto-early-learning-child-care-services/handbook.pdf",
@@ -1001,8 +1048,63 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "sourceNote": "Exact file"
         },
         {
+          "requirement": "Emergency contact information",
+          "category": "admission",
+          "quote": "gather emergency contact information, immunization records, medical and physical needs of the child, nutrition policies and procedures, and child's individual development and general care needs.",
+          "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#161",
+          "docKey": "toronto-early-learning-child-care-services/handbook.pdf",
+          "docTitle": "Parent Handbook (March 2026)",
+          "page": "PDF p.51",
+          "sourceUrl": "https://www.toronto.ca/wp-content/uploads/2026/04/95b1-parenthandbook2026.pdf",
+          "sourceNote": "Exact file"
+        },
+        {
+          "requirement": "Immunization records",
+          "category": "admission",
+          "quote": "gather emergency contact information, immunization records, medical and physical needs of the child, nutrition policies and procedures, and child's individual development and general care needs.",
+          "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#161",
+          "docKey": "toronto-early-learning-child-care-services/handbook.pdf",
+          "docTitle": "Parent Handbook (March 2026)",
+          "page": "PDF p.51",
+          "sourceUrl": "https://www.toronto.ca/wp-content/uploads/2026/04/95b1-parenthandbook2026.pdf",
+          "sourceNote": "Exact file"
+        },
+        {
+          "requirement": "Medical and physical needs of the child",
+          "category": "admission",
+          "quote": "gather emergency contact information, immunization records, medical and physical needs of the child, nutrition policies and procedures, and child's individual development and general care needs.",
+          "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#161",
+          "docKey": "toronto-early-learning-child-care-services/handbook.pdf",
+          "docTitle": "Parent Handbook (March 2026)",
+          "page": "PDF p.51",
+          "sourceUrl": "https://www.toronto.ca/wp-content/uploads/2026/04/95b1-parenthandbook2026.pdf",
+          "sourceNote": "Exact file"
+        },
+        {
+          "requirement": "Nutrition policies and procedures",
+          "category": "admission",
+          "quote": "gather emergency contact information, immunization records, medical and physical needs of the child, nutrition policies and procedures, and child's individual development and general care needs.",
+          "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#161",
+          "docKey": "toronto-early-learning-child-care-services/handbook.pdf",
+          "docTitle": "Parent Handbook (March 2026)",
+          "page": "PDF p.51",
+          "sourceUrl": "https://www.toronto.ca/wp-content/uploads/2026/04/95b1-parenthandbook2026.pdf",
+          "sourceNote": "Exact file"
+        },
+        {
+          "requirement": "Child's individual development and general care needs",
+          "category": "admission",
+          "quote": "gather emergency contact information, immunization records, medical and physical needs of the child, nutrition policies and procedures, and child's individual development and general care needs.",
+          "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#161",
+          "docKey": "toronto-early-learning-child-care-services/handbook.pdf",
+          "docTitle": "Parent Handbook (March 2026)",
+          "page": "PDF p.51",
+          "sourceUrl": "https://www.toronto.ca/wp-content/uploads/2026/04/95b1-parenthandbook2026.pdf",
+          "sourceNote": "Exact file"
+        },
+        {
           "requirement": "Up-to-date immunization information",
-          "category": "documents",
+          "category": "admission",
           "quote": "Please ensure that you provide current and up-to-date immunization information to the centre.",
           "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#32",
           "docKey": "toronto-early-learning-child-care-services/handbook.pdf",
@@ -1012,8 +1114,8 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "sourceNote": "Exact file"
         },
         {
-          "requirement": "Immunization medical exemption",
-          "category": "documents",
+          "requirement": "Written medical exemption for immunization",
+          "category": "admission",
           "quote": "Written medical exemption by a qualified medical practitioner, which clearly states the medical reasons why a child cannot be immunized",
           "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#32",
           "docKey": "toronto-early-learning-child-care-services/handbook.pdf",
@@ -1023,19 +1125,41 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "sourceNote": "Exact file"
         },
         {
-          "requirement": "Emergency contact information",
-          "category": "documents",
-          "quote": "Parents must provide the centre with the name and contact information of at least one person if the parent/guardian is unavailable or cannot be reached.",
-          "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#30",
+          "requirement": "Immunization Exemption Form",
+          "category": "admission",
+          "quote": "Complete the Immunization Exemption Form identifying that you have chosen not to immunize your child on the grounds that the immunization conflicts with your conscience…",
+          "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#32",
           "docKey": "toronto-early-learning-child-care-services/handbook.pdf",
           "docTitle": "Parent Handbook (March 2026)",
-          "page": "PDF p.13",
+          "page": "PDF p.14",
+          "sourceUrl": "https://www.toronto.ca/wp-content/uploads/2026/04/95b1-parenthandbook2026.pdf",
+          "sourceNote": "Exact file"
+        },
+        {
+          "requirement": "Legal documentation for custody arrangements",
+          "category": "admission",
+          "quote": "Please be prepared to provide legal documentation for custody arrangements.",
+          "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#31",
+          "docKey": "toronto-early-learning-child-care-services/handbook.pdf",
+          "docTitle": "Parent Handbook (March 2026)",
+          "page": "PDF p.14",
+          "sourceUrl": "https://www.toronto.ca/wp-content/uploads/2026/04/95b1-parenthandbook2026.pdf",
+          "sourceNote": "Exact file"
+        },
+        {
+          "requirement": "Individuals authorized to pick-up",
+          "category": "admission",
+          "quote": "parents/guardians are required to advise the Centre of all individuals who are authorized to pick-up their child.",
+          "chunkId": "toronto-early-learning-child-care-services/handbook.pdf#88",
+          "docKey": "toronto-early-learning-child-care-services/handbook.pdf",
+          "docTitle": "Parent Handbook (March 2026)",
+          "page": "PDF p.31",
           "sourceUrl": "https://www.toronto.ca/wp-content/uploads/2026/04/95b1-parenthandbook2026.pdf",
           "sourceNote": "Exact file"
         }
       ],
       "chunksRead": 14,
-      "latencyMs": 12312
+      "latencyMs": 3858
     }
   }
 ]
@@ -1075,11 +1199,6 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "label": "Preferred start date",
           "value": "March 2027",
           "source": "family profile"
-        },
-        {
-          "label": "Emergency contact",
-          "value": "",
-          "source": "parent to provide"
         }
       ],
       "checklist": [
@@ -1112,11 +1231,10 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         "Upload: Child's Birth Certificate",
         "Upload: Yellow Immunization Card (ISPA)",
         "Upload: Proof of Toronto Residency",
-        "Upload: Emergency Contact & Medical Consent Form",
-        "Provide: Emergency contact"
+        "Upload: Emergency Contact & Medical Consent Form"
       ],
-      "noteToCentre": "Hello. Priya is submitting an application for Anya for Full day care starting in March 2027 at CareQ Demo Centre (fictional).",
-      "latencyMs": 1211
+      "noteToCentre": "Hello, please find the application materials for Anya for Full day care starting in March 2027 at CareQ Demo Centre (fictional). Thank you.",
+      "latencyMs": 1193
     }
   },
   {
@@ -1156,6 +1274,16 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "label": "Preferred start date",
           "value": "March 2027",
           "source": "family profile"
+        },
+        {
+          "label": "Emergency contact",
+          "value": "",
+          "source": "parent to provide"
+        },
+        {
+          "label": "Medical consent",
+          "value": "",
+          "source": "parent to provide"
         }
       ],
       "checklist": [
@@ -1188,10 +1316,12 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "missingItems": [
         "Upload: Yellow Immunization Card (ISPA)",
         "Upload: Proof of Toronto Residency",
-        "Upload: Emergency Contact & Medical Consent Form"
+        "Upload: Emergency Contact & Medical Consent Form",
+        "Provide: Emergency contact",
+        "Provide: Medical consent"
       ],
-      "noteToCentre": "Hello. Priya is submitting an application for Anya for Full day care with a preferred start date of March 2027 at CareQ Demo Centre (fictional).",
-      "latencyMs": 1119
+      "noteToCentre": "Hello. Priya is submitting this application for Anya for Full day care starting in March 2027 at CareQ Demo Centre (fictional).",
+      "latencyMs": 1215
     }
   },
   {
@@ -1242,6 +1372,11 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "label": "Emergency contact name and contact information",
           "value": "",
           "source": "parent to provide"
+        },
+        {
+          "label": "Legal documentation for custody arrangements",
+          "value": "",
+          "source": "parent to provide"
         }
       ],
       "checklist": [
@@ -1286,10 +1421,11 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         "Provide: Parent contact information",
         "Provide: Doctor's contact information",
         "Provide: Health related information",
-        "Provide: Emergency contact name and contact information"
+        "Provide: Emergency contact name and contact information",
+        "Provide: Legal documentation for custody arrangements"
       ],
-      "noteToCentre": "Hello. Priya is applying for full day care for Anya at Jesse Ketchum Early Learning & Child Care Centre, with a preferred start date of March 2027.",
-      "latencyMs": 1397
+      "noteToCentre": "Hello Jesse Ketchum Early Learning & Child Care Centre. Priya is applying for Full day care for Anya, with a preferred start date of March 2027. Please find the application materials enclosed.",
+      "latencyMs": 1384
     }
   },
   {
@@ -1371,8 +1507,8 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         "Upload: Up-to-date immunization information",
         "Upload: Custody documents (if applicable)"
       ],
-      "noteToCentre": "Hello. Priya is submitting this application for Anya for Full day care with a preferred start date of March 2027 at Jesse Ketchum Early Learning & Child Care Centre. Thank you.",
-      "latencyMs": 1056
+      "noteToCentre": "Hello, please find enclosed the application for Anya for Full day care with a preferred start date of March 2027. Thank you.",
+      "latencyMs": 1337
     }
   },
   {
@@ -1463,8 +1599,8 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         "Upload: Pick Up Instructions",
         "Upload: Preauthorized Debit form"
       ],
-      "noteToCentre": "Hello. Priya is submitting the application materials for Anya for Full day care with a preferred start date of March 2027 at Wellesley Early Learning Centre - Earlscourt Creche Cdi - 495 Sherbourne Street. Thank you.",
-      "latencyMs": 1292
+      "noteToCentre": "Hello. Priya is submitting this application for Anya for Full day care with a preferred start date of March 2027 at Wellesley Early Learning Centre - Earlscourt Creche Cdi - 495 Sherbourne Street. Thank you.",
+      "latencyMs": 1280
     }
   },
   {
@@ -1504,6 +1640,11 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "label": "Preferred start date",
           "value": "March 2027",
           "source": "family profile"
+        },
+        {
+          "label": "Emergency contact",
+          "value": "",
+          "source": "parent to provide"
         }
       ],
       "checklist": [
@@ -1562,10 +1703,11 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         "Upload: Signed Consent Forms (those that are applicable)",
         "Upload: Emergency Contact Information",
         "Upload: Pick Up Instructions",
-        "Upload: Preauthorized Debit form"
+        "Upload: Preauthorized Debit form",
+        "Provide: Emergency contact"
       ],
-      "noteToCentre": "Hello. Please find attached the application details for Anya for Full day care with a preferred start date of March 2027. Thank you.",
-      "latencyMs": 982
+      "noteToCentre": "Hello. Priya is submitting application materials for Anya for Full day care starting in March 2027 at Wellesley Early Learning Centre - Earlscourt Creche Cdi - 495 Sherbourne Street. Thank you.",
+      "latencyMs": 1063
     }
   },
   {
@@ -1629,8 +1771,8 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         "Upload: Admission forms, including immunization records",
         "Upload: Up-to-date immunizations"
       ],
-      "noteToCentre": "Hello, Priya is applying for Full day care at Macaulay - Dovercourt Child Care Centre for Anya, with a preferred start date of March 2027. Thank you.",
-      "latencyMs": 1135
+      "noteToCentre": "Hello. Priya is applying for Full day care at Macaulay - Dovercourt Child Care Centre for Anya, with a preferred start date of March 2027. Thank you.",
+      "latencyMs": 1041
     }
   },
   {
@@ -1703,8 +1845,8 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         "Upload: Admission forms, including immunization records",
         "Upload: Up-to-date immunizations"
       ],
-      "noteToCentre": "Hello Macaulay - Dovercourt Child Care Centre, please find the application materials for Anya. Priya is applying for Full day care with a preferred start date of March 2027.",
-      "latencyMs": 1272
+      "noteToCentre": "Hello Macaulay - Dovercourt Child Care Centre. Priya is applying for Full day care for Anya, with a preferred start date of March 2027. Thank you.",
+      "latencyMs": 1315
     }
   },
   {
@@ -1768,8 +1910,8 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         "Upload: Deposit to guarantee your spot",
         "Upload: Application package forms"
       ],
-      "noteToCentre": "Hello, Priya is applying for care for Anya at Leaside Day Care Centre (Rolph Road Day Care) with a preferred start date of March 2027. Thank you.",
-      "latencyMs": 992
+      "noteToCentre": "Hello, please find the application details for Anya to start care in March 2027. Thank you.",
+      "latencyMs": 1498
     }
   },
   {
@@ -1811,7 +1953,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "source": "family profile"
         },
         {
-          "label": "Emergency contact",
+          "label": "Deposit",
           "value": "",
           "source": "parent to provide"
         }
@@ -1846,10 +1988,10 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "missingItems": [
         "Upload: Deposit to guarantee your spot",
         "Upload: Application package forms",
-        "Provide: Emergency contact"
+        "Provide: Deposit"
       ],
-      "noteToCentre": "Hello, please find attached the waiting list application form for Anya for the March 2027 start date. Thank you.",
-      "latencyMs": 1048
+      "noteToCentre": "Hello Leaside Day Care Centre (Rolph Road Day Care), Priya is submitting an application for Anya for Full day care with a preferred start date of March 2027. The waiting list application form is attached.",
+      "latencyMs": 1107
     }
   },
   {
@@ -1882,7 +2024,12 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "source": "family profile"
         },
         {
-          "label": "Emergency contact",
+          "label": "Medical details",
+          "value": "",
+          "source": "parent to provide"
+        },
+        {
+          "label": "Immunization information",
           "value": "",
           "source": "parent to provide"
         }
@@ -1935,10 +2082,11 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         "Upload: Immunization Information Form & copy of Yellow Immunization Card",
         "Upload: Emergency Contact Information Form",
         "Upload: Medical and Health Care Information Form",
-        "Provide: Emergency contact"
+        "Provide: Medical details",
+        "Provide: Immunization information"
       ],
-      "noteToCentre": "Hello, please find the application details for Anya. We are requesting full day care starting in March 2027 at Harmony Child Care Centre (Harmony Community School Centre) 124 Northcliffe Blvd. Thank you.",
-      "latencyMs": 1272
+      "noteToCentre": "Hello, please find the application materials for Anya. Priya is interested in Full day care with a preferred start date of March 2027. Thank you.",
+      "latencyMs": 1744
     }
   },
   {
@@ -1980,7 +2128,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "source": "family profile"
         },
         {
-          "label": "Emergency contact",
+          "label": "Immunization Information",
           "value": "",
           "source": "parent to provide"
         }
@@ -2033,10 +2181,10 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         "Upload: Immunization Information Form & copy of Yellow Immunization Card",
         "Upload: Emergency Contact Information Form",
         "Upload: Medical and Health Care Information Form",
-        "Provide: Emergency contact"
+        "Provide: Immunization Information"
       ],
-      "noteToCentre": "Hello Harmony Child Care Centre (Harmony Community School Centre) 124 Northcliffe Blvd, Priya is applying for Full day care for Anya, with a preferred start date of March 2027. Please find the attached documents enclosed.",
-      "latencyMs": 1221
+      "noteToCentre": "Hello. Priya is submitting application materials for Anya for full day care with a preferred start date of March 2027 at Harmony Child Care Centre (Harmony Community School Centre) 124 Northcliffe Blvd.",
+      "latencyMs": 1423
     }
   },
   {
@@ -2097,8 +2245,8 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         "Upload: Registration and Immunization Forms",
         "Upload: Toronto Public Health Immunization Form with your child's immunization record"
       ],
-      "noteToCentre": "Hello. I am submitting this application for Anya for Full day care with a preferred start date of March 2027 at B.F. Toronto Centre For Early Childhood (45 Golfdown). Thank you.",
-      "latencyMs": 1050
+      "noteToCentre": "Hello. Priya is submitting this application for Anya for Full day care with a preferred start date of March 2027 at B.F. Toronto Centre For Early Childhood (45 Golfdown). Thank you.",
+      "latencyMs": 1208
     }
   },
   {
@@ -2138,6 +2286,21 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
           "label": "Preferred start date",
           "value": "March 2027",
           "source": "family profile"
+        },
+        {
+          "label": "Registration Form",
+          "value": "",
+          "source": "parent to provide"
+        },
+        {
+          "label": "Immunization Form",
+          "value": "",
+          "source": "parent to provide"
+        },
+        {
+          "label": "Toronto Public Health Immunization Form",
+          "value": "",
+          "source": "parent to provide"
         }
       ],
       "checklist": [
@@ -2166,10 +2329,13 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       ],
       "missingItems": [
         "Upload: Registration and Immunization Forms",
-        "Upload: Toronto Public Health Immunization Form with your child's immunization record"
+        "Upload: Toronto Public Health Immunization Form with your child's immunization record",
+        "Provide: Registration Form",
+        "Provide: Immunization Form",
+        "Provide: Toronto Public Health Immunization Form"
       ],
-      "noteToCentre": "Hello. I am submitting the application materials for Anya to attend B.F. Toronto Centre For Early Childhood (45 Golfdown) for Full day care with a preferred start date of March 2027. Please find the registration fee document attached. Thank you.",
-      "latencyMs": 1118
+      "noteToCentre": "Hello, please find enclosed the application materials for Anya at B.F. Toronto Centre For Early Childhood (45 Golfdown) for Full day care starting March 2027. Thank you.",
+      "latencyMs": 1733
     }
   },
   {
@@ -2224,8 +2390,8 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
         "Upload: Proof of immunization (or a completed standard exemption form)",
         "Upload: Emergency contact information"
       ],
-      "noteToCentre": "Hello Family Day Care Services - Mary Ward Child Care Centre, Priya is applying for Anya for Full day care with a preferred start date of March 2027.",
-      "latencyMs": 1081
+      "noteToCentre": "Hello Family Day Care Services - Mary Ward Child Care Centre, Priya is submitting an application for Anya for Full day care starting in March 2027.",
+      "latencyMs": 949
     }
   },
   {
@@ -2289,8 +2455,8 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "missingItems": [
         "Upload: Emergency contact information"
       ],
-      "noteToCentre": "Hello, please find attached the application details for Anya. We are looking forward to a preferred start date of March 2027 for full day care at Family Day Care Services - Mary Ward Child Care Centre.",
-      "latencyMs": 974
+      "noteToCentre": "Hello, please find attached the application details for Anya. We are hoping for full day care starting March 2027. Thank you.",
+      "latencyMs": 1001
     }
   }
 ]
@@ -2308,12 +2474,12 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "label": false,
     "response": {
       "aiMode": "gemini",
-      "modelUsed": "gemini-3.5-flash",
+      "modelUsed": "gemini-3.5-flash-lite",
       "success": true,
       "isHarsh": false,
       "suggestedCalmerVersion": "",
       "reason": "",
-      "latencyMs": 1667
+      "latencyMs": 902
     }
   },
   {
@@ -2322,12 +2488,12 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "label": false,
     "response": {
       "aiMode": "gemini",
-      "modelUsed": "gemini-3.5-flash",
+      "modelUsed": "gemini-3.5-flash-lite",
       "success": true,
       "isHarsh": false,
       "suggestedCalmerVersion": "",
       "reason": "",
-      "latencyMs": 1977
+      "latencyMs": 868
     }
   },
   {
@@ -2336,12 +2502,12 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "label": false,
     "response": {
       "aiMode": "gemini",
-      "modelUsed": "gemini-3.5-flash",
+      "modelUsed": "gemini-3.5-flash-lite",
       "success": true,
       "isHarsh": false,
       "suggestedCalmerVersion": "",
       "reason": "",
-      "latencyMs": 2527
+      "latencyMs": 1044
     }
   },
   {
@@ -2350,12 +2516,12 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "label": false,
     "response": {
       "aiMode": "gemini",
-      "modelUsed": "gemini-3.5-flash",
+      "modelUsed": "gemini-3.5-flash-lite",
       "success": true,
       "isHarsh": false,
       "suggestedCalmerVersion": "",
       "reason": "",
-      "latencyMs": 1642
+      "latencyMs": 1033
     }
   },
   {
@@ -2364,12 +2530,12 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "label": false,
     "response": {
       "aiMode": "gemini",
-      "modelUsed": "gemini-3.5-flash",
+      "modelUsed": "gemini-3.5-flash-lite",
       "success": true,
       "isHarsh": false,
       "suggestedCalmerVersion": "",
       "reason": "",
-      "latencyMs": 1772
+      "latencyMs": 852
     }
   },
   {
@@ -2378,12 +2544,12 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "label": false,
     "response": {
       "aiMode": "gemini",
-      "modelUsed": "gemini-3.5-flash",
+      "modelUsed": "gemini-3.5-flash-lite",
       "success": true,
       "isHarsh": false,
       "suggestedCalmerVersion": "",
       "reason": "",
-      "latencyMs": 1559
+      "latencyMs": 828
     }
   },
   {
@@ -2397,7 +2563,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "isHarsh": false,
       "suggestedCalmerVersion": "",
       "reason": "",
-      "latencyMs": 869
+      "latencyMs": 1264
     }
   },
   {
@@ -2406,12 +2572,12 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "label": false,
     "response": {
       "aiMode": "gemini",
-      "modelUsed": "gemini-3.5-flash",
+      "modelUsed": "gemini-3.5-flash-lite",
       "success": true,
       "isHarsh": false,
       "suggestedCalmerVersion": "",
       "reason": "",
-      "latencyMs": 2304
+      "latencyMs": 890
     }
   },
   {
@@ -2425,7 +2591,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "isHarsh": false,
       "suggestedCalmerVersion": "",
       "reason": "",
-      "latencyMs": 1825
+      "latencyMs": 868
     }
   },
   {
@@ -2434,12 +2600,12 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "label": false,
     "response": {
       "aiMode": "gemini",
-      "modelUsed": "gemini-3.5-flash",
+      "modelUsed": "gemini-3.5-flash-lite",
       "success": true,
       "isHarsh": false,
       "suggestedCalmerVersion": "",
       "reason": "",
-      "latencyMs": 2445
+      "latencyMs": 967
     }
   },
   {
@@ -2453,7 +2619,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "isHarsh": false,
       "suggestedCalmerVersion": "",
       "reason": "",
-      "latencyMs": 858
+      "latencyMs": 851
     }
   },
   {
@@ -2467,7 +2633,7 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "isHarsh": false,
       "suggestedCalmerVersion": "",
       "reason": "",
-      "latencyMs": 849
+      "latencyMs": 865
     }
   },
   {
@@ -2479,9 +2645,9 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "modelUsed": "gemini-3.5-flash-lite",
       "success": true,
       "isHarsh": true,
-      "suggestedCalmerVersion": "Hello, I am following up on my previous three emails as I have not yet received a response. Could someone please get back to me regarding my inquiry as soon as possible? Thank you.",
-      "reason": "The message uses insulting language and a demanding tone, which comes across as aggressive and confrontational.",
-      "latencyMs": 997
+      "suggestedCalmerVersion": "Hello, I am following up regarding my previous emails as I have not yet received a response. Could someone please get back to me when you have a moment?",
+      "reason": "The message uses insulting language and a demanding tone, which is disrespectful and confrontational.",
+      "latencyMs": 1144
     }
   },
   {
@@ -2490,12 +2656,12 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "label": true,
     "response": {
       "aiMode": "gemini",
-      "modelUsed": "gemini-3.5-flash",
+      "modelUsed": "gemini-3.5-flash-lite",
       "success": true,
       "isHarsh": true,
-      "suggestedCalmerVersion": "I am urgently seeking a child care spot for my child starting this Monday. Could you please let me know if you have any availability?",
-      "reason": "The phrase 'No excuses' alongside the abrupt demand creates an aggressive and confrontational tone.",
-      "latencyMs": 2219
+      "suggestedCalmerVersion": "Hello, I am inquiring about the availability of a childcare spot by Monday. Please let me know if this might be possible.",
+      "reason": "The demand 'No excuses' sounds aggressive, demanding, and disrespectful of the centre's policies and capacity.",
+      "latencyMs": 1067
     }
   },
   {
@@ -2507,9 +2673,9 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "modelUsed": "gemini-3.5-flash-lite",
       "success": true,
       "isHarsh": true,
-      "suggestedCalmerVersion": "Hello, we are very eager to secure a spot at your centre. Could you please provide an update on our current position on the waitlist and when an opening might realistically become available?",
-      "reason": "The message uses a direct threat of a negative public review and insults the centre's staff, which is aggressive and unprofessional.",
-      "latencyMs": 1410
+      "suggestedCalmerVersion": "Hello, I am writing to politely inquire about our current position on the waitlist and if there are any updates regarding our timeline for enrollment.",
+      "reason": "The message uses a direct threat of leaving a defamatory review and insults the centre's competence to demand priority.",
+      "latencyMs": 996
     }
   },
   {
@@ -2521,9 +2687,9 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "modelUsed": "gemini-3.5-flash-lite",
       "success": true,
       "isHarsh": true,
-      "suggestedCalmerVersion": "Hello, I am following up on my previous question as I haven't heard back yet. Could you please provide an update when you have a moment?",
-      "reason": "The phrase 'Why is it so hard for you people' is confrontational and disparaging.",
-      "latencyMs": 1014
+      "suggestedCalmerVersion": "Hello, I was hoping to follow up on a question I asked earlier. Could you please provide an update when you have a moment?",
+      "reason": "The phrase 'you people' and the accusatory question structure come across as confrontational and aggressive.",
+      "latencyMs": 1134
     }
   },
   {
@@ -2532,12 +2698,12 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "label": true,
     "response": {
       "aiMode": "gemini",
-      "modelUsed": "gemini-3.5-flash",
+      "modelUsed": "gemini-3.5-flash-lite",
       "success": true,
       "isHarsh": true,
-      "suggestedCalmerVersion": "Could you please provide an update on this matter today? It is very important for me to receive a response as soon as possible.",
-      "reason": "The message uses an aggressive ultimatum and a threat of legal action to demand an immediate response.",
-      "latencyMs": 3218
+      "suggestedCalmerVersion": "Could you please provide an update on this matter today? I would greatly appreciate a response as soon as possible.",
+      "reason": "The message demands an immediate answer under the threat of legal action, which is aggressive and confrontational.",
+      "latencyMs": 954
     }
   },
   {
@@ -2549,9 +2715,9 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "modelUsed": "gemini-3.5-flash-lite",
       "success": true,
       "isHarsh": true,
-      "suggestedCalmerVersion": "I am following up on the status of my child's application on the waitlist and would appreciate an update when possible.",
-      "reason": "The message uses dismissive language and a demanding imperative that comes across as aggressive and confrontational.",
-      "latencyMs": 967
+      "suggestedCalmerVersion": "I would like to inquire about the current status of the waitlist and how it is managed. Could you please provide an update?",
+      "reason": "The message uses dismissive and demanding language ('is a joke', 'Fix it') which is confrontational and rude.",
+      "latencyMs": 1019
     }
   },
   {
@@ -2563,9 +2729,9 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
       "modelUsed": "gemini-3.5-flash-lite",
       "success": true,
       "isHarsh": true,
-      "suggestedCalmerVersion": "Hello. As previously mentioned, our centre is currently at full capacity with no available spaces at this time. We will keep your information on file and notify you if a spot opens up. Thank you for your understanding.",
-      "reason": "The phrase 'Stop emailing us' is abrupt and dismissive, which comes across as confrontational and rude.",
-      "latencyMs": 1071
+      "suggestedCalmerVersion": "Thank you for your continued interest in our child care centre. As previously mentioned, our waitlist is currently at full capacity and we do not have any available spaces at this time.",
+      "reason": "The phrase 'Stop emailing us' is abrupt and comes across as dismissive and aggressive.",
+      "latencyMs": 1021
     }
   },
   {
@@ -2574,12 +2740,12 @@ Full responses as returned by the server (also in eval/raw/*.json; server log in
     "label": true,
     "response": {
       "aiMode": "gemini",
-      "modelUsed": "gemini-3.5-flash",
+      "modelUsed": "gemini-3.5-flash-lite",
       "success": true,
       "isHarsh": true,
-      "suggestedCalmerVersion": "I have been unhappy with my experience so far and would appreciate a prompt update regarding my concern.",
-      "reason": "The message uses overly harsh generalizations and a demanding tone.",
-      "latencyMs": 2785
+      "suggestedCalmerVersion": "I have some concerns regarding my experience with the centre and would appreciate a prompt response.",
+      "reason": "The message uses insulting language and makes an aggressive demand for an immediate reply.",
+      "latencyMs": 1084
     }
   }
 ]
