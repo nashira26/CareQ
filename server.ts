@@ -79,6 +79,8 @@ const AI_ENDPOINTS = ['extract-policy-requirements', 'extract-from-documents', '
 // In-memory cache of successful Gemini answers, so repeated demo inputs answer instantly.
 const CACHE_TTL_MS = 30 * 60 * 1000;
 const CACHE_MAX_ENTRIES = 200;
+/** AI_CACHE=off: no response caching at all (Gemini calls and Ask CareQ answers), e.g. for npm run eval. */
+const AI_CACHE_OFF = process.env.AI_CACHE === 'off';
 
 class GeminiTimeoutError extends Error {}
 
@@ -258,7 +260,7 @@ async function startServer() {
   // When this throws, the endpoint uses its non-AI fallback.
   const generateWithTimeout = async (label: string, params: GeminiParams): Promise<GeminiResult> => {
     const cacheKey = `${label}|${JSON.stringify(params)}`;
-    const cached = geminiCache.get(cacheKey);
+    const cached = AI_CACHE_OFF ? undefined : geminiCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
       console.log(`[gemini] ${label}: cache hit (answered earlier by ${cached.modelUsed})`);
       return { response: cached.response, modelUsed: cached.modelUsed };
@@ -280,6 +282,7 @@ async function startServer() {
     }
     console.log(`[gemini] ${label}: answered by ${modelUsed} in ${Date.now() - started}ms`);
 
+    if (AI_CACHE_OFF) return { response, modelUsed };
     if (geminiCache.size >= CACHE_MAX_ENTRIES) {
       const oldestKey = geminiCache.keys().next().value;
       if (oldestKey !== undefined) geminiCache.delete(oldestKey);
@@ -986,8 +989,8 @@ If it is respectful, calm, neutral, professional, or standard:
         : undefined;
 
     const cacheKey = askCacheKey(user, centreId, question);
-    // ASK_DEBUG=1: every question runs for real (so repeated runs show the full log)
-    const cached = process.env.ASK_DEBUG === '1' ? null : askCache.get(cacheKey);
+    // ASK_DEBUG=1 or AI_CACHE=off: every question runs for real (so repeated runs show the full log)
+    const cached = process.env.ASK_DEBUG === '1' || AI_CACHE_OFF ? null : askCache.get(cacheKey);
     if (cached) {
       console.log('[gemini] ask-careq: cache hit');
       return res.json({ success: true, ...cached, cached: true });

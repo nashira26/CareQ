@@ -1,0 +1,10 @@
+{
+	"requirements": [
+		"parent contact information",
+		"child's doctor's contact information",
+		"health related information",
+		"emergency contact information",
+		"child's immunization record",
+		"pick up instructions"
+	]
+}

@@ -1,0 +1,22 @@
+[
+  { "text": "Hi, could you let me know if you need any other documents for Anya's application? Thank you!", "role": "parent", "harsh": false },
+  { "text": "Thanks for the update on our position. We're still very interested in a spot.", "role": "parent", "harsh": false },
+  { "text": "Hello, I wanted to confirm you received our application last week. Have a great day.", "role": "parent", "harsh": false },
+  { "text": "We'd love to accept the offer. What are the next steps before her first day?", "role": "parent", "harsh": false },
+  { "text": "Could we book a tour sometime next week? Any afternoon works for us.", "role": "parent", "harsh": false },
+  { "text": "Sorry for the late reply. Here is the immunization record you asked for.", "role": "parent", "harsh": false },
+  { "text": "Is there anything we can do to keep our application up to date while we wait?", "role": "parent", "harsh": false },
+  { "text": "We've found care elsewhere, so please remove us from the waitlist. Thank you for your help.", "role": "parent", "harsh": false },
+  { "text": "Hi Priya, thanks for applying. We'll be in touch as soon as we have an update.", "role": "centre", "harsh": false },
+  { "text": "Your application is complete. Please let us know if anything changes.", "role": "centre", "harsh": false },
+  { "text": "Just checking in again on our application, as our return-to-work date is getting close.", "role": "parent", "harsh": false },
+  { "text": "Could you clarify what the deposit covers? We want to be sure we understand.", "role": "parent", "harsh": false },
+  { "text": "This is ridiculous. I've emailed three times and nobody answers. Do your job.", "role": "parent", "harsh": true },
+  { "text": "I need a spot by Monday. No excuses.", "role": "parent", "harsh": true },
+  { "text": "If you don't move us up the list I'll post a review telling everyone how useless you are.", "role": "parent", "harsh": true },
+  { "text": "Why is it so hard for you people to answer a simple question?", "role": "parent", "harsh": true },
+  { "text": "Answer me today or I'm calling my lawyer.", "role": "parent", "harsh": true },
+  { "text": "Your waitlist is a joke. Fix it.", "role": "parent", "harsh": true },
+  { "text": "Stop emailing us. We already told you there are no spaces.", "role": "centre", "harsh": true },
+  { "text": "Honestly, your centre is the worst I've dealt with and I expect an answer immediately.", "role": "parent", "harsh": true }
+]

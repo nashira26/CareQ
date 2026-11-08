@@ -16,7 +16,8 @@
     "reset": "tsx scripts/reset.ts",
     "build:index": "tsx scripts/build-index.ts",
     "eval:ask": "tsx scripts/eval-ask.ts",
-    "eval:docs": "tsx scripts/eval-docs.ts"
+    "eval:docs": "tsx scripts/eval-docs.ts",
+    "eval": "tsx scripts/eval.ts"
   },
   "dependencies": {
     "@google/genai": "^2.32.0",
