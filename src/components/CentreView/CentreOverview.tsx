@@ -63,7 +63,7 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
       {/* 1. Greeting */}
       <GreetingBand
         tone="mint"
-        scene="centre"
+        photo="centre"
         note={{ title: 'Families see your updates', detail: 'the moment you save them' }}
       >
         <p className="text-base font-bold text-leaf-ink">Good to see you</p>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { isAiOffline } from '../../lib/aiFetch';
 import { ArrowRight, Check, Info } from 'lucide-react';
+import { HeroPhoto, PHOTOS } from './HeroPhoto';
 import type { ApplicationStatus } from '../../data/mockData';
 
 /* ---------------------------------------------------------------------------
@@ -414,33 +415,31 @@ export const HouseIllustration: React.FC<HouseIllustrationProps> = ({ scene = 'h
    Greeting band at the top of the parent and centre Overviews: text on the
    left, the house scene on the right in a soft panel that runs to the band's
    right and bottom edges, with a tilted note over its lower-left corner.
-   Phones: the scene sits on top at 140px, text below, no note.
+   Overview greetings now use AI-generated photos (HeroPhoto); the house scene stays available.
+   Phones: the photo sits on top at 160px, text below, no note.
    ------------------------------------------------------------------------ */
 
 export interface GreetingBandProps {
   tone: 'butter' | 'mint';
-  scene?: HouseScene;
+  /** AI-generated photo on the right (parent: mother and toddler; centre: educator with a tablet). */
+  photo: 'parent' | 'centre';
   note: { title: string; detail: string };
   children: React.ReactNode;
   className?: string;
 }
 
-export const GreetingBand: React.FC<GreetingBandProps> = ({ tone, scene = 'home', note, children, className = '' }) => (
+export const GreetingBand: React.FC<GreetingBandProps> = ({ tone, photo, note, children, className = '' }) => (
   <section
     className={`rounded-[20px] overflow-hidden flex flex-col sm:flex-row sm:min-h-[272px] ${
       tone === 'mint' ? 'bg-mint' : 'bg-butter'
     } ${className}`}
   >
-    <div className="order-2 sm:order-1 min-w-0 flex-1 px-5 pt-4 pb-5 sm:px-8 sm:py-7 flex flex-col justify-center">
+    <div className="order-2 sm:order-1 min-w-0 flex-1 px-5 pt-3 pb-5 sm:px-8 sm:py-7 flex flex-col justify-center">
       {children}
     </div>
-    <div className="order-1 sm:order-2 relative shrink-0 sm:w-[46%] sm:flex sm:flex-col sm:pt-6 sm:pl-7">
-      <div className="relative h-[140px] sm:h-auto sm:flex-1 sm:rounded-tl-[22px] sm:bg-white/60">
-        <div className="absolute inset-0 sm:top-2.5 sm:left-2.5 overflow-hidden sm:rounded-tl-[16px]">
-          <HouseIllustration scene={scene} className="w-full h-full" />
-        </div>
-      </div>
-      <div className="hidden sm:flex absolute left-0 bottom-6 -rotate-3 items-center gap-2.5 rounded-xl bg-white shadow-md px-3.5 py-2.5 max-w-[240px]">
+    <div className="order-1 sm:order-2 relative shrink-0 sm:w-[46%] px-4 pt-4 sm:pt-5 sm:pb-4 sm:pr-5 sm:pl-7 flex flex-col">
+      <HeroPhoto photo={PHOTOS[photo]} load="eager" className="sm:flex-1" frameClassName="h-[160px] sm:h-auto sm:flex-1 sm:min-h-[210px]" />
+      <div className="hidden sm:flex absolute left-0 bottom-12 -rotate-3 items-center gap-2.5 rounded-xl bg-white shadow-md px-3.5 py-2.5 max-w-[240px]">
         <span className="w-7 h-7 rounded-full bg-mint text-leaf-ink flex items-center justify-center shrink-0">
           <Check className="w-4 h-4" strokeWidth={2.5} aria-hidden="true" />
         </span>

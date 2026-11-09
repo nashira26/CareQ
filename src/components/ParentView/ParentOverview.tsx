@@ -46,7 +46,7 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Greeting band */}
-      <GreetingBand tone="butter" note={{ title: 'A little more clarity', detail: 'for your family’s next step' }}>
+      <GreetingBand tone="butter" photo="parent" note={{ title: 'A little more clarity', detail: 'for your family’s next step' }}>
         <h1 className="text-2xl sm:text-[30px] sm:leading-[38px] font-extrabold text-brand">Hello, {firstName}</h1>
         <p className="mt-1 text-base text-ink">Here’s where things stand today.</p>
         {parentProfile.children.length > 0 && (
