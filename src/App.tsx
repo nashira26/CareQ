@@ -226,6 +226,13 @@ export default function App() {
 
   const currentRole = currentAccount ? currentAccount.role : 'parent';
 
+  // Signing in or out swaps the whole page: start the new one at the top, so on
+  // phones the Overview greeting isn't left below the fold of the login page's scroll.
+  const accountKey = currentAccount ? `${currentAccount.role}:${currentAccount.email}` : '';
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [accountKey]);
+
   // The signed-in parent and their active child (the first child for now)
   const myChildren: Child[] = currentAccount?.role === 'parent' ? currentAccount?.children ?? [] : [];
   const activeChild: Child | undefined = myChildren[0];

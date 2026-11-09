@@ -185,8 +185,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
           {/* 4. Illustration */}
           <div className="mt-8 w-full lg:max-w-[520px] rounded-3xl overflow-hidden border border-mint-line relative hidden sm:block">
-            <HouseIllustration tone="sage" />
-            <div className="absolute left-4 bottom-4 bg-white rounded-xl shadow-md px-4 py-2.5 text-sm text-ink flex items-center gap-2">
+            <HouseIllustration />
+            <div className="absolute left-4 bottom-4 bg-white rounded-xl shadow-md px-4 py-2.5 text-sm text-ink flex items-center gap-2 -rotate-2">
               <Check className="w-4 h-4 text-leaf-ink shrink-0" aria-hidden="true" />
               <span className="font-semibold">Parents &amp; centres, on the same page.</span>
             </div>

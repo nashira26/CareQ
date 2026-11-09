@@ -2,7 +2,6 @@ import React from 'react';
 import { Centre, Application, InAppNotification } from '../../data/mockData';
 import { StatusBadge } from '../StatusBadge';
 import {
-  PageHeader,
   Card,
   PrimaryButton,
   GhostButton,
@@ -11,7 +10,7 @@ import {
   DemoBanner,
   SimNote,
   TertiaryButton,
-  CentreAvatar,
+  GreetingBand,
 } from '../ui/CareUI';
 import { FileText, Clock, Heart, ArrowRight, Leaf, Check } from 'lucide-react';
 import { EmptyState, SpotChecklist } from '../ui/Illustrations';
@@ -62,28 +61,18 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* 1. PageHeader */}
-      <PageHeader
-        title="Centre overview"
-        subtitle={`Your simulated workspace for ${singleCentre.name}.`}
-        action={
-          <PrimaryButton arrow onClick={() => onNavigate('applications')}>
-            Review applications
-          </PrimaryButton>
-        }
-      />
-
-      {/* 2. Centre identity */}
-      <div className="rounded-2xl bg-white border border-cq-line p-4 sm:p-5 flex items-center gap-4">
-        <CentreAvatar centreId={singleCentre.id} size="lg" />
-        <div className="min-w-0">
-          <p className="text-xs font-bold text-sim">Simulated centre workspace</p>
-          <h2 className="text-xl font-extrabold text-ink leading-snug">{singleCentre.name}</h2>
-          <p className="text-sm text-ink-muted mt-0.5">
-            {singleCentre.address || singleCentre.neighbourhood}
-            {singleCentre.hours ? ` · ${singleCentre.hours}` : ''}
-          </p>
-          <span className="mt-2 inline-flex rounded-md bg-mint px-2 py-0.5 text-xs text-brand font-bold">
+      {/* 1. Greeting */}
+      <GreetingBand
+        tone="mint"
+        scene="centre"
+        note={{ title: 'Families see your updates', detail: 'the moment you save them' }}
+      >
+        <p className="text-base font-bold text-leaf-ink">Good to see you</p>
+        <h1 className="mt-0.5 text-2xl sm:text-[30px] sm:leading-[38px] font-extrabold text-brand">{singleCentre.name}</h1>
+        <p className="mt-1 text-base text-ink">Here’s what needs your attention today.</p>
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <span className="text-xs font-bold text-sim">Simulated centre workspace</span>
+          <span className="inline-flex rounded-md bg-white px-2 py-0.5 text-xs text-brand font-bold">
             {singleCentre.demoKind === 'open-data'
               ? `Licensed centre · Ontario open data${singleCentre.licenceNumber ? ` (licence #${singleCentre.licenceNumber})` : ''}`
               : singleCentre.demoKind === 'fictional'
@@ -91,7 +80,12 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
               : 'Licensed centre · Demo details'}
           </span>
         </div>
-      </div>
+        <div className="mt-5">
+          <PrimaryButton arrow onClick={() => onNavigate('applications')}>
+            Review applications
+          </PrimaryButton>
+        </div>
+      </GreetingBand>
 
       {/* 3. Needs attention: counts that open the queue */}
       <section aria-labelledby="attention-heading">

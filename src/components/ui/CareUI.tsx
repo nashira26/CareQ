@@ -1,6 +1,6 @@
 import React from 'react';
 import { isAiOffline } from '../../lib/aiFetch';
-import { ArrowRight, Info } from 'lucide-react';
+import { ArrowRight, Check, Info } from 'lucide-react';
 import type { ApplicationStatus } from '../../data/mockData';
 
 /* ---------------------------------------------------------------------------
@@ -314,48 +314,141 @@ export const DemoBanner: React.FC<DemoBannerProps> = ({ title, children, classNa
 );
 
 /* ---------------------------------------------------------------------------
-   House scene (landing, auth, centre without a photo). Same line style as the
-   spot illustrations in ./Illustrations.
+   House scene for the landing hero, the login page and the Overview greetings:
+   sky, sun, cloud, birds, rolling hills, a round tree, a pine, the house with a
+   path and flowers. Same 2px teal line as the spot illustrations in
+   ./Illustrations. `centre` swaps in a sky-blue sky and an "Open" sign.
+   It fills its box (cropping the edges if the box is a different shape), so
+   pass a size; the default is full width at its natural height.
    ------------------------------------------------------------------------ */
 
-export type HouseIllustrationTone = 'sage' | 'lilac' | 'sky';
+export type HouseScene = 'home' | 'centre';
 
 export interface HouseIllustrationProps {
-  tone?: HouseIllustrationTone;
+  scene?: HouseScene;
   className?: string;
 }
 
-const HOUSE_BG: Record<HouseIllustrationTone, string> = {
-  sage: 'fill-mint',
-  lilac: 'fill-status-wait-bg',
-  sky: 'fill-info-bg',
-};
-
-export const HouseIllustration: React.FC<HouseIllustrationProps> = ({ tone = 'sage', className = '' }) => (
+export const HouseIllustration: React.FC<HouseIllustrationProps> = ({ scene = 'home', className = '' }) => (
   <svg
     viewBox="0 0 520 280"
-    className={`w-full h-auto select-none ${className}`}
+    preserveAspectRatio="xMidYMid slice"
+    className={`block select-none ${className || 'w-full h-auto'}`}
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
     fill="none"
+    strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <rect width="520" height="280" className={HOUSE_BG[tone] || HOUSE_BG.sage} />
-    <circle cx="420" cy="70" r="30" className="fill-sun" />
-    <path d="M0 236 H520" className="stroke-brand" strokeWidth="3" />
-    <path d="M300 236 c40 0 70 -8 120 -8 s60 8 100 8" className="stroke-leaf" strokeWidth="3" />
-    {/* tree */}
-    <path d="M96 236 V178" className="stroke-brand" strokeWidth="3" />
-    <path d="M66 182 c0 -34 16 -54 30 -54 s30 20 30 54 z" className="fill-leaf stroke-brand" strokeWidth="3" />
-    {/* house */}
-    <path d="M168 126 260 62 352 126" className="stroke-brand" strokeWidth="3.5" />
-    <path d="M186 114 V236 H334 V114" className="fill-white stroke-brand" strokeWidth="3.5" />
-    <rect x="206" y="140" width="34" height="30" rx="5" className="fill-peach stroke-brand" strokeWidth="3" />
-    <rect x="280" y="140" width="34" height="30" rx="5" className="fill-peach stroke-brand" strokeWidth="3" />
-    <path d="M242 236 V204 a18 18 0 0 1 36 0 V236" className="fill-sun stroke-brand" strokeWidth="3" />
-    {/* Q-ring path echoing the logo */}
-    <path d="M430 196 a22 22 0 1 1 10 -18" className="stroke-coral" strokeWidth="3.5" />
-    <path d="M436 188 l10 10" className="stroke-coral" strokeWidth="3.5" />
+    {/* sky */}
+    <rect width="520" height="280" className={scene === 'centre' ? 'fill-info-bg' : 'fill-butter'} />
+
+    {/* sun with a soft glow */}
+    <circle cx="430" cy="62" r="40" className="fill-sun/25" />
+    <circle cx="430" cy="62" r="28" className="fill-sun" />
+
+    {/* cloud, top left */}
+    <path
+      d="M44 86 h62 a12 12 0 0 0 0 -24 a14 14 0 0 0 -22 -12 a17 17 0 0 0 -31 6 a15 15 0 0 0 -9 30 z"
+      className="fill-white stroke-brand"
+    />
+
+    {/* birds */}
+    <path d="M364 96 q6 -8 12 0 q6 -8 12 0" className="stroke-brand" />
+    <path d="M396 108 q5 -7 10 0 q5 -7 10 0" className="stroke-brand" strokeWidth="1.75" />
+
+    {/* rolling hills: the near one stacks on the far one, so it reads deeper */}
+    <path d="M0 195 Q160 145 320 180 T520 165 V280 H0 Z" className="fill-leaf/40" />
+    <path d="M0 230 Q180 170 360 200 T520 195 V280 H0 Z" className="fill-leaf/40" />
+
+    {/* path from the door */}
+    <path d="M265 255 Q315 258 370 264 T520 268" className="stroke-brand" />
+
+    {/* round tree */}
+    <rect x="98" y="168" width="6" height="74" rx="2" className="fill-brand" />
+    <circle cx="112" cy="146" r="28" className="fill-leaf-ink/80 stroke-brand" />
+    <circle cx="88" cy="158" r="32" className="fill-leaf stroke-brand" />
+
+    {/* house: chimney, body, roof */}
+    <rect x="312" y="84" width="16" height="30" rx="2" className="fill-coral stroke-brand" />
+    <rect x="175" y="132" width="180" height="123" rx="3" className="fill-page stroke-brand" />
+    <path d="M158 132 265 70 372 132 Z" className="fill-brand stroke-brand" />
+
+    {/* windows with warm light */}
+    <rect x="198" y="152" width="30" height="30" rx="3" className="fill-sun stroke-brand" />
+    <path d="M213 152 V182 M198 167 H228" className="stroke-brand" />
+    <rect x="302" y="152" width="30" height="30" rx="3" className="fill-sun stroke-brand" />
+    <path d="M317 152 V182 M302 167 H332" className="stroke-brand" />
+
+    {/* arched door */}
+    <path d="M248 255 V214 a17 17 0 0 1 34 0 V255 Z" className="fill-brand stroke-brand" />
+    <circle cx="276" cy="235" r="2" className="fill-sun" />
+
+    {/* flowers by the door */}
+    <path d="M238 255 V243 M292 255 V245" className="stroke-brand" strokeWidth="1.5" />
+    <circle cx="238" cy="240" r="4.5" className="fill-coral" />
+    <circle cx="292" cy="242" r="4" className="fill-coral" />
+
+    {scene === 'centre' && (
+      <>
+        {/* "Open" sign on the wall by the door */}
+        <path d="M306 206 l6 -8 l6 8" className="stroke-brand" strokeWidth="1.5" />
+        <rect x="292" y="206" width="40" height="18" rx="3" className="fill-white stroke-brand" />
+        <text x="312" y="219.5" textAnchor="middle" fontSize="11" fontWeight="800" className="fill-brand">
+          Open
+        </text>
+      </>
+    )}
+
+    {/* pine */}
+    <rect x="424" y="196" width="7" height="46" rx="2" className="fill-brand" />
+    <path
+      d="M400 212 427.5 172 455 212 Z M405 188 427.5 152 450 188 Z M410 164 427.5 134 445 164 Z"
+      className="fill-brand stroke-brand"
+    />
   </svg>
+);
+
+/* ---------------------------------------------------------------------------
+   Greeting band at the top of the parent and centre Overviews: text on the
+   left, the house scene on the right in a soft panel that runs to the band's
+   right and bottom edges, with a tilted note over its lower-left corner.
+   Phones: the scene sits on top at 140px, text below, no note.
+   ------------------------------------------------------------------------ */
+
+export interface GreetingBandProps {
+  tone: 'butter' | 'mint';
+  scene?: HouseScene;
+  note: { title: string; detail: string };
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const GreetingBand: React.FC<GreetingBandProps> = ({ tone, scene = 'home', note, children, className = '' }) => (
+  <section
+    className={`rounded-[20px] overflow-hidden flex flex-col sm:flex-row sm:min-h-[272px] ${
+      tone === 'mint' ? 'bg-mint' : 'bg-butter'
+    } ${className}`}
+  >
+    <div className="order-2 sm:order-1 min-w-0 flex-1 px-5 pt-4 pb-5 sm:px-8 sm:py-7 flex flex-col justify-center">
+      {children}
+    </div>
+    <div className="order-1 sm:order-2 relative shrink-0 sm:w-[46%] sm:flex sm:flex-col sm:pt-6 sm:pl-7">
+      <div className="relative h-[140px] sm:h-auto sm:flex-1 sm:rounded-tl-[22px] sm:bg-white/60">
+        <div className="absolute inset-0 sm:top-2.5 sm:left-2.5 overflow-hidden sm:rounded-tl-[16px]">
+          <HouseIllustration scene={scene} className="w-full h-full" />
+        </div>
+      </div>
+      <div className="hidden sm:flex absolute left-0 bottom-6 -rotate-3 items-center gap-2.5 rounded-xl bg-white shadow-md px-3.5 py-2.5 max-w-[240px]">
+        <span className="w-7 h-7 rounded-full bg-mint text-leaf-ink flex items-center justify-center shrink-0">
+          <Check className="w-4 h-4" strokeWidth={2.5} aria-hidden="true" />
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-bold text-brand leading-tight">{note.title}</span>
+          <span className="block text-xs text-ink-muted">{note.detail}</span>
+        </span>
+      </div>
+    </div>
+  </section>
 );

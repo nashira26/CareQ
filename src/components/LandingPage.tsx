@@ -115,7 +115,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           <div className="w-full max-w-[540px] mx-auto lg:max-w-none">
             <div className="rounded-3xl overflow-hidden border border-mint-line">
-              <HouseIllustration tone="sage" className="w-full h-auto" />
+              <HouseIllustration className="w-full h-auto" />
             </div>
           </div>
         </section>

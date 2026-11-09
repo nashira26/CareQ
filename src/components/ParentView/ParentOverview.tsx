@@ -2,8 +2,7 @@ import React from 'react';
 import { ParentProfile, Application, Centre, InAppNotification, ApplicationStatus } from '../../data/mockData';
 import { StatusBadge } from '../StatusBadge';
 import { ageInMonths, formatAge } from '../../lib/family';
-import { PrimaryButton, GhostButton, TertiaryButton, SimNote, SimTag, CentreAvatar, ProgressStrip } from '../ui/CareUI';
-import { SpotJourney } from '../ui/Illustrations';
+import { PrimaryButton, GhostButton, TertiaryButton, SimNote, SimTag, CentreAvatar, ProgressStrip, GreetingBand } from '../ui/CareUI';
 import { Bell, ChevronRight, ArrowRight } from 'lucide-react';
 
 export interface ParentOverviewProps {
@@ -47,19 +46,22 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Greeting band */}
-      <section className="rounded-3xl bg-butter px-5 py-6 sm:px-8 sm:py-7 flex items-center justify-between gap-4 overflow-hidden">
-        <div className="min-w-0">
-          <h1 className="text-2xl sm:text-[30px] sm:leading-[38px] font-extrabold text-brand">Hello, {firstName}</h1>
-          <p className="mt-1 text-base text-ink">Here’s where things stand today.</p>
-          {parentProfile.children.length > 0 && (
-            <p className="mt-3 text-sm text-cq-sand-ink">
-              <span className="font-bold">Your family:</span>{' '}
-              {parentProfile.children.map((c) => `${c.firstName}, ${formatAge(ageInMonths(c.dateOfBirth))}`).join(' · ')}
-            </p>
-          )}
+      <GreetingBand tone="butter" note={{ title: 'A little more clarity', detail: 'for your family’s next step' }}>
+        <h1 className="text-2xl sm:text-[30px] sm:leading-[38px] font-extrabold text-brand">Hello, {firstName}</h1>
+        <p className="mt-1 text-base text-ink">Here’s where things stand today.</p>
+        {parentProfile.children.length > 0 && (
+          <p className="mt-3 text-sm text-cq-sand-ink">
+            <span className="font-bold">Your family:</span>{' '}
+            {parentProfile.children.map((c) => `${c.firstName}, ${formatAge(ageInMonths(c.dateOfBirth))}`).join(' · ')}
+          </p>
+        )}
+        <div className="mt-5">
+          <GhostButton onClick={() => onNavigate('find')}>
+            Explore centres
+            <ArrowRight className="w-4 h-4" aria-hidden="true" />
+          </GhostButton>
         </div>
-        <SpotJourney className="w-28 sm:w-52 shrink-0 -mr-2 sm:mr-0" />
-      </section>
+      </GreetingBand>
 
       <div className="grid lg:grid-cols-5 gap-8">
         {/* Needs you + updates */}
