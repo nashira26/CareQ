@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CareQ Design Preview</title>
+<!-- Static design preview. Not part of the app build (Vite only builds /index.html). -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap" rel="stylesheet" />
+<style>
+  /* ---------- Proposed tokens (mirror the planned Tailwind v4 @theme names) ---------- */
+  :root {
+    /* core */
+    --brand: #124B50; --brand-hover: #0D3A3E; --brand-press: #0A2F32;
+    --coral: #F26D55; --coral-ink: #B23F27;
+    --sun: #F4C95D;   --sun-ink: #7A5600;
+    --leaf: #8FB99A;  --leaf-ink: #2E6741;
+    /* surfaces */
+    --page: #FCF9F2; --surface: #FFFFFF; --mint: #E8F0EB; --peach: #FCEBE4; --butter: #F4EFD9; --stone: #F1EEE6;
+    /* text + lines */
+    --ink: #1B3438; --ink-muted: #55615E; --line: #E6E1D6; --line-strong: #8C9794;
+    /* semantic */
+    --success: #256B3F; --success-bg: #E7F3EA;
+    --warning: #7A4F00; --warning-bg: #FDF3D8;
+    --error: #A8231A;   --error-bg: #FCE9E7;
+    --info: #245C8A;    --info-bg: #E6EFF7;
+    /* shape */
+    --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-xl: 20px;
+    --shadow-1: 0 1px 2px rgba(18,75,80,.06), 0 1px 1px rgba(18,75,80,.04);
+    --shadow-2: 0 8px 24px rgba(18,75,80,.12);
+    --focus: 0 0 0 2px var(--page), 0 0 0 4px #C4492F;
+    --font: 'Nunito Sans', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.55; font-optical-sizing: auto; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1, h2, h3 { margin: 0; color: var(--brand); line-height: 1.25; letter-spacing: 0; }
+  h1 { font-size: 30px; font-weight: 800; }
+  h2 { font-size: 22px; font-weight: 800; }
+  h3 { font-size: 17px; font-weight: 700; color: var(--ink); }
+  p { margin: 0; }
+  .muted { color: var(--ink-muted); }
+  .small { font-size: 14px; line-height: 1.45; }
+  .caption { font-size: 13px; line-height: 1.4; color: var(--ink-muted); }
+  section { margin-top: 56px; }
+  section > header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+  section > header .num { font-size: 14px; font-weight: 800; color: var(--coral-ink); }
+  .grid { display: grid; gap: 16px; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px; }
+  .top { display: flex; gap: 24px; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+  .top img { display: block; }
+  .lede { max-width: 640px; margin-top: 8px; color: var(--ink-muted); }
+
+  /* ---------- palette ---------- */
+  .swatches { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .sw { border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--line); background: var(--surface); }
+  .sw .chip { height: 64px; display: flex; align-items: flex-end; padding: 8px 10px; font-size: 13px; font-weight: 700; }
+  .sw .meta { padding: 8px 10px 10px; font-size: 13px; line-height: 1.35; }
+  .sw .meta b { display: block; font-size: 14px; }
+  .group-label { font-size: 15px; font-weight: 700; margin: 22px 0 10px; color: var(--ink); }
+  .semantic { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+  .alert { display: flex; gap: 10px; align-items: flex-start; border-radius: var(--r-md); padding: 12px 14px; font-size: 14px; line-height: 1.45; }
+  .alert svg { flex: none; margin-top: 2px; }
+  .alert b { display: block; }
+
+  /* ---------- type comparison ---------- */
+  .compare { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 860px) { .compare { grid-template-columns: 1fr; } }
+  .fontcol > .label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; font-size: 14px; }
+  .fontcol > .label b { font-size: 16px; }
+  .rec { font-size: 12px; font-weight: 800; color: var(--leaf-ink); background: var(--mint); padding: 2px 8px; border-radius: 999px; }
+  .mini { background: var(--page); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 22px; }
+  .mini .hello { font-size: 26px; font-weight: 800; color: var(--brand); }
+  .mini .sub { margin-top: 4px; color: var(--ink-muted); }
+  .next { margin-top: 18px; display: flex; gap: 16px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--coral); border-radius: var(--r-lg); padding: 16px 18px; }
+  .next .k { font-size: 14px; font-weight: 700; color: var(--coral-ink); }
+  .next h3 { margin-top: 2px; }
+  .next p { font-size: 15px; color: var(--ink-muted); margin-top: 2px; }
+  .apps { margin-top: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); }
+  .apps h3 { padding: 14px 18px 10px; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-top: 1px solid var(--line); }
+  .row .name { font-weight: 700; font-size: 15px; line-height: 1.3; }
+  .row .sub2 { font-size: 13px; color: var(--ink-muted); }
+  .row .grow { flex: 1; min-width: 0; }
+  .lato, .lato * { font-family: 'Lato', system-ui, sans-serif !important; }
+  .nunito, .nunito * { font-family: 'Nunito Sans', system-ui, sans-serif !important; }
+  .scale { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); column-gap: 32px; row-gap: 0; margin-top: 16px; }
+  .scale div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--line); padding: 8px 0; }
+  .scale span:first-child { white-space: nowrap; line-height: 1.2; }
+  .scale span:last-child { font-size: 13px; color: var(--ink-muted); white-space: nowrap; }
+
+  /* ---------- buttons ---------- */
+  .btn { font: inherit; font-size: 15px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: var(--r-md); border: 1px solid transparent; cursor: pointer; transition: background-color .15s, transform .08s, box-shadow .15s; }
+  .btn:active { transform: scale(.98); }
+  .btn:focus-visible { outline: none; box-shadow: var(--focus); }
+  .btn-primary { background: var(--brand); color: #fff; }
+  .btn-primary:hover { background: var(--brand-hover); }
+  .btn-secondary { background: var(--surface); color: var(--brand); border-color: var(--line-strong); }
+  .btn-secondary:hover { background: var(--mint); }
+  .btn-tertiary { background: transparent; color: var(--brand); padding: 0 8px; text-decoration: underline; text-decoration-color: rgba(18,75,80,.35); text-underline-offset: 4px; }
+  .btn-tertiary:hover { text-decoration-color: var(--brand); }
+  .btn-danger { background: var(--surface); color: var(--error); border-color: #E2B4AF; }
+  .btn-danger:hover { background: var(--error-bg); }
+  .btn[disabled] { background: var(--stone); color: #6B7370; border-color: var(--line); cursor: not-allowed; transform: none; }
+  .btn-sm { height: 36px; padding: 0 12px; font-size: 14px; }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .btn-note { font-size: 13px; color: var(--ink-muted); margin-top: 6px; }
+  .demo-focus { box-shadow: var(--focus); }
+
+  /* ---------- inputs ---------- */
+  .fields { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .field label { display: block; font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .field .hint { font-size: 13px; color: var(--ink-muted); margin-top: 6px; }
+  .input { font: inherit; font-size: 16px; width: 100%; height: 46px; padding: 0 14px; border-radius: var(--r-md); border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); }
+  .input::placeholder { color: #6B7370; }
+  .input:focus, .input.is-focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(18,75,80,.18); }
+  .input.is-error { border-color: var(--error); }
+  .input[disabled] { background: var(--stone); color: #6B7370; }
+  .err { color: var(--error); font-size: 13px; font-weight: 600; margin-top: 6px; display: flex; gap: 6px; align-items: center; }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; margin-top: 4px; }
+  .box { width: 22px; height: 22px; flex: none; border-radius: var(--r-sm); border: 1.5px solid var(--line-strong); background: var(--surface); display: grid; place-items: center; }
+  .box.on { background: var(--brand); border-color: var(--brand); }
+  .seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: var(--r-md); overflow: hidden; }
+  .seg span { white-space: nowrap; padding: 9px 12px; font-size: 14px; font-weight: 700; color: var(--ink-muted); }
+  .seg span.on { background: var(--brand); color: #fff; }
+
+  /* ---------- status + trust ---------- */
+  .pill { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; font-size: 13px; font-weight: 700; line-height: 1; white-space: nowrap; border: 1px solid transparent; }
+  .pill svg { flex: none; }
+  .st-draft { background: var(--stone); color: #525D5A; border: 1px dashed #A7ADA9; }
+  .st-submitted { background: var(--info-bg); color: var(--info); }
+  .st-review { background: var(--peach); color: #9A3B22; }
+  .st-wait { background: #EEEAF6; color: #5A4888; }
+  .st-offer { background: var(--sun); color: #3A2C00; }
+  .st-accepted { background: var(--mint); color: var(--leaf-ink); }
+  .st-withdrawn { background: var(--stone); color: #5F6765; text-decoration: line-through; }
+  .pills { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+  .pill-cell { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+  .pill-cell .caption { font-size: 12px; }
+  .tag-sim { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: var(--r-sm); background: var(--butter); color: #6A4B12; font-size: 12px; font-weight: 700; border: 1px solid #E5DAB4; }
+  .trust { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; padding: 4px 9px; border-radius: var(--r-sm); }
+  .trust.ok { background: var(--success-bg); color: var(--success); }
+  .trust.no { background: var(--stone); color: #525D5A; }
+  .trust.ai { background: var(--mint); color: var(--brand); }
+  .ai-note { font-size: 13px; color: var(--ink-muted); display: flex; gap: 6px; align-items: center; }
+  .banner-sim { display: flex; gap: 10px; align-items: flex-start; background: var(--butter); border: 1px solid #E5DAB4; border-radius: var(--r-md); padding: 10px 14px; font-size: 14px; color: #4F3A0E; }
+  .quote { border-left: 3px solid var(--leaf); background: var(--surface); padding: 10px 14px; border-radius: 0 var(--r-md) var(--r-md) 0; font-size: 15px; }
+  .quote cite { display: block; font-style: normal; font-size: 13px; color: var(--ink-muted); margin-top: 6px; }
+  .quote cite a { color: var(--brand); font-weight: 700; }
+
+  /* ---------- parent card ---------- */
+  .cards { grid-template-columns: minmax(0, 390px) minmax(0, 1fr); align-items: start; }
+  @media (max-width: 860px) { .cards { grid-template-columns: 1fr; } }
+  .phone { border: 1px solid var(--line); border-radius: 26px; padding: 14px; background: var(--page); max-width: 390px; }
+  .appcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px; box-shadow: var(--shadow-1); }
+  .appcard .head { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+  .appcard .head > div:nth-child(2) { flex: 1 1 200px; }
+  .appcard .ill { width: 48px; height: 48px; border-radius: var(--r-md); background: var(--mint); flex: none; display: grid; place-items: center; }
+  .appcard h3 { font-size: 18px; line-height: 1.3; }
+  .appcard .where { font-size: 14px; color: var(--ink-muted); margin-top: 2px; }
+  .appcard .status { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+  .steps { list-style: none; padding: 0; margin: 16px 0 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .steps li { font-size: 12px; font-weight: 700; color: var(--ink-muted); display: flex; flex-direction: column; gap: 6px; }
+  .steps li::before { content: ""; height: 6px; border-radius: 3px; background: var(--stone); }
+  .steps li.done::before { background: var(--leaf); }
+  .steps li.now::before { background: var(--sun); }
+  .steps li.done, .steps li.now { color: var(--ink); }
+  .fact { margin-top: 14px; font-size: 14px; line-height: 1.45; color: var(--ink-muted); }
+  .fact b { color: var(--ink); }
+  .callout { margin-top: 14px; background: var(--butter); border-radius: var(--r-md); padding: 12px 14px; font-size: 15px; display: flex; gap: 10px; }
+  .callout b { display: block; }
+  .actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .actions .btn { flex: 1 1 auto; }
+  .linkrow { margin-top: 12px; display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+  .linkrow a { color: var(--brand); font-weight: 700; }
+  .notes { display: grid; gap: 12px; }
+  .notes li { margin-bottom: 6px; }
+  ul.tight { margin: 8px 0 0; padding-left: 18px; font-size: 15px; }
+
+  /* ---------- scales ---------- */
+  .scales { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+  .rad { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+  .rad div { width: 64px; height: 52px; background: var(--mint); border: 1.5px solid var(--brand); }
+  .rad span { display: block; font-size: 12px; text-align: center; margin-top: 6px; color: var(--ink-muted); }
+  .shad { display: flex; gap: 16px; flex-wrap: wrap; }
+  .shad div { width: 120px; height: 64px; background: var(--surface); border-radius: var(--r-lg); display: grid; place-items: center; font-size: 13px; color: var(--ink-muted); border: 1px solid var(--line); }
+  .space { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .space > div > div { background: var(--coral); opacity: .85; height: 14px; border-radius: 2px; }
+  .space span { display: block; font-size: 12px; color: var(--ink-muted); margin-top: 4px; }
+
+  /* ---------- illustrations ---------- */
+  .ills { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); }
+  .ills figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 14px 10px; }
+  .ills svg { display: block; width: 100%; height: auto; }
+  .ills figcaption { font-size: 13px; color: var(--ink-muted); margin-top: 8px; line-height: 1.35; }
+  .ills figcaption b { color: var(--ink); display: block; font-size: 14px; }
+
+  /* ---------- before / after ---------- */
+  .ba { display: grid; grid-template-columns: repeat(2, 390px); gap: 28px 40px; justify-content: center; }
+  @media (max-width: 860px) { .ba { grid-template-columns: minmax(0, 390px); } }
+  .ba-col > .ba-label { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 800; margin-bottom: 10px; }
+  .ba-col > .ba-label span { font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
+  .ba-label .was { background: var(--stone); color: #525D5A; }
+  .ba-label .now { background: var(--mint); color: var(--leaf-ink); }
+  .frame { width: 100%; max-width: 390px; border: 1px solid var(--line-strong); border-radius: 28px; overflow: hidden; background: var(--page); box-shadow: var(--shadow-2); position: relative; }
+  .frame > img { display: block; width: 100%; height: auto; }
+  .ba-screen + .ba-screen { margin-top: 48px; }
+  .ba-screen > h3 { font-size: 20px; color: var(--brand); margin-bottom: 4px; }
+  .ba-screen > p { margin-bottom: 18px; }
+  .ba-changes { max-width: 820px; margin: 20px auto 0; }
+
+  /* mock app chrome (phone) */
+  .m { font-size: 16px; line-height: 1.5; color: var(--ink); }
+  .m-proto { background: var(--butter); color: #4F3A0E; font-size: 13px; padding: 7px 16px; display: flex; gap: 6px; align-items: center; justify-content: center; }
+  .m-proto b { font-weight: 800; }
+  .m-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
+  .m-bar .r { display: flex; align-items: center; gap: 6px; }
+  .m-icon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: var(--r-md); color: var(--brand); position: relative; }
+  .m-dot { position: absolute; top: 7px; right: 7px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--coral-ink); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; border: 2px solid var(--surface); }
+  .m-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--mint); color: var(--brand); font-weight: 800; font-size: 14px; display: grid; place-items: center; }
+  .m-nav { display: flex; gap: 4px; overflow-x: auto; padding: 8px 12px; background: var(--surface); border-bottom: 1px solid var(--line); scrollbar-width: none; }
+  .m-nav a { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px; border-radius: var(--r-md); font-size: 14px; font-weight: 700; color: var(--ink-muted); text-decoration: none; }
+  .m-nav a.on { background: var(--mint); color: var(--brand); box-shadow: inset 0 -3px 0 var(--brand); }
+  .m-nav a .badge { font-size: 11px; font-weight: 800; background: var(--sun); color: #3A2C00; padding: 1px 6px; border-radius: 999px; }
+  .m-body { padding: 20px 16px 28px; }
+  .m-hello { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .m-hello h1 { font-size: 24px; line-height: 1.25; }
+  .m-hello p { font-size: 15px; color: var(--ink-muted); margin-top: 2px; }
+  .m-sec { font-size: 18px; font-weight: 800; color: var(--brand); margin: 24px 0 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .m-sec a { font-size: 14px; font-weight: 700; color: var(--brand); }
+  .m-needs { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--coral); border-radius: var(--r-lg); padding: 16px; box-shadow: var(--shadow-1); }
+  .m-needs .k { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 800; color: var(--coral-ink); }
+  .m-needs h2 { font-size: 19px; color: var(--ink); margin-top: 4px; }
+  .m-needs p { font-size: 15px; color: var(--ink-muted); margin-top: 2px; }
+  .m-needs .btn { width: 100%; margin-top: 14px; }
+  .m-upd { display: flex; align-items: center; gap: 12px; margin-top: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 12px 14px; font-size: 15px; text-decoration: none; color: var(--ink); }
+  .m-upd .ic { width: 36px; height: 36px; border-radius: var(--r-md); background: var(--info-bg); color: var(--info); display: grid; place-items: center; flex: none; }
+  .m-upd b { display: block; font-size: 15px; }
+  .m-upd small { font-size: 13px; color: var(--ink-muted); }
+  .m-list { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); }
+  .m-app { display: flex; gap: 10px; align-items: center; padding: 12px 14px; }
+  .m-app + .m-app { border-top: 1px solid var(--line); }
+  .m-app .grow { flex: 1; min-width: 0; }
+  .m-app .name { font-size: 15px; font-weight: 700; line-height: 1.3; }
+  .m-app .sub { font-size: 13px; color: var(--ink-muted); margin-top: 2px; }
+  .m-app .st { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+  .m-app .chev { color: var(--line-strong); flex: none; }
+  .m-foot { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: var(--ink-muted); margin-top: 12px; }
+  .m-foot svg { flex: none; margin-top: 2px; }
+  .m-fab { position: absolute; right: 14px; bottom: 16px; display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 16px; border-radius: var(--r-md); background: var(--brand); color: #fff; font-weight: 800; font-size: 15px; box-shadow: var(--shadow-2); }
+  /* find */
+  .m-search label { font-size: 15px; font-weight: 700; display: block; margin-bottom: 6px; }
+  .m-search .row2 { display: flex; gap: 8px; }
+  .m-search .input { height: 48px; }
+  .m-search .btn { height: 48px; flex: none; }
+  .m-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .m-chip { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 999px; font-size: 14px; font-weight: 700; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); }
+  .m-chip.on { background: var(--mint); border-color: #B9CFC1; color: var(--brand); }
+  .m-yours { display: flex; gap: 10px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 4px; scrollbar-width: none; }
+  .m-yc { flex: none; width: 250px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 12px 14px; }
+  .m-yc .name { font-size: 15px; font-weight: 700; line-height: 1.3; }
+  .m-yc .st { display: flex; gap: 6px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+  .m-yc .rep { font-size: 13px; color: var(--ink-muted); margin-top: 6px; line-height: 1.35; }
+  .m-yc .src { font-size: 12px; color: var(--ink-muted); margin-bottom: 4px; }
+  .m-count { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 22px 0 10px; }
+  .m-count p { font-size: 15px; font-weight: 700; }
+  .m-res { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px; }
+  .m-res + .m-res { margin-top: 12px; }
+  .m-res .top2 { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .m-src { font-size: 12px; font-weight: 700; color: #525D5A; background: var(--stone); border-radius: var(--r-sm); padding: 2px 7px; }
+  .m-heart { width: 44px; height: 44px; margin: -8px -8px -8px 0; display: grid; place-items: center; color: var(--ink-muted); }
+  .m-res h4 { margin: 6px 0 0; font-size: 18px; line-height: 1.3; color: var(--ink); }
+  .m-res .addr { font-size: 14px; color: var(--ink-muted); margin-top: 2px; }
+  .m-dist { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 14px; font-weight: 700; color: var(--brand); }
+  .m-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .m-tag { font-size: 13px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--mint); color: var(--leaf-ink); }
+  .m-tag.plain { background: var(--stone); color: #525D5A; }
+  .m-facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin-top: 12px; font-size: 14px; }
+  .m-facts dt { color: var(--ink-muted); }
+  .m-facts dd { margin: 0; }
+  .m-avail { margin-top: 12px; border-radius: var(--r-md); background: var(--page); border: 1px dashed var(--line-strong); padding: 10px 12px; font-size: 14px; }
+  .m-avail b { display: block; }
+  .m-avail span { color: var(--ink-muted); }
+  .m-meta { font-size: 13px; color: var(--ink-muted); margin-top: 10px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div>
+      <img src="../public/careq-symbol.svg" alt="" width="40" height="40" onerror="this.remove()" />
+      <h1 style="margin-top:10px">CareQ visual identity · preview</h1>
+      <p class="lede">A proposal for review: colours, type, buttons, inputs, status pills and one application card. These are static mock-ups and use no app code. Everything shown in the tokens is meant to replace the hard-coded values currently in the app.</p>
+    </div>
+    <p class="caption">Draft for review · 8 Nov 2026</p>
+  </div>
+
+  <!-- lucide-style icon sprite (2px stroke) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <g id="i-bell" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></g>
+      <g id="i-home" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></g>
+      <g id="i-search" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></g>
+      <g id="i-file" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></g>
+      <g id="i-list" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></g>
+      <g id="i-heart" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/></g>
+      <g id="i-chev" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></g>
+      <g id="i-info" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></g>
+      <g id="i-pin" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></g>
+      <g id="i-x" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></g>
+      <g id="i-plus" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></g>
+      <g id="i-map" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></g>
+      <g id="i-msg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></g>
+      <g id="i-wait" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></g>
+      <g id="i-send" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4z"/></g>
+      <g id="i-gift" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></g>
+      <g id="i-ask" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M9.5 8.5a2.5 2.5 0 1 1 3 2.4V12M12 14.5h.01"/></g>
+    </defs>
+  </svg>
+
+  <!-- 0. BEFORE / AFTER -->
+  <section>
+    <header><span class="num">00</span><h2>Before / after at phone width</h2><p class="muted small">Left: a screenshot of the running app (local mode, Priya’s demo account). Right: a static mock of the same screen with the same seeded data. No content was added or invented.</p></header>
+
+    <div class="ba-screen">
+      <h3>Parent Overview</h3>
+      <p class="muted small">Both columns show the first 1,700px of the page at 390px width.</p>
+      <div class="ba">
+        <div class="ba-col">
+          <div class="ba-label"><span class="was">Before</span>Current app</div>
+          <div class="frame"><img src="before-overview-phone.png" alt="Current parent Overview at phone width" onerror="this.outerHTML='<p style=\x27padding:24px;font-size:14px;color:#55615E\x27>Screenshot not committed (design/*.png is git-ignored). It showed the pre-redesign Overview at 390px.</p>'" /></div>
+        </div>
+        <div class="ba-col">
+          <div class="ba-label"><span class="now">After</span>Proposed</div>
+          <div class="frame m" style="height:1700px">
+            <div class="m-proto"><b>Prototype</b> Simulated data prototype. <svg width="14" height="14" viewBox="0 0 24 24"><use href="#i-info"/></svg></div>
+            <div class="m-bar">
+              <img src="../public/careq-symbol.svg" alt="CareQ" width="34" height="34" />
+              <div class="r">
+                <span class="m-icon" aria-label="Notifications, 2 unread"><svg width="22" height="22" viewBox="0 0 24 24"><use href="#i-bell"/></svg><span class="m-dot">2</span></span>
+                <span class="m-avatar">PP</span>
+              </div>
+            </div>
+            <nav class="m-nav">
+              <a class="on"><svg width="16" height="16" viewBox="0 0 24 24"><use href="#i-home"/></svg>Overview</a>
+              <a><svg width="16" height="16" viewBox="0 0 24 24"><use href="#i-search"/></svg>Find Centres</a>
+              <a><svg width="16" height="16" viewBox="0 0 24 24"><use href="#i-file"/></svg>Apply</a>
+              <a><svg width="16" height="16" viewBox="0 0 24 24"><use href="#i-list"/></svg>Track Status <span class="badge">Offer</span></a>
+            </nav>
+            <div class="m-body">
+              <div class="m-hello">
+                <div>
+                  <h1>Hello, Priya</h1>
+                  <p>Your family: Anya, 22 months</p>
+                </div>
+                <svg width="84" height="58" viewBox="0 0 160 110" fill="none" stroke="#124B50" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M18 88c22 0 22-26 46-26s22 22 44-4 20-30 34-30" stroke-dasharray="3 8"/>
+                  <circle cx="22" cy="88" r="9" fill="#8FB99A"/><circle cx="64" cy="62" r="9" fill="#8FB99A"/><circle cx="102" cy="60" r="9" fill="#F4C95D"/>
+                  <path d="M136 30V10l14 6-14 6" fill="#F26D55"/>
+                </svg>
+              </div>
+
+              <div class="m-sec">Here’s what needs your attention</div>
+              <div class="m-needs">
+                <div class="k">Needs you <span class="tag-sim">Simulated</span></div>
+                <h2>You have an offer!</h2>
+                <p>Macaulay - Dovercourt Child Care Centre has a spot for Anya.</p>
+                <button class="btn btn-primary">Review offer</button>
+              </div>
+              <a class="m-upd">
+                <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24"><use href="#i-bell"/></svg></span>
+                <span style="flex:1"><b>2 unread companion updates</b><small>Messages &amp; status changes</small></span>
+                <svg class="chev" width="18" height="18" viewBox="0 0 24 24" style="color:var(--line-strong)"><use href="#i-chev"/></svg>
+              </a>
+
+              <div class="m-sec">Your applications <a>View all</a></div>
+              <div class="m-list">
+                <div class="m-app"><div class="grow"><div class="name">Macaulay - Dovercourt Child Care Centre</div><div class="sub">Anya · Full day</div>
+                  <div class="st"><span class="pill st-offer"><svg width="14" height="14" viewBox="0 0 24 24"><use href="#i-gift"/></svg>Offer Available</span><span class="tag-sim">Simulated</span></div></div>
+                  <svg class="chev" width="18" height="18" viewBox="0 0 24 24"><use href="#i-chev"/></svg></div>
+                <div class="m-app"><div class="grow"><div class="name">Jesse Ketchum Early Learning &amp; Child Care Centre</div><div class="sub">Anya · Full day</div>
+                  <div class="st"><span class="pill st-wait"><svg width="14" height="14" viewBox="0 0 24 24"><use href="#i-wait"/></svg>Waitlisted</span><span class="tag-sim">Simulated</span></div></div>
+                  <svg class="chev" width="18" height="18" viewBox="0 0 24 24"><use href="#i-chev"/></svg></div>
+                <div class="m-app"><div class="grow"><div class="name">Leaside Day Care Centre (Rolph Road Day Care)</div><div class="sub">Anya · Full day</div>
+                  <div class="st"><span class="pill st-wait"><svg width="14" height="14" viewBox="0 0 24 24"><use href="#i-wait"/></svg>Waitlisted</span><span class="tag-sim">Simulated</span></div></div>
+                  <svg class="chev" width="18" height="18" viewBox="0 0 24 24"><use href="#i-chev"/></svg></div>
+                <div class="m-app"><div class="grow"><div class="name">Wellesley Early Learning Centre - Earlscourt Creche Cdi - 495 Sherbourne Street</div><div class="sub">Anya · Full day</div>
+                  <div class="st"><span class="pill st-submitted"><svg width="14" height="14" viewBox="0 0 24 24"><use href="#i-send"/></svg>Submitted</span><span class="tag-sim">Simulated</span></div></div>
+                  <svg class="chev" width="18" height="18" viewBox="0 0 24 24"><use href="#i-chev"/></svg></div>
+                <div class="m-app"><div class="grow"><div class="name">CareQ Demo Centre (fictional)</div><div class="sub">Anya · Full day</div>
+                  <div class="st"><span class="pill st-submitted"><svg width="14" height="14" viewBox="0 0 24 24"><use href="#i-send"/></svg>Submitted</span><span class="tag-sim">Simulated</span></div></div>
+                  <svg class="chev" width="18" height="18" viewBox="0 0 24 24"><use href="#i-chev"/></svg></div>
+              </div>
+              <p class="m-foot"><svg width="14" height="14" viewBox="0 0 24 24"><use href="#i-info"/></svg>Queue positions are determined by each centre under its own published policy.</p>
+
+              <div class="m-sec">Looking for more centres?</div>
+              <button class="btn btn-secondary" style="width:100%">Explore centres</button>
+            </div>
+            <span class="m-fab"><svg width="18" height="18" viewBox="0 0 24 24"><use href="#i-ask"/></svg>Ask CareQ</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ba-screen">
+      <h3>Find centres</h3>
+      <p class="muted small">Every open-data label and source line from today’s card is kept. They are regrouped so the name, the distance and “Availability not reported” are easy to scan.</p>
+      <div class="ba">
+        <div class="ba-col">
+          <div class="ba-label"><span class="was">Before</span>Current app</div>
+          <div class="frame"><img src="before-find-phone.png" alt="Current Find screen at phone width" onerror="this.outerHTML='<p style=\x27padding:24px;font-size:14px;color:#55615E\x27>Screenshot not committed (design/*.png is git-ignored). It showed the pre-redesign Find screen at 390px.</p>'" /></div>
+        </div>
+        <div class="ba-col">
+          <div class="ba-label"><span class="now">After</span>Proposed</div>
+          <div class="frame m" style="height:1700px">
+            <div class="m-proto"><b>Prototype</b> Simulated data prototype. <svg width="14" height="14" viewBox="0 0 24 24"><use href="#i-info"/></svg></div>
+            <div class="m-bar">
+              <img src="../public/careq-symbol.svg" alt="CareQ" width="34" height="34" />
+              <div class="r">
+                <span class="m-icon"><svg width="22" height="22" viewBox="0 0 24 24"><use href="#i-bell"/></svg><span class="m-dot">2</span></span>
+                <span class="m-avatar">PP</span>
+              </div>
+            </div>
+            <nav class="m-nav">
+              <a><svg width="16" height="16" viewBox="0 0 24 24"><use href="#i-home"/></svg>Overview</a>
+              <a class="on"><svg width="16" height="16" viewBox="0 0 24 24"><use href="#i-search"/></svg>Find Centres</a>
+              <a><svg width="16" height="16" viewBox="0 0 24 24"><use href="#i-file"/></svg>Apply</a>
+              <a><svg width="16" height="16" viewBox="0 0 24 24"><use href="#i-list"/></svg>Track Status <span class="badge">Offer</span></a>
+            </nav>
+            <div class="m-body">
+              <h1 style="font-size:24px">Find centres</h1>
+              <p class="small muted" style="margin-top:4px">Search licensed centres near you. Availability and waitlists only appear when a centre reports them.</p>
+
+              <div class="m-search" style="margin-top:18px">
+                <label for="m-q">Describe what you need</label>
+                <div class="row2">
+                  <input id="m-q" class="input" placeholder="Full-time care for my 2-year-old…" />
+                  <button class="btn btn-primary" aria-label="Search"><svg width="18" height="18" viewBox="0 0 24 24"><use href="#i-search"/></svg></button>
+                </div>
+                <div class="m-chips">
+                  <span class="m-chip on"><svg width="14" height="14" viewBox="0 0 24 24"><use href="#i-pin"/></svg>Near The Annex <svg width="14" height="14" viewBox="0 0 24 24"><use href="#i-x"/></svg></span>
+                  <span class="m-chip"><svg width="14" height="14" viewBox="0 0 24 24"><use href="#i-plus"/></svg>Add filter</span>
+                  <button class="btn btn-tertiary btn-sm">Clear</button>
+                </div>
+                <div class="check" style="font-size:14px;margin-top:12px"><span class="box"></span>Include school-age-only programs (183 hidden)</div>
+                <div class="check" style="font-size:14px;margin-top:8px"><span class="box"></span>Shortlist only (0)</div>
+              </div>
+
+              <div class="m-sec">Your centres <a>5</a></div>
+              <div class="m-yours">
+                <div class="m-yc"><div class="src">Ontario open data · Simulated applications</div><div class="name">Jesse Ketchum Early Learning &amp; Child Care Centre</div>
+                  <div class="st"><span class="pill st-wait"><svg width="14" height="14" viewBox="0 0 24 24"><use href="#i-wait"/></svg>Waitlisted (#4)</span></div>
+                  <div class="rep">Reported by Jesse Ketchum Early Learning &amp; Child Care Centre · <span class="tag-sim">Simulated</span> · Nov 2</div><a style="display:inline-block;margin-top:8px;font-size:14px;font-weight:700;color:var(--brand)">Manage</a></div>
+                <div class="m-yc"><div class="src">Ontario open data · Simulated applications</div><div class="name">Leaside Day Care Centre (Rolph Road Day Care)</div>
+                  <div class="st"><span class="pill st-wait"><svg width="14" height="14" viewBox="0 0 24 24"><use href="#i-wait"/></svg>Waitlisted (#10)</span></div>
+                  <div class="rep">Reported by Leaside Day Care Centre (Rolph Road Day Care) · <span class="tag-sim">Simulated</span> · Oct 1</div><a style="display:inline-block;margin-top:8px;font-size:14px;font-weight:700;color:var(--brand)">Manage</a></div>
+              </div>
+
+              <div class="m-count"><p>920 centres match your description, closest first</p><button class="btn btn-secondary btn-sm"><svg width="16" height="16" viewBox="0 0 24 24"><use href="#i-map"/></svg>Map</button></div>
+
+              <article class="m-res">
+                <div class="top2"><span class="m-src">Not on CareQ yet · Ontario open data</span><span class="m-heart" aria-label="Add to shortlist"><svg width="20" height="20" viewBox="0 0 24 24"><use href="#i-heart"/></svg></span></div>
+                <h4>Atelier Kids Annex</h4>
+                <p class="addr">34 Madison Avenue, Toronto, ON M5R 2S1</p>
+                <span class="m-dist"><svg width="16" height="16" viewBox="0 0 24 24"><use href="#i-pin"/></svg>0.1 km from The Annex.</span>
+                <div class="m-tags"><span class="m-tag">Infant</span><span class="m-tag">Toddler</span><span class="m-tag">Preschool</span><span class="m-tag plain">Not in CWELCC</span></div>
+                <dl class="m-facts"><dt>Programs</dt><dd>Full day</dd><dt>Language</dt><dd>English</dd><dt>Spaces</dt><dd>98 licensed spaces in total (capacity, not availability)</dd></dl>
+                <div class="m-avail"><b>Availability not reported</b><span>Not part of the CareQ demo; contact the centre directly.</span></div>
+                <p class="m-meta">Licence active · #62896 · No published documents for this centre yet.<br/>Ontario open data · Sep 30, 2026 · City of Toronto open data · Nov 5, 2026</p>
+              </article>
+
+              <article class="m-res">
+                <div class="top2"><span class="m-src">Not on CareQ yet · Ontario open data</span><span class="m-heart"><svg width="20" height="20" viewBox="0 0 24 24"><use href="#i-heart"/></svg></span></div>
+                <h4>Dr. Eric Jackman Institute Of Child Study Laboratory School Nursery</h4>
+                <p class="addr">45 Walmer Road, Toronto, ON M5R 2X2</p>
+                <span class="m-dist"><svg width="16" height="16" viewBox="0 0 24 24"><use href="#i-pin"/></svg>0.2 km from The Annex.</span>
+                <div class="m-tags"><span class="m-tag">Preschool</span><span class="m-tag plain">Not in CWELCC</span></div>
+                <dl class="m-facts"><dt>Programs</dt><dd>Half day</dd><dt>Language</dt><dd>English</dd><dt>Spaces</dt><dd>20 licensed spaces in total (capacity, not availability)</dd></dl>
+                <div class="m-avail"><b>Availability not reported</b><span>Not part of the CareQ demo; contact the centre directly.</span></div>
+                <p class="m-meta">Licence active · #56323 · No published documents for this centre yet.<br/>Ontario open data · Sep 30, 2026 · City of Toronto open data · Nov 5, 2026</p>
+              </article>
+            </div>
+            <span class="m-fab"><svg width="18" height="18" viewBox="0 0 24 24"><use href="#i-ask"/></svg>Ask CareQ</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel ba-changes small">
+      <b>What changed, and what didn’t</b>
+      <ul class="tight" style="font-size:14px">
+        <li><b>Overview:</b> the slogan hero, the tilted note and the three stat cards are gone. The offer (“Needs you”) comes first. The application list is sorted by what needs action. “2 unread companion updates” is now one row instead of a stat card. Every status keeps its “Simulated” tag, and the queue-position note stays word for word.</li>
+        <li><b>Find:</b> the title is plain (“Find centres”). The search box comes before “Your centres”, which is now a horizontal strip. The result card keeps every label, licence, source and date line, plus “capacity, not availability”, “Availability not reported” and “Not part of the CareQ demo; contact the centre directly.”, grouped into name → distance → ages → facts → availability → sources.</li>
+        <li>The “Prototype” banner, notifications, the Track “Offer” badge and Ask CareQ all stay. The phone nav row keeps the same items and only gets a clearer active state. Navigation, data and workflows don’t change.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 1. PALETTE -->
+  <section>
+    <header><span class="num">01</span><h2>Colour roles</h2><p class="muted small">Teal is the anchor. Coral and sunshine are fills and accents only. Their “-ink” shades are the versions that are safe to use for text.</p></header>
+
+    <p class="group-label">Core</p>
+    <div class="grid swatches">
+      <div class="sw"><div class="chip" style="background:#124B50;color:#fff">#124B50</div><div class="meta"><b>Teal · brand</b>Nav, primary actions, headings. White text 9.8:1</div></div>
+      <div class="sw"><div class="chip" style="background:#F26D55;color:#3A1209">#F26D55</div><div class="meta"><b>Coral</b>“Needs you” edge, focus ring tint, highlights. Never text (3.0:1)</div></div>
+      <div class="sw"><div class="chip" style="background:#F4C95D;color:#3A2C00">#F4C95D</div><div class="meta"><b>Sunshine</b>Offer pill, reminders, current step. Never text (1.6:1)</div></div>
+      <div class="sw"><div class="chip" style="background:#8FB99A;color:#173322">#8FB99A</div><div class="meta"><b>Leaf</b>Completed steps, progress, ticks. Never text (2.2:1)</div></div>
+    </div>
+
+    <p class="group-label">Text-safe shades (all ≥ 4.5:1 on white and on their tint)</p>
+    <div class="grid swatches">
+      <div class="sw"><div class="chip" style="background:#1B3438;color:#fff">#1B3438</div><div class="meta"><b>Ink</b>Body text · 12.5:1</div></div>
+      <div class="sw"><div class="chip" style="background:#55615E;color:#fff">#55615E</div><div class="meta"><b>Ink muted</b>Secondary text · 6.1:1 (replaces #7A8A84, 3.4:1 ✗)</div></div>
+      <div class="sw"><div class="chip" style="background:#B23F27;color:#fff">#B23F27</div><div class="meta"><b>Coral ink</b>Coral-tinted labels · 5.8:1</div></div>
+      <div class="sw"><div class="chip" style="background:#7A5600;color:#fff">#7A5600</div><div class="meta"><b>Sunshine ink</b>Reminder text · 6.7:1</div></div>
+      <div class="sw"><div class="chip" style="background:#2E6741;color:#fff">#2E6741</div><div class="meta"><b>Leaf ink</b>“Done” text · 6.7:1</div></div>
+    </div>
+
+    <p class="group-label">Surfaces</p>
+    <div class="grid swatches">
+      <div class="sw"><div class="chip" style="background:#FCF9F2">#FCF9F2</div><div class="meta"><b>Warm white</b>Page</div></div>
+      <div class="sw"><div class="chip" style="background:#FFFFFF">#FFFFFF</div><div class="meta"><b>White</b>Cards, inputs, tables</div></div>
+      <div class="sw"><div class="chip" style="background:#E8F0EB">#E8F0EB</div><div class="meta"><b>Mint</b>Active nav, AI/quote surfaces, done</div></div>
+      <div class="sw"><div class="chip" style="background:#FCEBE4">#FCEBE4</div><div class="meta"><b>Peach</b>Under review, gentle prompts</div></div>
+      <div class="sw"><div class="chip" style="background:#F4EFD9">#F4EFD9</div><div class="meta"><b>Butter</b>Simulated tags and banners, reminders</div></div>
+      <div class="sw"><div class="chip" style="background:#F1EEE6">#F1EEE6</div><div class="meta"><b>Stone</b>Draft, withdrawn, disabled</div></div>
+    </div>
+
+    <p class="group-label">Semantic (feedback only; never used for application statuses)</p>
+    <div class="grid semantic">
+      <div class="alert" style="background:var(--success-bg);color:var(--success)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+        <div><b>Success · #256B3F</b>Your application was sent to the centre.</div></div>
+      <div class="alert" style="background:var(--warning-bg);color:var(--warning)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <div><b>Warning · #7A4F00</b>Two documents are still missing.</div></div>
+      <div class="alert" style="background:var(--error-bg);color:var(--error)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>
+        <div><b>Error · #A8231A</b>We couldn’t save that. Try again.</div></div>
+      <div class="alert" style="background:var(--info-bg);color:var(--info)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div><b>Info · #245C8A</b>Centres update positions on their own timeline.</div></div>
+    </div>
+  </section>
+
+  <!-- 2. TYPE -->
+  <section>
+    <header><span class="num">02</span><h2>Typeface: Lato vs Nunito Sans</h2><p class="muted small">The same parent Overview content, 16px body, no tracking changes.</p></header>
+    <div class="grid compare">
+      <div class="fontcol lato">
+        <div class="label"><b>Lato</b><span class="muted">400 / 700 / 900</span></div>
+        <div class="mini">
+          <div class="hello">Hi Priya</div>
+          <p class="sub">Here’s what needs your attention today.</p>
+          <div class="next">
+            <div style="flex:1">
+              <div class="k">Needs you</div>
+              <h3>You have an offer from Macaulay – Dovercourt</h3>
+              <p>Review it and decide when you’re ready.</p>
+            </div>
+            <span class="btn btn-primary btn-sm">Review offer</span>
+          </div>
+          <div class="apps">
+            <h3>Your applications</h3>
+            <div class="row"><div class="grow"><div class="name">Jesse Ketchum Early Learning &amp; Child Care Centre</div><div class="sub2">Anya · Full day · Position #4</div></div><span class="pill st-wait">Waitlisted</span></div>
+            <div class="row"><div class="grow"><div class="name">Wellesley Early Learning Centre</div><div class="sub2">Anya · Full day · Sent Oct 28</div></div><span class="pill st-submitted">Submitted</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="fontcol nunito">
+        <div class="label"><b>Nunito Sans</b><span class="rec">Recommended</span></div>
+        <div class="mini">
+          <div class="hello">Hi Priya</div>
+          <p class="sub">Here’s what needs your attention today.</p>
+          <div class="next">
+            <div style="flex:1">
+              <div class="k">Needs you</div>
+              <h3>You have an offer from Macaulay – Dovercourt</h3>
+              <p>Review it and decide when you’re ready.</p>
+            </div>
+            <span class="btn btn-primary btn-sm">Review offer</span>
+          </div>
+          <div class="apps">
+            <h3>Your applications</h3>
+            <div class="row"><div class="grow"><div class="name">Jesse Ketchum Early Learning &amp; Child Care Centre</div><div class="sub2">Anya · Full day · Position #4</div></div><span class="pill st-wait">Waitlisted</span></div>
+            <div class="row"><div class="grow"><div class="name">Wellesley Early Learning Centre</div><div class="sub2">Anya · Full day · Sent Oct 28</div></div><span class="pill st-submitted">Submitted</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <h3>Why Nunito Sans</h3>
+      <ul class="tight">
+        <li>It has a larger x-height, so 14–16px text and long centre names stay readable on phones. Lato looks smaller at the same size.</li>
+        <li>Its slightly rounded ends feel warmer than Lato, without looking childish like a fully rounded face.</li>
+        <li>It is a variable font with weights 400–800 and an optical-size axis, so headings and captions are each tuned to their size from a single family file.</li>
+        <li>Lato is very common in 2010s templates and government sites, which are the looks the brief says to avoid.</li>
+      </ul>
+      <div class="grid scale">
+        <div><span style="font-size:30px;font-weight:800;color:var(--brand)">Page title</span><span>30/38 · 800 (24 on phone)</span></div>
+        <div><span style="font-size:22px;font-weight:800;color:var(--brand)">Section</span><span>22/28 · 800</span></div>
+        <div><span style="font-size:18px;font-weight:700">Card title</span><span>18/24 · 700</span></div>
+        <div><span style="font-size:16px">Body text</span><span>16/25 · 400</span></div>
+        <div><span style="font-size:14px">Small / table</span><span>14/20 · 400–600</span></div>
+        <div><span style="font-size:13px;color:var(--ink-muted)">Caption (minimum)</span><span>13/18 · replaces 10–11px</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. BUTTONS -->
+  <section>
+    <header><span class="num">03</span><h2>Buttons</h2><p class="muted small">10px corners, 44px tall (36px compact variant on desktop tables only), and a coral focus ring with an offset.</p></header>
+    <div class="panel">
+      <div class="btn-row">
+        <button class="btn btn-primary">Send application</button>
+        <button class="btn btn-secondary">Message centre</button>
+        <button class="btn btn-tertiary">View history</button>
+        <button class="btn btn-danger">Withdraw</button>
+        <button class="btn btn-primary" disabled>Send application</button>
+        <button class="btn btn-primary demo-focus">Focused</button>
+      </div>
+      <p class="btn-note">Primary, secondary, tertiary, destructive, disabled and keyboard focus. Arrows appear only on buttons that move you to another screen. When pressed, a button shrinks slightly to 98% and gets darker.</p>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn btn-primary btn-sm">Update position</button>
+        <button class="btn btn-secondary btn-sm">Review</button>
+        <span class="caption">Compact size: centre tables only</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. INPUTS -->
+  <section>
+    <header><span class="num">04</span><h2>Form controls</h2><p class="muted small">16px input text (so iOS doesn’t zoom in), labels always visible, input borders at 3:1 contrast.</p></header>
+    <div class="panel grid fields">
+      <div class="field"><label for="i1">Child’s first name</label><input id="i1" class="input" placeholder="e.g. Anya" /><p class="hint">As it appears on the birth certificate.</p></div>
+      <div class="field"><label for="i2">Preferred start date</label><input id="i2" class="input is-focus" value="March 2027" /><p class="hint">Focused state</p></div>
+      <div class="field"><label for="i3">Postal code</label><input id="i3" class="input is-error" value="M5R" aria-invalid="true" />
+        <p class="err"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Enter the full postal code, like M5R 2S1.</p></div>
+      <div class="field"><label for="i4">Licence number</label><input id="i4" class="input" value="Checked by CareQ" disabled /><p class="hint">Disabled state</p></div>
+      <div class="field"><label>Care type</label><div class="seg"><span class="on">Full day</span><span>Half day</span><span>Before/after</span></div></div>
+      <div class="field"><label>Checklist</label>
+        <div class="check"><span class="box on"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="m5 12 5 5 9-10"/></svg></span>Child’s birth certificate</div>
+        <div class="check"><span class="box"></span>Immunization record</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. STATUS + TRUST -->
+  <section>
+    <header><span class="num">05</span><h2>Application status &amp; trust labels</h2><p class="muted small">Each status has its own colour <em>and</em> its own icon, so the colour is never the only cue. Wording is unchanged.</p></header>
+    <div class="panel">
+      <div class="pills">
+        <div class="pill-cell"><span class="pill st-draft"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Draft</span><span class="caption">dashed = not sent</span></div>
+        <div class="pill-cell"><span class="pill st-submitted"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4z"/></svg>Submitted</span><span class="caption">info blue · 6.1:1</span></div>
+        <div class="pill-cell"><span class="pill st-review"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Under review</span><span class="caption">peach · 6.0:1</span></div>
+        <div class="pill-cell"><span class="pill st-wait"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Waitlisted (#4)</span><span class="caption">violet · 6.5:1</span></div>
+        <div class="pill-cell"><span class="pill st-offer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>Offer Available</span><span class="caption">solid sunshine · 8.7:1</span></div>
+        <div class="pill-cell"><span class="pill st-accepted"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5 9-10"/></svg>Accepted</span><span class="caption">mint · 5.8:1</span></div>
+        <div class="pill-cell"><span class="pill st-withdrawn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>Withdrawn</span><span class="caption">stone · 5.0:1</span></div>
+      </div>
+
+      <div style="border-top:1px solid var(--line); margin:20px 0 16px"></div>
+      <p class="group-label" style="margin-top:0">Trust and AI labels: wording exactly as today, restyled</p>
+      <div class="pills">
+        <span class="tag-sim">Simulated</span>
+        <span class="trust ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>Licensed · verified against Ontario open data</span>
+        <span class="trust no"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Self-registered · not verified</span>
+        <span class="trust ai"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Prepared with AI</span>
+        <span class="ai-note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>AI unavailable: basic mode used</span>
+      </div>
+      <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr));margin-top:16px">
+        <div class="banner-sim"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:3px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><span><b>Simulated demo account.</b> Not operated by or affiliated with Jesse Ketchum Early Learning &amp; Child Care Centre.</span></div>
+        <div class="quote">“Children are admitted from the waiting list in order of application date, subject to age group vacancies.”<cite>Sample text for styling only · <a href="#">Parent Handbook, PDF p.7</a></cite></div>
+      </div>
+      <p class="caption" style="margin-top:12px">The ✦ sparkle icon is no longer used for both “AI” and “simulated”. AI gets a pen icon on mint, and “simulated” gets the butter tag. This way the two meanings can’t be confused.</p>
+    </div>
+  </section>
+
+  <!-- 6. PARENT CARD -->
+  <section>
+    <header><span class="num">06</span><h2>Sample parent card (Track / Overview)</h2><p class="muted small">Phone width first. The status, a progress strip, who reported it, one clear next step.</p></header>
+    <div class="grid cards">
+      <div class="phone">
+        <article class="appcard">
+          <div class="head">
+            <div class="ill"><svg width="30" height="30" viewBox="0 0 48 48" fill="none" stroke="#124B50" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22 24 9l16 13"/><path d="M12 19v20h24V19" fill="#FFFFFF"/><path d="M21 39v-8a3 3 0 0 1 6 0v8" fill="#F4C95D"/></svg></div>
+            <div style="min-width:0">
+              <h3>Macaulay – Dovercourt Child Care Centre</h3>
+              <p class="where">Bloor &amp; Dufferin · Anya · Full day</p>
+            </div>
+          </div>
+          <div class="status"><span class="pill st-offer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7"/></svg>Offer Available</span><span class="tag-sim">Simulated</span></div>
+          <ol class="steps" aria-label="Application progress">
+            <li class="done">Sent</li><li class="done">Reviewed</li><li class="done">Waitlist</li><li class="now">Offer</li>
+          </ol>
+          <div class="callout"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7A5600" stroke-width="2" style="flex:none;margin-top:2px"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><div><b>Your next step</b>Review the offer, then accept it or let it go.</div></div>
+          <p class="fact">Reported by <b>Macaulay – Dovercourt Child Care Centre</b> · Nov 2 · <span class="tag-sim">Simulated</span></p>
+          <div class="actions"><button class="btn btn-primary">Review offer</button><button class="btn btn-secondary">Message</button></div>
+          <div class="linkrow"><a href="#">Ask about this centre</a><a href="#" style="color:var(--ink-muted);font-weight:600">History</a></div>
+        </article>
+      </div>
+      <div class="notes">
+        <article class="appcard">
+          <div class="head">
+            <div class="ill" style="background:#EEEAF6"><svg width="30" height="30" viewBox="0 0 48 48" fill="none" stroke="#124B50" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22 24 9l16 13"/><path d="M12 19v20h24V19" fill="#FFFFFF"/><path d="M21 39v-8a3 3 0 0 1 6 0v8" fill="#8FB99A"/></svg></div>
+            <div style="flex:1;min-width:0">
+              <h3>Jesse Ketchum Early Learning &amp; Child Care Centre</h3>
+              <p class="where">Yorkville · Anya · Full day · Start March 2027</p>
+            </div>
+            <div class="status" style="margin-top:0"><span class="pill st-wait">Waitlisted (#4)</span><span class="tag-sim">Simulated</span></div>
+          </div>
+          <ol class="steps"><li class="done">Sent</li><li class="done">Reviewed</li><li class="now">Waitlist</li><li>Offer</li></ol>
+          <p class="fact">Position <b>#4</b>, reported by Jesse Ketchum Early Learning &amp; Child Care Centre · Nov 2 · <span class="tag-sim">Simulated</span><br/>Centre’s estimate: 4–6 months, not a guarantee · <span class="tag-sim">Simulated</span></p>
+          <div class="actions" style="justify-content:flex-start"><button class="btn btn-secondary" style="flex:0 0 auto">View &amp; message</button><button class="btn btn-tertiary" style="flex:0 0 auto">History</button><button class="btn btn-tertiary" style="flex:0 0 auto;color:var(--error)">Withdraw</button></div>
+        </article>
+        <div class="panel small">
+          <b>Notes on the card</b>
+          <ul class="tight" style="font-size:14px">
+            <li>The progress strip only shows the stages the centre has reported. It never predicts what comes next.</li>
+            <li>The coral left edge and the butter “next step” box only appear when a parent needs to act.</li>
+            <li>There is one card level. No boxes nested inside boxes, and no 10px grey text.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. SCALES -->
+  <section>
+    <header><span class="num">07</span><h2>Radius, depth, spacing</h2></header>
+    <div class="grid scales">
+      <div class="panel"><h3>Radius</h3><div class="rad" style="margin-top:12px">
+        <div style="border-radius:6px"></div><div style="border-radius:10px"></div><div style="border-radius:14px"></div><div style="border-radius:20px"></div></div>
+        <p class="caption" style="margin-top:8px">6 tags/checkbox · 10 buttons/inputs · 14 cards/panels · 20 landing & illustration panels only. Full pill shape only for status pills and filter chips.</p></div>
+      <div class="panel"><h3>Depth</h3><div class="shad" style="margin-top:12px">
+        <div>none</div><div style="box-shadow:var(--shadow-1)">raised</div><div style="box-shadow:var(--shadow-2);border-color:transparent">overlay</div></div>
+        <p class="caption" style="margin-top:8px">A border plus no shadow is the default. “Raised” is for application cards and the sticky header. “Overlay” is for modals, menus and Ask CareQ.</p></div>
+      <div class="panel"><h3>Spacing (4px base)</h3><div class="space" style="margin-top:12px">
+        <div><div style="width:4px"></div><span>4</span></div><div><div style="width:8px"></div><span>8</span></div><div><div style="width:12px"></div><span>12</span></div><div><div style="width:16px"></div><span>16</span></div><div><div style="width:24px"></div><span>24</span></div><div><div style="width:32px"></div><span>32</span></div><div><div style="width:48px"></div><span>48</span></div><div><div style="width:64px"></div><span>64</span></div></div>
+        <p class="caption" style="margin-top:8px">Card padding 20 (phone 16) · gap between sections 32 in the app, 64–96 on the landing page.</p></div>
+    </div>
+  </section>
+
+  <!-- 8. ILLUSTRATIONS -->
+  <section>
+    <header><span class="num">08</span><h2>Spot illustrations (rough sketches)</h2><p class="muted small">All six share a 2px teal line, flat fills from the surface colours, one warm accent each, and a Q-ring arc that echoes the logo.</p></header>
+    <div class="grid ills">
+      <figure>
+        <svg viewBox="0 0 160 110" fill="none" stroke="#124B50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="122" cy="28" r="12" fill="#F4C95D" stroke="none"/>
+          <path d="M20 96h120" />
+          <path d="M44 54 80 26l36 28" />
+          <path d="M52 48v48h56V48" fill="#FFFFFF"/>
+          <path d="M72 96V78a8 8 0 0 1 16 0v18" fill="#E8F0EB"/>
+          <rect x="58" y="58" width="12" height="12" rx="2" fill="#FCEBE4"/><rect x="90" y="58" width="12" height="12" rx="2" fill="#FCEBE4"/>
+          <path d="M30 96c0-12 4-20 10-20s10 8 10 20" fill="#8FB99A"/>
+        </svg>
+        <figcaption><b>Centre / home</b>Find results, a centre with no photo, landing</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 160 110" fill="none" stroke="#124B50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="18" y="16" width="124" height="80" rx="10" fill="#E8F0EB"/>
+          <path d="M18 56c30-8 50 10 80 0s34-6 44-4" stroke="#FFFFFF" stroke-width="6"/>
+          <path d="M60 16v80M112 16v80" stroke="#FFFFFF" stroke-width="4"/>
+          <path d="M86 70c-12-12-16-20-16-28a16 16 0 0 1 32 0c0 8-4 16-16 28z" fill="#FFFFFF"/>
+          <circle cx="86" cy="42" r="6" fill="#F26D55" stroke="none"/>
+          <path d="M96 80a14 14 0 1 1 4-10" /><path d="M98 76l6 6"/>
+        </svg>
+        <figcaption><b>Neighbourhood / location</b>Find search, home area in onboarding</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 160 110" fill="none" stroke="#124B50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="52" y="14" width="60" height="84" rx="8" fill="#FFFFFF"/>
+          <rect x="68" y="8" width="28" height="12" rx="4" fill="#F4EFD9"/>
+          <path d="m62 38 5 5 8-9" stroke="#2E6741"/><path d="M82 40h20"/>
+          <path d="m62 58 5 5 8-9" stroke="#2E6741"/><path d="M82 60h20"/>
+          <rect x="62" y="74" width="12" height="12" rx="3" fill="#F4C95D"/><path d="M82 80h14"/>
+          <path d="M120 70l14-14 6 6-14 14-8 2z" fill="#FCEBE4"/>
+        </svg>
+        <figcaption><b>Documents &amp; checklist</b>Apply, Prepare with AI, Policy &amp; requirements</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 160 110" fill="none" stroke="#124B50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 88c22 0 22-26 46-26s22 22 44-4 20-30 34-30" stroke-dasharray="2 6"/>
+          <circle cx="22" cy="88" r="7" fill="#8FB99A"/><circle cx="64" cy="62" r="7" fill="#8FB99A"/><circle cx="102" cy="60" r="7" fill="#F4C95D"/>
+          <path d="M136 30V10l14 6-14 6" fill="#F26D55"/>
+          <path d="M20 88l2 2 3-4M62 62l2 2 3-4" stroke="#FFFFFF"/>
+        </svg>
+        <figcaption><b>Progress / journey</b>Track, onboarding steps, “You’ve completed this step”</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 160 110" fill="none" stroke="#124B50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 26h68a8 8 0 0 1 8 8v28a8 8 0 0 1-8 8H48l-14 12V70h-12a8 8 0 0 1-8-8V34a8 8 0 0 1 8-8z" fill="#E8F0EB"/>
+          <path d="M70 48h68a8 8 0 0 1 8 8v24a8 8 0 0 1-8 8h-8v12l-14-12H70a8 8 0 0 1-8-8V56a8 8 0 0 1 8-8z" fill="#FCEBE4"/>
+          <path d="M30 42h40M30 54h26M80 64h50M80 74h32"/>
+        </svg>
+        <figcaption><b>Messages</b>Parent and centre inboxes, empty conversations</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 160 110" fill="none" stroke="#124B50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="34" y="12" width="92" height="70" rx="10" fill="#F4EFD9"/>
+          <path d="M80 12v70M34 47h92" stroke="#FFFFFF" stroke-width="3"/>
+          <circle cx="104" cy="32" r="9" fill="#F4C95D" stroke="none"/>
+          <path d="M24 82h112"/>
+          <path d="M60 82V70h20v12" fill="#FCEBE4"/>
+          <path d="M70 70c0-10-8-14-12-22M70 70c0-8 6-14 12-18M70 70V52" stroke="#2E6741"/>
+          <path d="M54 46c4 0 6 2 4 6M84 50c2-4 6-4 6-2" stroke="#2E6741"/>
+        </svg>
+        <figcaption><b>Empty state</b>“Nothing here yet”, a quiet window with a plant</figcaption>
+      </figure>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

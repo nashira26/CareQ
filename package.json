@@ -17,7 +17,8 @@
     "build:index": "tsx scripts/build-index.ts",
     "eval:ask": "tsx scripts/eval-ask.ts",
     "eval:docs": "tsx scripts/eval-docs.ts",
-    "eval": "tsx scripts/eval.ts"
+    "eval": "tsx scripts/eval.ts",
+    "journey": "tsx scripts/journey.ts"
   },
   "dependencies": {
     "@google/genai": "^2.32.0",
@@ -47,6 +48,7 @@
     "@types/react-dom": "^19.3.0",
     "autoprefixer": "^10.4.21",
     "esbuild": "^0.28.0",
+    "playwright": "1.51.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2"
   }
