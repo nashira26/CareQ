@@ -89,8 +89,10 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
   // Attach sample simulated document
   const handleAttachSample = (appId: string, reqName: string) => {
     const sanitized = reqName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    // Named after the active child (sample file, nothing is uploaded)
+    const childSlug = parentProfile.childName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'child';
     onUploadDocument(appId, reqName, {
-      fileName: `anya_${sanitized}_doc.pdf`,
+      fileName: `${childSlug}_${sanitized}_doc.pdf`,
       fileSize: '1.2 MB',
     });
   };

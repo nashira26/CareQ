@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Centre, Application, ChatMessage } from '../data/mockData';
 import { StatusBadge } from './StatusBadge';
 import { AiFallbackNote, AiMode, AiNotice, SimTag } from './ui/CareUI';
+import { parentMessageSuggestions } from '../lib/messageSuggestions';
 import { AI_OFFLINE_STATUS, aiPost, isUserFacingAiError } from '../lib/aiFetch';
 import { X, Send, Bot, Loader2, Check, Building2, User, Baby, RefreshCw, MessageSquare, AlertTriangle, PenLine } from 'lucide-react';
 
@@ -67,22 +68,8 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
     setDraftContext(null);
   };
 
-  // Smart suggestions tailored to role and application status
-  // Status-aware: an offer comes first when there is one
-  const parentSuggestions =
-    application.status === 'Offer'
-      ? [
-          'Accept the offer and ask about next steps',
-          'Ask a question about the offer before deciding',
-          'Decline the offer politely',
-          'Request a brief visit before the start date',
-        ]
-      : [
-          'Inquire about waitlist timeline & current queue movement',
-          'Follow up on submitted immunization & residency documents',
-          'Request a brief morning tour of the toddler classroom',
-          'Confirm March start date availability and CWELCC fee details',
-        ];
+  // Parent ideas from this application's facts (start date, age group, status, the centre's checklist)
+  const parentSuggestions = parentMessageSuggestions(application, centre);
 
   const centreSuggestions = (() => {
     switch (application.status) {

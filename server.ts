@@ -39,6 +39,17 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 
 // Max time to wait for Gemini before using the non-AI fallback. Override with GEMINI_TIMEOUT_MS.
 const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 15000;
+/**
+ * Per-endpoint first-model time limit: GEMINI_TIMEOUT_MS_<ENDPOINT> (e.g. GEMINI_TIMEOUT_MS_EXTRACT_POLICY_REQUIREMENTS).
+ * The centre-side policy readers read long documents with the main model, so they get 30 s by default;
+ * everything else keeps GEMINI_TIMEOUT_MS (15 s).
+ */
+const ENDPOINT_TIMEOUT_DEFAULTS: Record<string, number> = {
+  'extract-policy-requirements': 30000,
+  'extract-from-documents': 30000,
+};
+const timeoutFor = (endpoint: string) =>
+  Number(process.env[`GEMINI_TIMEOUT_MS_${endpoint.toUpperCase().replace(/-/g, '_')}`]) || ENDPOINT_TIMEOUT_DEFAULTS[endpoint] || GEMINI_TIMEOUT_MS;
 
 // Backup model, tried once when the main model times out or is overloaded (429/503).
 // gemini-3.5-flash-lite was the fastest reliable other flash model in testing on 2026-11-05.
@@ -272,7 +283,7 @@ async function startServer() {
     let response: GenerateContentResponse;
     let modelUsed = primary;
     try {
-      response = await callModel(label, primary, params, GEMINI_TIMEOUT_MS);
+      response = await callModel(label, primary, params, timeoutFor(label));
     } catch (err) {
       if (!isRetryable(err)) throw err;
       const status = err instanceof ApiError ? `HTTP ${err.status}` : 'timeout';

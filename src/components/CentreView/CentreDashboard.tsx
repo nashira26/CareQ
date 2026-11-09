@@ -822,7 +822,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                   ))}
                   <PrimaryButton onClick={() => handleExtractFromDocument(selectedDocKey)} disabled={isExtracting || !selectedDocKey} className="h-11">
                     <PenLine className="w-4 h-4" aria-hidden="true" />
-                    <span>{isExtracting ? 'Reading the document…' : 'Find requirements in this document'}</span>
+                    <span>{isExtracting ? 'Reading your policy… this can take up to 30 seconds' : 'Find requirements in this document'}</span>
                   </PrimaryButton>
                 </div>
               )}
@@ -872,7 +872,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                   <PenLine className="w-4 h-4" aria-hidden="true" />
                   <span>
                     {isExtracting
-                      ? 'Reading your policy…'
+                      ? 'Reading your policy… this can take up to 30 seconds'
                       : 'Find requirements with AI'}
                   </span>
                 </PrimaryButton>
