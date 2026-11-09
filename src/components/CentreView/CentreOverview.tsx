@@ -73,7 +73,7 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
         title="More time for the children in the room."
         subtitle={`Your simulated workspace for ${singleCentre.name}.`}
         action={
-          <PrimaryButton onClick={() => onNavigate('applications')}>
+          <PrimaryButton arrow onClick={() => onNavigate('applications')}>
             Review applications
           </PrimaryButton>
         }

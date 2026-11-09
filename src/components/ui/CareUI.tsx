@@ -215,7 +215,7 @@ export const ProgressStrip: React.FC<{ status: ApplicationStatus; compact?: bool
               }`}
             />
             {!compact && (
-              <span className={`text-xs truncate ${state === 'todo' ? 'text-ink-faint' : 'font-bold text-ink'}`}>{s}</span>
+              <span className={`text-[12px] leading-tight whitespace-nowrap ${state === 'todo' ? 'text-ink-faint' : 'font-bold text-ink'}`}>{s}</span>
             )}
           </li>
         );

@@ -6,26 +6,24 @@ import {
   Clock,
   Search,
   ArrowRight,
-  Sparkles,
   Loader2,
   RotateCcw,
   LayoutList,
   Map as MapIcon,
-  Navigation,
 } from 'lucide-react';
 import { DaycareMap } from './DaycareMap';
-import { useOntarioData, useShortlist, OntarioCentreCard, HeartButton, Chip, ResultInfo } from './OntarioCentres';
+import { useOntarioData, useShortlist, OntarioCentreCard, HeartButton, Chip, ResultInfo, MoreDetails, AvailabilityBox } from './OntarioCentres';
 import { SearchChips } from './SearchChips';
-import { reportedLine } from '../../lib/simulated';
+import { reportedLineOnCard } from '../../lib/simulated';
 import { licenceLabel } from '../../lib/family';
 import { doesntServeLabel } from '../../lib/searchCriteria';
 import {
   PageHeader,
-  Eyebrow,
   Card,
   GhostButton,
-  HouseIllustration,
-  HouseIllustrationTone,
+  PrimaryButton,
+  TertiaryButton,
+  CentreAvatar,
   AiFallbackNote,
   AiMode,
   AiNotice,
@@ -50,7 +48,6 @@ import { AskAboutCentre } from '../AskAboutCentre';
 // Approximate centre points, used only to sort by distance (see metadata.approximate).
 const AREAS = (torontoAreas as { areas: Area[] }).areas;
 const FSA = fsaCentroids as FsaCentroids;
-const TONES: HouseIllustrationTone[] = ['sage', 'lilac', 'sky'];
 const PAGE_SIZE = 24;
 const EXPLAIN_TOP_N = 10;
 
@@ -104,9 +101,9 @@ const demoCentreLabel = (c: Centre) =>
 const appliedLabel = (status: ApplicationStatus) => (status === 'Draft' ? 'Draft application' : `Applied · ${status}`);
 
 /** Queue position exactly as the centre reported it, with the date when known. */
-const positionLabel = (app: Application) =>
+const positionLabel = (app: Application, centreName?: string) =>
   app.waitlistPosition
-    ? `#${app.waitlistPosition} · ${reportedLine(app.waitlistReportedBy || 'centre', app.waitlistReportedDate || 'recently')}`
+    ? `#${app.waitlistPosition} · ${reportedLineOnCard(app.waitlistReportedBy, centreName, app.waitlistReportedDate || 'recently')}`
     : null;
 
 export const FindTab: React.FC<FindTabProps> = ({
@@ -292,11 +289,11 @@ export const FindTab: React.FC<FindTabProps> = ({
   const statusPill = (id: string) => {
     const app = appByCentre.get(id);
     if (app) {
-      const pos = positionLabel(app);
+      const pos = positionLabel(app, entryById.get(id)?.name);
       return (
-        <span className="inline-flex flex-wrap items-center gap-1.5">
+        <span className="flex flex-col items-start gap-1">
           <Chip tone="sage">{appliedLabel(app.status)}</Chip>
-          {pos && <span className="text-xs text-cq-muted">{pos}</span>}
+          {pos && <span className="text-xs text-ink-muted">{pos}</span>}
         </span>
       );
     }
@@ -304,153 +301,132 @@ export const FindTab: React.FC<FindTabProps> = ({
     return null;
   };
 
-  const renderPartnerCard = (centre: Centre, index: number, result?: ResultInfo) => {
+  const renderPartnerCard = (centre: Centre, _index: number, result?: ResultInfo) => {
     const existingApp = appByCentre.get(centre.id);
-    const tone = TONES[index % TONES.length];
     const reg = centre.registration; // self-registered by its own staff (demo, not verified)
     const notServed = doesntServeLabel(centre.ageGroups, parentProfile.childAgeMonths);
+    const distance =
+      result?.reason ??
+      (result?.distanceKm != null ? distanceLabel(result.distanceKm, reg ? { neighbourhood: centre.neighbourhood } : undefined) : null);
+    const pill = statusPill(centre.id);
     return (
-      <div
-        key={centre.id}
-        className="bg-white rounded-2xl border border-cq-line overflow-hidden hover:shadow-[0_12px_30px_-18px_rgba(23,63,66,0.35)] transition flex flex-col justify-between"
-      >
-        <div>
-          <div className="relative h-[150px] overflow-hidden bg-cq-page flex items-center justify-center">
-            {reg?.photoDataUrl ? (
-              <img src={reg.photoDataUrl} alt={`${centre.name}`} className="w-full h-full object-cover" />
-            ) : (
-              <HouseIllustration tone={tone} className="w-full h-full object-cover" />
-            )}
-            <span className="absolute bottom-2.5 left-3 text-xs bg-white/80 backdrop-blur-xs text-cq-muted font-medium rounded px-1.5 py-0.5 border border-cq-line">
-              {reg?.photoDataUrl ? 'Photo provided by the centre' : 'Illustration · not a site photo'}
+      <article key={centre.id} className="bg-white rounded-2xl border border-cq-line overflow-hidden flex flex-col">
+        {reg?.photoDataUrl && (
+          <div className="relative h-[150px] overflow-hidden bg-page">
+            <img src={reg.photoDataUrl} alt={`${centre.name}`} className="w-full h-full object-cover" />
+            <span className="absolute bottom-2.5 left-3 text-xs bg-white text-ink-muted font-semibold rounded-md px-1.5 py-0.5 border border-cq-line">
+              Photo provided by the centre
             </span>
           </div>
+        )}
 
-          <div className="p-5">
-            <div className="flex items-start justify-between gap-2">
-              {reg ? (
-                <span
-                  className={`inline-block rounded px-1.5 py-0.5 text-xs font-semibold ${
-                    reg.licenceVerified ? 'bg-cq-sage text-cq-sage-ink' : 'bg-cq-peach text-cq-rust'
-                  }`}
-                >
-                  {licenceLabel(centre)}
-                </span>
-              ) : (
-                <span className="inline-block rounded px-1.5 py-0.5 bg-cq-brand/10 text-cq-brand text-xs font-semibold">
-                  {demoCentreLabel(centre)}
-                </span>
-              )}
-              <HeartButton name={centre.name} active={shortlist.includes(centre.id)} onToggle={() => toggleShortlist(centre.id)} />
+        <div className="p-4 sm:p-5 flex-1 flex flex-col">
+          <div className="flex items-start justify-between gap-2">
+            {reg ? (
+              <span
+                className={`inline-flex items-center rounded-md px-2 h-6 text-xs font-bold ${
+                  reg.licenceVerified ? 'bg-success-bg text-success' : 'bg-stone text-status-draft'
+                }`}
+              >
+                {licenceLabel(centre)}
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-md px-2 h-6 bg-mint text-brand text-xs font-bold">{demoCentreLabel(centre)}</span>
+            )}
+            <HeartButton name={centre.name} active={shortlist.includes(centre.id)} onToggle={() => toggleShortlist(centre.id)} />
+          </div>
+
+          <div className="flex items-start gap-3 mt-1">
+            <CentreAvatar centreId={centre.id} />
+            <div className="min-w-0">
+              <h3 className="text-[17px] font-extrabold text-ink leading-snug">{centre.name}</h3>
+              {centre.address && <p className="text-sm text-ink-muted mt-0.5">{centre.address}</p>}
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-cq-soft mt-1">
-              <MapPin className="w-3 h-3 shrink-0" />
-              <span>{centre.neighbourhood}</span>
-              {result?.distanceKm != null && (
-                <span className="font-semibold text-cq-ink flex items-center gap-1 ml-1">
-                  <Navigation className="w-3 h-3" />
-                  {distanceLabel(result.distanceKm, reg ? { neighbourhood: centre.neighbourhood } : undefined)}
-                </span>
-              )}
-            </div>
-            <h3 className="text-[17px] font-bold text-cq-ink mt-1 leading-snug">{centre.name}</h3>
-            <div className="mt-1.5">{statusPill(centre.id)}</div>
-            {centre.address && <p className="text-xs text-cq-muted mt-2">{centre.address}</p>}
+          </div>
+
+          {distance ? (
+            <p className="mt-3 flex items-start gap-1.5 text-sm font-bold text-brand">
+              <MapPin className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+              <span>{distance}</span>
+            </p>
+          ) : (
+            <p className="mt-3 flex items-center gap-1.5 text-sm text-ink-muted">
+              <MapPin className="w-4 h-4 shrink-0" aria-hidden="true" />
+              {centre.neighbourhood}
+            </p>
+          )}
+
+          {pill && <div className="mt-2">{pill}</div>}
+          {notServed && (
+            <p className="mt-2 inline-flex self-start rounded-md bg-warning-bg px-2 py-0.5 text-xs font-bold text-warning">{notServed}</p>
+          )}
+
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            {centre.ageGroups.map((age) => (
+              <Chip key={age}>{age}</Chip>
+            ))}
+            {centre.feeNote && <Chip tone="sand">CWELCC ($10/day)</Chip>}
+          </div>
+
+          <AvailabilityBox title="Availability reported by centre only" />
+
+          <MoreDetails>
+            {centre.hours && (
+              <p className="flex items-center gap-1.5">
+                <Clock className="w-4 h-4 shrink-0" aria-hidden="true" />
+                {centre.hours}
+              </p>
+            )}
+            {centre.programOptions && centre.programOptions.length > 0 && (
+              <p>
+                <span className="font-bold text-ink">Programs:</span> {centre.programOptions.join(', ')}
+              </p>
+            )}
+            {centre.languages && centre.languages.length > 0 && (
+              <p>
+                <span className="font-bold text-ink">Language:</span> {centre.languages.join(', ')}
+              </p>
+            )}
             {centre.demoKind === 'open-data' && (
-              <p className="text-xs text-cq-soft mt-1">
+              <p>
                 {centre.licenceNumber ? `Licence #${centre.licenceNumber} · ` : ''}Ontario open data
                 {centre.capacity ? ` · ${centre.capacity} licensed spaces (capacity, not availability)` : ''}
               </p>
             )}
-            {notServed && (
-              <p className="mt-2 inline-block rounded-md border border-cq-sand-line-2 bg-cq-cream-amber px-2 py-0.5 text-xs font-semibold text-cq-amber-ink">
-                {notServed}
-              </p>
-            )}
             {reg && (
-              <p className="text-xs text-cq-soft mt-1">
+              <p>
                 {reg.licenceNumber ? `Licence #${reg.licenceNumber} · ${reg.licenceVerified ? 'matches Ontario open data' : 'Self-reported, not verified'} · ` : ''}
                 Approximate location ({reg.locationSource})
                 {reg.capacity ? ` · ${reg.capacity} licensed spaces (capacity, not availability)` : ''}
               </p>
             )}
+          </MoreDetails>
 
-            {result?.reason && (
-              <p className="mt-3 text-xs text-cq-muted bg-cq-sand/60 border border-cq-line rounded-lg p-2.5">
-                {result.reason}
-              </p>
-            )}
-
-            <div className="flex flex-wrap gap-1.5 mt-3">
-              {centre.ageGroups.map((age) => (
-                <span key={age} className="rounded-md border border-cq-sage-line-2 bg-cq-surface-sage px-2 py-0.5 text-xs text-cq-sage-ink font-medium">
-                  {age}
-                </span>
-              ))}
-              {centre.hours && (
-                <span className="rounded-md border border-cq-sage-line-2 bg-cq-surface-sage px-2 py-0.5 text-xs text-cq-sage-ink font-medium flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-cq-sage-ink" />
-                  {centre.hours}
-                </span>
-              )}
-              {centre.feeNote && (
-                <span className="rounded-md border border-cq-sand-line bg-cq-sand-50 px-2 py-0.5 text-xs text-cq-sand-ink-2 font-medium">
-                  CWELCC ($10/day)
-                </span>
-              )}
-            </div>
-            {centre.programOptions && centre.programOptions.length > 0 && (
-              <p className="text-xs text-cq-muted mt-2">
-                <span className="font-semibold">Programs:</span> {centre.programOptions.join(', ')}
-              </p>
-            )}
-            {centre.languages && centre.languages.length > 0 && (
-              <p className="text-xs text-cq-muted mt-0.5">
-                <span className="font-semibold">Language:</span> {centre.languages.join(', ')}
-              </p>
-            )}
-            <div className="mt-3">
-              <AskAboutCentre centreId={centre.id} centreName={centre.name} />
-            </div>
+          <div className="mt-3">
+            <AskAboutCentre centreId={centre.id} centreName={centre.name} />
           </div>
-        </div>
 
-        <div className="px-5 pb-5 pt-4 border-t border-cq-line flex items-center justify-between gap-2">
-          <span className="text-xs text-cq-soft">Availability reported by centre only</span>
-          <div className="flex items-center gap-3 shrink-0">
-            <button
-              type="button"
-              onClick={() => onOpenConversation(centre.id)}
-              className="text-xs font-semibold text-cq-muted hover:text-cq-ink hover:underline cursor-pointer"
-            >
+          <div className="mt-auto pt-4 flex items-center justify-end gap-2 flex-wrap">
+            <GhostButton onClick={() => onOpenConversation(centre.id)} className="h-10">
               Message
-            </button>
+            </GhostButton>
             {existingApp ? (
-              <button
-                type="button"
-                onClick={onNavigateToApply}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-cq-ink hover:text-cq-brand hover:underline cursor-pointer"
-              >
-                <span>Manage ({existingApp.status})</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              <GhostButton onClick={onNavigateToApply} className="h-10">
+                Manage ({existingApp.status})
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </GhostButton>
             ) : notServed ? (
-              <span className="text-xs text-cq-soft" title={`${notServed}, so you can't apply for ${parentProfile.childName}.`}>
+              <span className="text-sm text-ink-muted px-2" title={`${notServed}, so you can't apply for ${parentProfile.childName}.`}>
                 Can&apos;t apply
               </span>
             ) : (
-              <button
-                type="button"
-                onClick={() => onSelectCentre(centre.id)}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-cq-ink hover:text-cq-brand hover:underline cursor-pointer"
-              >
-                <span>Apply</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              <PrimaryButton arrow onClick={() => onSelectCentre(centre.id)} className="h-10">
+                Apply
+              </PrimaryButton>
             )}
           </div>
         </div>
-      </div>
+      </article>
     );
   };
 
@@ -459,35 +435,40 @@ export const FindTab: React.FC<FindTabProps> = ({
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Find centres"
-        title="A good fit starts here."
+        title="Find centres"
         subtitle="Search licensed centres near you. Availability and waitlists only appear when a centre reports them."
       />
 
       {/* A) Your centres */}
       {yourCentreIds.length > 0 && (
-        <section aria-label="Your centres">
-          <Eyebrow>Your centres</Eyebrow>
-          <div className="mt-2 flex overflow-x-auto pb-1 gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:overflow-visible">
+        <section aria-labelledby="your-centres">
+          <h2 id="your-centres" className="text-lg font-extrabold text-brand">
+            Your centres <span className="text-sm font-bold text-ink-muted">({yourCentreIds.length})</span>
+          </h2>
+          <div className="mt-3 -mx-4 px-4 sm:mx-0 sm:px-0 flex overflow-x-auto no-scrollbar pb-1 gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:overflow-visible">
             {yourCentreIds.map((id) => {
               const e = entryById.get(id)!;
               const app = appByCentre.get(id);
               return (
-                <div key={id} className="shrink-0 w-[230px] sm:w-auto rounded-xl border border-cq-line bg-white p-3 space-y-1.5">
-                  <p className="text-xs font-semibold text-cq-soft">
+                <div key={id} className="shrink-0 w-[260px] sm:w-auto rounded-2xl border border-cq-line bg-white p-3.5 flex flex-col gap-2">
+                  <p className="text-xs text-ink-soft">
                     {e.kind === 'open-data'
                       ? 'Not on CareQ yet · Ontario open data'
                       : (e.centre as Centre).registration
                       ? licenceLabel(e.centre as Centre)
                       : demoCentreLabel(e.centre as Centre)}
                   </p>
-                  <p className="text-sm font-bold text-cq-ink leading-snug line-clamp-2">{e.name}</p>
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-start gap-2.5">
+                    <CentreAvatar centreId={id} size="sm" />
+                    <p className="text-[15px] font-bold text-ink leading-snug line-clamp-2">{e.name}</p>
+                  </div>
+                  <div className="mt-auto flex items-end justify-between gap-2">
                     {statusPill(id)}
                     {app && (
-                      <button type="button" onClick={onNavigateToApply} className="text-xs font-semibold text-cq-brand hover:underline cursor-pointer">
+                      <TertiaryButton onClick={onNavigateToApply} className="h-9 px-1 shrink-0">
                         Manage
-                      </button>
+                        <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                      </TertiaryButton>
                     )}
                   </div>
                 </div>
@@ -498,13 +479,13 @@ export const FindTab: React.FC<FindTabProps> = ({
       )}
 
       {/* B) Describe what you need */}
-      <div className="rounded-2xl border border-cq-line bg-white shadow-2xs p-4 space-y-3">
-        <label htmlFor="describe-need" className="block">
-          <Eyebrow>Describe what you need</Eyebrow>
+      <div className="rounded-2xl border border-cq-line bg-white p-4 sm:p-5 space-y-3">
+        <label htmlFor="describe-need" className="block text-[15px] font-bold text-ink">
+          Describe what you need
         </label>
         <div className="flex flex-col sm:flex-row gap-2">
-          <div className="flex-1 flex items-center gap-3 px-3 rounded-xl border border-cq-line focus-within:border-cq-brand min-w-0">
-            <Search className="w-4 h-4 text-cq-soft shrink-0" />
+          <div className="flex-1 flex items-center gap-3 px-3.5 h-12 rounded-xl border border-line-strong bg-white focus-within:border-brand focus-within:ring-[3px] focus-within:ring-brand/20 min-w-0 transition-[border-color,box-shadow]">
+            <Search className="w-5 h-5 text-ink-muted shrink-0" aria-hidden="true" />
             <input
               id="describe-need"
               type="text"
@@ -512,7 +493,7 @@ export const FindTab: React.FC<FindTabProps> = ({
               onChange={(e) => setSearchText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="Full-time care for my 2-year-old near Danforth and Pape, from March"
-              className="w-full py-2.5 bg-transparent border-none text-sm text-cq-ink placeholder-cq-soft focus:outline-hidden"
+              className="w-full h-full bg-transparent border-none text-base text-ink placeholder:text-ink-faint focus:outline-hidden focus-visible:outline-none"
             />
           </div>
           <div className="flex gap-2 shrink-0">
@@ -520,13 +501,13 @@ export const FindTab: React.FC<FindTabProps> = ({
               type="button"
               onClick={handleSearch}
               disabled={isParsing}
-              className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-cq-brand hover:bg-cq-brand-hover text-white text-sm font-semibold disabled:opacity-50 cursor-pointer"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 h-12 px-5 rounded-xl bg-cq-brand hover:bg-cq-brand-hover text-white text-sm font-bold disabled:bg-stone disabled:text-ink-faint active:scale-[0.98] transition-[background-color,transform] cursor-pointer"
             >
-              {isParsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {isParsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" aria-hidden="true" />}
               Search
             </button>
             {(searching || searchText) && (
-              <GhostButton onClick={handleClear} className="h-11">
+              <GhostButton onClick={handleClear} className="h-12">
                 <RotateCcw className="w-3.5 h-3.5" /> Clear
               </GhostButton>
             )}
@@ -545,16 +526,16 @@ export const FindTab: React.FC<FindTabProps> = ({
         <AiFallbackNote aiMode={parseAiMode} />
         <AiNotice message={aiNotice} />
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1 text-xs text-cq-ink">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={includeSchoolAgeOnly} onChange={(e) => setIncludeSchoolAgeOnly(e.target.checked)} />
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 pt-1 text-sm text-ink">
+          <label className="flex items-center gap-2 min-h-10 cursor-pointer">
+            <input type="checkbox" className="w-[18px] h-[18px] accent-brand" checked={includeSchoolAgeOnly} onChange={(e) => setIncludeSchoolAgeOnly(e.target.checked)} />
             <span>
               Include school-age-only programs
               {!includeSchoolAgeOnly && ontarioFile && <span className="text-cq-soft"> ({hiddenSchoolAgeOnly} hidden)</span>}
             </span>
           </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={shortlistOnly} onChange={(e) => setShortlistOnly(e.target.checked)} />
+          <label className="flex items-center gap-2 min-h-10 cursor-pointer">
+            <input type="checkbox" className="w-[18px] h-[18px] accent-brand" checked={shortlistOnly} onChange={(e) => setShortlistOnly(e.target.checked)} />
             <span>Shortlist only ({shortlist.length})</span>
           </label>
         </div>
@@ -609,7 +590,7 @@ export const FindTab: React.FC<FindTabProps> = ({
           )}
           {loadError && <span className="ml-2 text-xs font-normal text-cq-rust">Could not load licensed centres.</span>}
         </div>
-        <GhostButton onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="h-9 px-3 text-xs shrink-0">
+        <GhostButton onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="h-10 px-3 shrink-0">
           {viewMode === 'list' ? (
             <>
               <MapIcon className="w-3.5 h-3.5" />
@@ -645,7 +626,7 @@ export const FindTab: React.FC<FindTabProps> = ({
               <p className="text-cq-muted text-sm">No centres match. Try removing a filter or widening the distance.</p>
             </Card>
           ) : (
-            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
               {shown.map(({ entry, rank }, i) => {
                 const result: ResultInfo | undefined = rank ? { distanceKm: rank.distanceKm, reason: reasonFor(rank) } : undefined;
                 return entry.kind === 'partner' ? (

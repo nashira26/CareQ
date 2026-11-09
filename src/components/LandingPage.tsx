@@ -1,5 +1,6 @@
 import React from 'react';
-import { ArrowRight, ShieldCheck, Sparkles, FileText, CheckCheck, Lock } from 'lucide-react';
+import { ArrowRight, ShieldCheck, FileText, CheckCheck, Lock, Check } from 'lucide-react';
+import { SpotNeighbourhood, SpotChecklist, SpotJourney, SpotCentre } from './ui/Illustrations';
 import { LogoFull } from './Logo';
 import { HouseIllustration } from './ui/CareUI';
 
@@ -28,38 +29,38 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       className="min-h-screen bg-cq-page text-cq-ink-body font-brand-page flex flex-col antialiased selection:bg-cq-sage selection:text-cq-ink"
     >
       {/* ---------------- Navigation Header ---------------- */}
-      <header className="sticky top-0 z-40 w-full bg-cq-page/90 backdrop-blur-md border-b border-cq-line/80 transition-colors">
-        <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 w-full bg-white border-b border-cq-line">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <LogoFull size={40} />
+            <LogoFull size={34} />
           </div>
 
           <nav className="flex items-center gap-2 sm:gap-6">
             <button
               type="button"
               onClick={scrollToHowItWorks}
-              className="text-sm font-semibold text-cq-muted hover:text-cq-ink transition-colors cursor-pointer hidden md:inline-flex"
+              className="text-sm font-bold text-ink-muted hover:text-brand transition-colors cursor-pointer hidden md:inline-flex"
             >
               See how it works
             </button>
             <button
               type="button"
               onClick={onOpenTrust}
-              className="text-sm font-semibold text-cq-muted hover:text-cq-ink transition-colors cursor-pointer hidden sm:inline-flex"
+              className="text-sm font-bold text-ink-muted hover:text-brand transition-colors cursor-pointer hidden sm:inline-flex"
             >
               Trust &amp; AI
             </button>
             <button
               type="button"
               onClick={onLogIn}
-              className="h-10 px-4 rounded-xl border border-cq-line bg-white text-sm font-semibold text-cq-ink hover:bg-cq-page transition-colors cursor-pointer"
+              className="h-10 px-4 rounded-xl border border-line-strong bg-white text-sm font-bold text-brand hover:bg-mint active:scale-[0.98] transition-[background-color,transform] cursor-pointer"
             >
               Log in
             </button>
             <button
               type="button"
               onClick={onGetStarted}
-              className="h-10 px-5 rounded-xl bg-cq-brand hover:bg-cq-brand-hover text-white text-sm font-semibold shadow-xs transition-colors inline-flex items-center gap-2 cursor-pointer"
+              className="h-10 px-4 sm:px-5 rounded-xl bg-cq-brand hover:bg-cq-brand-hover text-white text-sm font-bold active:scale-[0.98] transition-[background-color,transform] inline-flex items-center gap-2 cursor-pointer"
             >
               <span>Get started</span>
               <ArrowRight className="w-4 h-4 shrink-0" />
@@ -73,16 +74,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {/* 1. HERO SECTION */}
         <section className="max-w-6xl w-full mx-auto px-6 pt-12 pb-16 lg:pt-20 lg:pb-24 grid lg:grid-cols-2 gap-12 lg:gap-14 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cq-sage-250 bg-cq-sage-50 px-4 py-1.5 text-xs font-semibold text-cq-sage-ink mb-6">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Ontario Child Care Platform</span>
-            </div>
+            <p className="text-sm font-bold text-coral-ink mb-4">Ontario Child Care Platform</p>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-bold text-cq-ink leading-[1.12]">
+            <h1 className="text-[34px] sm:text-5xl lg:text-[52px] font-extrabold text-brand leading-[1.1]">
               Your child-care applications, followed through to a spot.
             </h1>
 
-            <p className="mt-6 text-lg sm:text-xl leading-relaxed text-cq-muted max-w-xl">
+            <p className="mt-5 text-lg leading-relaxed text-ink-muted max-w-xl">
               CareQ keeps every Ontario child-care application in one place. It shows what each centre has told you, what's still unknown, and the next step to take. Nothing is sent without your approval.
             </p>
 
@@ -90,7 +88,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <button
                 type="button"
                 onClick={onGetStarted}
-                className="h-12 px-6 rounded-xl bg-cq-brand hover:bg-cq-brand-hover text-white font-semibold text-base shadow-sm transition-colors inline-flex items-center gap-2 cursor-pointer"
+                className="h-12 px-6 rounded-xl bg-cq-brand hover:bg-cq-brand-hover text-white font-bold text-base active:scale-[0.98] transition-[background-color,transform] inline-flex items-center gap-2 cursor-pointer"
               >
                 <span>Get started</span>
                 <ArrowRight className="w-4 h-4 shrink-0" />
@@ -99,23 +97,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <button
                 type="button"
                 onClick={scrollToHowItWorks}
-                className="h-12 px-6 rounded-xl border border-cq-line bg-white text-base font-semibold text-cq-ink hover:bg-cq-page transition-colors cursor-pointer"
+                className="h-12 px-6 rounded-xl border border-line-strong bg-white text-base font-bold text-brand hover:bg-mint active:scale-[0.98] transition-[background-color,transform] cursor-pointer"
               >
                 See how it works
               </button>
             </div>
 
-            <p className="mt-5 text-xs text-cq-soft font-medium flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-cq-accent shrink-0" />
-              <span>Built for Ontario families · Licensed centres only · You approve every step</span>
-            </p>
+            <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-muted">
+              {['Built for Ontario families', 'Licensed centres only', 'You approve every step'].map((t) => (
+                <li key={t} className="flex items-center gap-1.5">
+                  <Check className="w-4 h-4 text-leaf-ink shrink-0" aria-hidden="true" />
+                  {t}
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div className="w-full max-w-[540px] mx-auto lg:max-w-none">
-            <div className="rounded-3xl bg-cq-sage-100 p-3 shadow-xs border border-cq-sage-line-2">
-              <div className="rounded-3xl bg-cq-sage-150 overflow-hidden relative">
-                <HouseIllustration tone="sage" className="w-full h-auto" />
-              </div>
+            <div className="rounded-3xl overflow-hidden border border-mint-line">
+              <HouseIllustration tone="sage" className="w-full h-auto" />
             </div>
           </div>
         </section>
@@ -123,11 +123,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {/* 2. PROBLEM & STATS SECTION */}
         <section className="bg-white border-y border-cq-line py-16 lg:py-24">
           <div className="max-w-6xl w-full mx-auto px-6">
-            <div className="max-w-2xl mx-auto text-center mb-12 sm:mb-16">
-              <p className="text-xs font-semibold text-cq-muted mb-3">
+            <div className="max-w-2xl mb-10 sm:mb-12">
+              <p className="text-sm font-bold text-coral-ink mb-2">
                 The current reality
               </p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-cq-ink">
+              <h2 className="text-[28px] sm:text-4xl font-extrabold text-brand leading-tight">
                 Getting a child-care spot shouldn't be a second job
               </h2>
             </div>
@@ -221,11 +221,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {/* 3. HOW CAREQ WORKS SECTION */}
         <section id="how-it-works" className="py-16 lg:py-24 scroll-mt-24">
           <div className="max-w-6xl w-full mx-auto px-6">
-            <div className="max-w-2xl mx-auto text-center mb-12 sm:mb-16">
-              <p className="text-xs font-semibold text-cq-muted mb-3">
+            <div className="max-w-2xl mb-10 sm:mb-12">
+              <p className="text-sm font-bold text-coral-ink mb-2">
                 A calmer path
               </p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-cq-ink">
+              <h2 className="text-[28px] sm:text-4xl font-extrabold text-brand leading-tight">
                 How CareQ works
               </h2>
             </div>
@@ -233,11 +233,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {/* 4 Numbered Steps */}
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Step 1 */}
-              <div className="rounded-2xl border border-cq-line bg-white p-6 flex flex-col justify-between hover:border-cq-secondary transition-colors">
+              <div className="rounded-2xl border border-cq-line bg-white p-6 flex flex-col justify-between">
                 <div>
-                  <div className="w-10 h-10 rounded-xl bg-cq-sage text-cq-sage-ink font-bold text-sm flex items-center justify-center mb-6">
-                    1
-                  </div>
+                  <SpotNeighbourhood className="w-28 mb-4" />
+                  <p className="text-sm font-bold text-coral-ink mb-1">Step 1</p>
                   <h3 className="text-lg font-bold text-cq-ink mb-2">
                     Find centres that fit
                   </h3>
@@ -248,11 +247,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
 
               {/* Step 2 */}
-              <div className="rounded-2xl border border-cq-line bg-white p-6 flex flex-col justify-between hover:border-cq-secondary transition-colors">
+              <div className="rounded-2xl border border-cq-line bg-white p-6 flex flex-col justify-between">
                 <div>
-                  <div className="w-10 h-10 rounded-xl bg-cq-sage text-cq-sage-ink font-bold text-sm flex items-center justify-center mb-6">
-                    2
-                  </div>
+                  <SpotChecklist className="w-28 mb-4" />
+                  <p className="text-sm font-bold text-coral-ink mb-1">Step 2</p>
                   <h3 className="text-lg font-bold text-cq-ink mb-2">
                     Apply with confidence
                   </h3>
@@ -263,11 +261,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
 
               {/* Step 3 */}
-              <div className="rounded-2xl border border-cq-line bg-white p-6 flex flex-col justify-between hover:border-cq-secondary transition-colors">
+              <div className="rounded-2xl border border-cq-line bg-white p-6 flex flex-col justify-between">
                 <div>
-                  <div className="w-10 h-10 rounded-xl bg-cq-sage text-cq-sage-ink font-bold text-sm flex items-center justify-center mb-6">
-                    3
-                  </div>
+                  <SpotJourney className="w-28 mb-4" />
+                  <p className="text-sm font-bold text-coral-ink mb-1">Step 3</p>
                   <h3 className="text-lg font-bold text-cq-ink mb-2">
                     Track every application
                   </h3>
@@ -278,11 +275,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
 
               {/* Step 4 */}
-              <div className="rounded-2xl border border-cq-line bg-white p-6 flex flex-col justify-between hover:border-cq-secondary transition-colors">
+              <div className="rounded-2xl border border-cq-line bg-white p-6 flex flex-col justify-between">
                 <div>
-                  <div className="w-10 h-10 rounded-xl bg-cq-sage text-cq-sage-ink font-bold text-sm flex items-center justify-center mb-6">
-                    4
-                  </div>
+                  <SpotCentre className="w-28 mb-4" />
+                  <p className="text-sm font-bold text-coral-ink mb-1">Step 4</p>
                   <h3 className="text-lg font-bold text-cq-ink mb-2">
                     Accept your spot and free up the rest
                   </h3>
@@ -298,11 +294,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {/* BUILT FOR BOTH SIDES SECTION */}
         <section className="bg-white border-y border-cq-line py-16 lg:py-24">
           <div className="max-w-6xl w-full mx-auto px-6">
-            <div className="max-w-2xl mx-auto text-center mb-12 sm:mb-16">
-              <p className="text-xs font-semibold text-cq-muted mb-3">
+            <div className="max-w-2xl mb-10 sm:mb-12">
+              <p className="text-sm font-bold text-coral-ink mb-2">
                 Two sides, one calm system
               </p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-cq-ink">
+              <h2 className="text-[28px] sm:text-4xl font-extrabold text-brand leading-tight">
                 Built for both sides
               </h2>
             </div>
@@ -356,11 +352,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {/* 4. AI THAT HELPS, NEVER DECIDES SECTION */}
         <section className="py-16 lg:py-24">
           <div className="max-w-6xl w-full mx-auto px-6">
-            <div className="max-w-2xl mx-auto text-center mb-12">
-              <p className="text-xs font-semibold text-cq-muted mb-3">
+            <div className="max-w-2xl mb-10">
+              <p className="text-sm font-bold text-coral-ink mb-2">
                 Ethical &amp; Transparent
               </p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-cq-ink">
+              <h2 className="text-[28px] sm:text-4xl font-extrabold text-brand leading-tight">
                 AI that helps, never decides
               </h2>
             </div>
@@ -403,13 +399,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
             </div>
 
-            <div className="mt-10 text-center">
+            <div className="mt-8">
               <button
                 type="button"
                 onClick={onOpenTrust}
-                className="inline-flex items-center gap-2 text-sm font-bold text-cq-brand hover:text-cq-secondary underline transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2 h-10 text-sm font-bold text-brand underline decoration-brand/35 underline-offset-4 hover:decoration-brand cursor-pointer"
               >
-                <span>Read how we use AI →</span>
+                <span>Read how we use AI</span>
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -418,11 +415,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {/* QUESTIONS PARENTS ASK SECTION */}
         <section className="bg-white border-y border-cq-line py-16 lg:py-24">
           <div className="max-w-4xl w-full mx-auto px-6">
-            <div className="text-center mb-12">
-              <p className="text-xs font-semibold text-cq-muted mb-3">
+            <div className="mb-10">
+              <p className="text-sm font-bold text-coral-ink mb-2">
                 Clear answers
               </p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-cq-ink">
+              <h2 className="text-[28px] sm:text-4xl font-extrabold text-brand leading-tight">
                 Questions parents ask
               </h2>
             </div>
@@ -460,17 +457,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         {/* WHO WE ARE BLOCK */}
         <section className="py-16 lg:py-20">
-          <div className="max-w-4xl w-full mx-auto px-6 text-center">
-            <p className="text-xs font-semibold text-cq-muted mb-3">
+          <div className="max-w-4xl w-full mx-auto px-6">
+            <p className="text-sm font-bold text-coral-ink mb-2">
               About the project
             </p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-cq-ink mb-4">
+            <h2 className="text-[28px] sm:text-3xl font-extrabold text-brand mb-3">
               Who we are
             </h2>
-            <p className="text-base sm:text-lg text-cq-muted leading-relaxed max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg text-ink-muted leading-relaxed max-w-2xl">
               CareQ is a women-led prototype that helps Ontario families find, apply for and track licensed child care in one place: helpful AI, with people in control.
             </p>
-            <div className="mt-6 inline-flex flex-col items-center justify-center rounded-2xl bg-white border border-cq-line px-6 py-4 shadow-xs">
+            <div className="mt-6 inline-flex flex-col rounded-2xl bg-white border border-cq-line px-5 py-4">
               <span className="text-xs font-bold text-cq-brand">
                 Team 38 – Coalesce
               </span>
@@ -484,15 +481,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {/* 5. FINAL CALL TO ACTION */}
         <section className="py-12 lg:py-20">
           <div className="max-w-4xl w-full mx-auto px-6">
-            <div className="rounded-3xl bg-cq-sage border border-cq-sage-line-2 p-8 sm:p-14 text-center">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-cq-ink leading-tight max-w-2xl mx-auto">
+            <div className="rounded-3xl bg-butter p-8 sm:p-14 text-center">
+              <SpotJourney className="w-40 mx-auto mb-4" />
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-brand leading-tight max-w-2xl mx-auto">
                 Spend less time chasing waitlists and more time with your family.
               </h2>
               <div className="mt-8">
                 <button
                   type="button"
                   onClick={onGetStarted}
-                  className="h-12 px-8 rounded-xl bg-cq-brand hover:bg-cq-brand-hover text-white font-semibold text-base shadow-sm transition-colors inline-flex items-center gap-2 cursor-pointer"
+                  className="h-12 px-8 rounded-xl bg-cq-brand hover:bg-cq-brand-hover text-white font-bold text-base active:scale-[0.98] transition-[background-color,transform] inline-flex items-center gap-2 cursor-pointer"
                 >
                   <span>Get started</span>
                   <ArrowRight className="w-4 h-4 shrink-0" />

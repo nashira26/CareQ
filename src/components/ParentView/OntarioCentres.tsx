@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { MapPin, Heart, Database, Users, Navigation } from 'lucide-react';
+import React, { useEffect, useId, useState } from 'react';
+import { MapPin, Heart, Database, Users, ChevronDown } from 'lucide-react';
 import { OntarioCentre, OntarioCentresFile, formatSourceDate } from '../../data/ontarioTypes';
 
 import { SHORTLIST_KEY } from '../../lib/demoStorage';
 import { AskAboutCentre } from '../AskAboutCentre';
+import { CentreAvatar } from '../ui/CareUI';
 
 const readShortlist = (): string[] => {
   try {
@@ -57,9 +58,9 @@ export const HeartButton: React.FC<{ name: string; active: boolean; onToggle: ()
     aria-pressed={active}
     aria-label={active ? `Remove ${name} from shortlist` : `Add ${name} to shortlist`}
     title={active ? 'Remove from shortlist' : 'Add to shortlist (saved in this browser)'}
-    className="p-1.5 rounded-lg hover:bg-cq-page cursor-pointer shrink-0"
+    className="w-11 h-11 -mt-2 -mr-2 inline-flex items-center justify-center rounded-xl hover:bg-peach cursor-pointer shrink-0 transition-colors"
   >
-    <Heart className={`w-4 h-4 ${active ? 'fill-cq-peach-ink text-cq-peach-ink' : 'text-cq-soft'}`} />
+    <Heart className={`w-5 h-5 transition-transform duration-200 ${active ? 'fill-coral text-coral-ink scale-110' : 'text-ink-muted'}`} />
   </button>
 );
 
@@ -68,12 +69,38 @@ export const Chip: React.FC<{ children: React.ReactNode; tone?: 'sage' | 'sand' 
   tone = 'sage',
 }) => {
   const tones = {
-    sage: 'border-cq-sage-line-2 bg-cq-surface-sage text-cq-sage-ink',
-    sand: 'border-cq-sand-line bg-cq-sand-50 text-cq-sand-ink-2',
-    grey: 'border-cq-line bg-cq-page text-cq-soft',
-    peach: 'border-cq-peach-line bg-cq-peach text-cq-rust',
+    sage: 'bg-mint text-leaf-ink',
+    sand: 'bg-butter text-cq-sand-ink',
+    grey: 'bg-stone text-status-draft',
+    peach: 'bg-peach text-coral-ink',
   };
-  return <span className={`rounded-md border px-2 py-0.5 text-xs font-medium ${tones[tone]}`}>{children}</span>;
+  return <span className={`inline-flex items-center rounded-full px-2.5 h-[26px] text-xs font-bold ${tones[tone]}`}>{children}</span>;
+};
+
+/**
+ * Secondary facts on a centre card. Collapsed on phones behind "More details" (everything stays
+ * available); always shown from the small-tablet width up.
+ */
+export const MoreDetails: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen((o) => !o)}
+        className="sm:hidden inline-flex items-center gap-1.5 h-10 -ml-1 px-1 text-sm font-bold text-brand cursor-pointer"
+      >
+        {open ? 'Fewer details' : 'More details'}
+        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+      </button>
+      <div id={id} className={`${open ? 'block' : 'hidden'} sm:block space-y-1 text-sm text-ink-muted`}>
+        {children}
+      </div>
+    </div>
+  );
 };
 
 /** Search result extras shown on both card types. */
@@ -81,6 +108,14 @@ export interface ResultInfo {
   distanceKm: number | null;
   reason: string | null;
 }
+
+/** "Availability not reported" box, shared by both card types. */
+export const AvailabilityBox: React.FC<{ title: string; children?: React.ReactNode }> = ({ title, children }) => (
+  <div className="mt-3 rounded-xl border border-dashed border-line-strong bg-page px-3.5 py-2.5 text-sm">
+    <p className="font-bold text-ink">{title}</p>
+    {children && <p className="text-ink-muted">{children}</p>}
+  </div>
+);
 
 export const OntarioCentreCard: React.FC<{
   centre: OntarioCentre;
@@ -92,98 +127,92 @@ export const OntarioCentreCard: React.FC<{
   const { sources } = file.metadata;
   const fromToronto = centre.dataSources.includes('toronto');
   const geocoded = centre.dataSources.includes('osm');
+  const distance = result?.reason ?? (result?.distanceKm != null ? `${result.distanceKm.toFixed(1)} km away` : null);
 
   return (
-    <div className="bg-white rounded-2xl border border-cq-line p-5 flex flex-col justify-between gap-4">
-      <div>
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <span className="inline-block rounded px-1.5 py-0.5 bg-cq-lilac text-cq-lilac-ink-2 text-xs font-semibold">
-              Not on CareQ yet · Ontario open data
-            </span>
-            <div className="flex items-center gap-1.5 text-xs text-cq-soft mt-2">
-              <MapPin className="w-3 h-3 shrink-0" />
-              <span>{centre.area}</span>
-              {result?.distanceKm != null && (
-                <span className="font-semibold text-cq-ink flex items-center gap-1 ml-1">
-                  <Navigation className="w-3 h-3" />
-                  {result.distanceKm.toFixed(1)} km
-                </span>
-              )}
-            </div>
-            <h3 className="text-[15px] font-bold text-cq-ink mt-1 leading-snug">{centre.name}</h3>
-          </div>
-          <HeartButton name={centre.name} active={isShortlisted} onToggle={onToggleShortlist} />
-        </div>
-        {isShortlisted && (
-          <span className="inline-block mt-1.5">
-            <Chip tone="peach">Shortlisted</Chip>
-          </span>
-        )}
+    <article className="bg-white rounded-2xl border border-cq-line p-4 sm:p-5 flex flex-col">
+      <div className="flex items-start justify-between gap-2">
+        <span className="inline-flex items-center rounded-md px-2 h-6 bg-stone text-status-draft text-xs font-bold">
+          Not on CareQ yet · Ontario open data
+        </span>
+        <HeartButton name={centre.name} active={isShortlisted} onToggle={onToggleShortlist} />
+      </div>
 
-        <p className="text-xs text-cq-muted mt-2">{centre.address}</p>
-        <p className="text-xs text-cq-soft mt-1">
-          Licence {centre.licenceStatus.toLowerCase()} · #{centre.licenceNumber}
+      <div className="flex items-start gap-3 mt-1">
+        <CentreAvatar centreId={centre.id} />
+        <div className="min-w-0">
+          <h3 className="text-[17px] font-extrabold text-ink leading-snug">{centre.name}</h3>
+          <p className="text-sm text-ink-muted mt-0.5">{centre.address}</p>
+        </div>
+      </div>
+
+      {distance ? (
+        <p className="mt-3 flex items-start gap-1.5 text-sm font-bold text-brand">
+          <MapPin className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+          <span>{distance}</span>
         </p>
+      ) : (
+        <p className="mt-3 flex items-center gap-1.5 text-sm text-ink-muted">
+          <MapPin className="w-4 h-4 shrink-0" aria-hidden="true" />
+          {centre.area}
+        </p>
+      )}
 
-        {result?.reason && (
-          <p className="mt-3 text-xs text-cq-muted bg-cq-sand/60 border border-cq-line rounded-lg p-2.5">
-            {result.reason}
-          </p>
+      {/* Ages: only from City of Toronto data */}
+      <div className="flex flex-wrap gap-1.5 mt-3">
+        {centre.ageGroups === null ? (
+          <Chip tone="grey">Ages not reported</Chip>
+        ) : centre.ageGroups.length === 0 ? (
+          <Chip tone="grey">No infant, toddler or preschool spaces listed</Chip>
+        ) : (
+          centre.ageGroups.map((age) => <Chip key={age}>{age}</Chip>)
         )}
+        {centre.cwelcc === true && <Chip tone="sand">CWELCC participant</Chip>}
+        {centre.cwelcc === false && <Chip tone="grey">Not in CWELCC</Chip>}
+        {isShortlisted && <Chip tone="peach">Shortlisted</Chip>}
+      </div>
 
-        {/* Ages: only from City of Toronto data */}
-        <div className="flex flex-wrap gap-1.5 mt-3">
-          {centre.ageGroups === null ? (
-            <Chip tone="grey">Ages not reported</Chip>
-          ) : centre.ageGroups.length === 0 ? (
-            <Chip tone="grey">No infant, toddler or preschool spaces listed</Chip>
-          ) : (
-            centre.ageGroups.map((age) => <Chip key={age}>{age}</Chip>)
-          )}
-          {centre.cwelcc === true && <Chip tone="sand">CWELCC participant</Chip>}
-          {centre.cwelcc === false && <Chip tone="grey">Not in CWELCC</Chip>}
-        </div>
+      <AvailabilityBox title="Availability not reported">Not part of the CareQ demo; contact the centre directly.</AvailabilityBox>
 
+      <MoreDetails>
         {centre.programOptions.length > 0 && (
-          <p className="text-xs text-cq-muted mt-2">
-            <span className="font-semibold">Programs:</span> {centre.programOptions.join(', ')}
+          <p>
+            <span className="font-bold text-ink">Programs:</span> {centre.programOptions.join(', ')}
           </p>
         )}
         {centre.languages.length > 0 && (
-          <p className="text-xs text-cq-muted mt-0.5">
-            <span className="font-semibold">Language:</span> {centre.languages.join(', ')}
+          <p>
+            <span className="font-bold text-ink">Language:</span> {centre.languages.join(', ')}
           </p>
         )}
         {centre.capacity !== null && (
-          <p className="text-xs text-cq-muted mt-0.5 flex items-center gap-1">
-            <Users className="w-3 h-3" />
+          <p className="flex items-start gap-1.5">
+            <Users className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
             <span>{centre.capacity} licensed spaces in total (capacity, not availability)</span>
           </p>
         )}
-        <div className="mt-3">
-          <AskAboutCentre centreId={centre.id} centreName={centre.name} />
-        </div>
-      </div>
-
-      <div className="border-t border-cq-line pt-3 space-y-1">
-        <p className="text-xs font-semibold text-cq-muted">Availability not reported</p>
-        <p className="text-xs text-cq-soft">Not part of the CareQ demo; contact the centre directly.</p>
-        <div className="pt-1 space-y-0.5 text-xs text-cq-soft">
-          <p className="flex items-center gap-1">
-            <Database className="w-3 h-3 shrink-0" />
+        <p>
+          Licence {centre.licenceStatus.toLowerCase()} · #{centre.licenceNumber}
+        </p>
+        <div className="pt-1 space-y-0.5 text-xs text-ink-soft">
+          <p className="flex items-center gap-1.5">
+            <Database className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             Ontario open data · {formatSourceDate(sources.ontario.dataDate)}
           </p>
           {fromToronto && (
-            <p className="flex items-center gap-1">
-              <Database className="w-3 h-3 shrink-0" />
+            <p className="flex items-center gap-1.5">
+              <Database className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
               City of Toronto open data · {formatSourceDate(sources.toronto.dataDate)}
             </p>
           )}
-          {geocoded && <p className="pl-4">Location: Geocoding © OpenStreetMap contributors</p>}
-          {centre.lat === null && <p className="pl-4">Location not found · not shown on map</p>}
+          {geocoded && <p className="pl-5">Location: Geocoding © OpenStreetMap contributors</p>}
+          {centre.lat === null && <p className="pl-5">Location not found · not shown on map</p>}
         </div>
+      </MoreDetails>
+
+      <div className="mt-auto pt-3">
+        <AskAboutCentre centreId={centre.id} centreName={centre.name} />
       </div>
-    </div>
+    </article>
   );
 };

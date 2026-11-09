@@ -9,8 +9,10 @@ import {
   Card,
   PrimaryButton,
   GhostButton,
+  CentreAvatar,
   IconTile,
 } from '../ui/CareUI';
+import { EmptyState, SpotChecklist } from '../ui/Illustrations';
 import {
   CheckCircle2,
   Circle,
@@ -22,6 +24,8 @@ import {
   Eye,
   X,
   Sparkles,
+  Plus,
+  ArrowRight,
 } from 'lucide-react';
 
 interface ApplyTabProps {
@@ -108,12 +112,13 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        eyebrow="Apply"
-        title="The right documents, the first time."
+        title="Apply"
         subtitle="Each checklist comes from the centre's own policy. You approve before anything is sent."
         action={
-          <GhostButton onClick={onNavigateToFind} className="h-10 text-xs">
-            + Add more centres
+          <GhostButton onClick={onNavigateToFind}>
+            <Plus className="w-4 h-4" aria-hidden="true" />
+            Add more centres
+            <ArrowRight className="w-4 h-4" aria-hidden="true" />
           </GhostButton>
         }
       />
@@ -121,11 +126,11 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
       {/* Draft Applications List */}
       {draftApps.length > 0 ? (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-cq-muted">
-              Applications In Progress ({draftApps.length})
-            </h3>
-            <span className="text-xs text-cq-soft">
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
+            <h2 className="text-xl font-extrabold text-brand">
+              Applications in progress ({draftApps.length})
+            </h2>
+            <span className="text-sm text-ink-muted">
               {parentProfile.childName} · {parentProfile.childAgeMonths} mos · {parentProfile.careType}
             </span>
           </div>
@@ -150,18 +155,21 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                 <Card key={app.id} className="p-6 space-y-6">
                   {/* Card Header Row */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-cq-line">
-                    <div>
-                      <div className="flex items-center gap-2.5">
-                        <h4 className="text-lg font-bold text-cq-ink">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <CentreAvatar centreId={centre.id} />
+                      <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-lg font-extrabold text-ink leading-snug">
                           {centre.name}
-                        </h4>
-                        <span className="text-xs font-semibold px-2 py-0.5 bg-cq-page text-cq-muted border border-cq-line rounded-md">
+                        </h3>
+                        <span className="text-xs font-bold px-2 py-0.5 bg-stone text-status-draft rounded-md">
                           {centre.neighbourhood}
                         </span>
                       </div>
-                      <p className="text-xs text-cq-soft mt-1">
+                      <p className="text-xs text-ink-muted mt-1">
                         Intake: {parentProfile.careType} ({parentProfile.childAgeMonths} mos) · Desired Start: {parentProfile.preferredStartDate}
                       </p>
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -194,15 +202,15 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                   {/* Thin Progress Bar: bg #E7E4DA, fill #4E7A5A */}
                   {!noRequirements && (
                   <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs text-cq-muted font-medium">
+                    <div className="flex justify-between text-sm text-ink-muted font-semibold">
                       <span>Checklist readiness</span>
                       <span>
                         {completedCount} of {totalRequirements} ready
                       </span>
                     </div>
-                    <div className="h-2 w-full bg-cq-line rounded-full overflow-hidden">
+                    <div className="h-2 w-full bg-stone rounded-full overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={totalRequirements} aria-valuenow={completedCount} aria-label="Checklist readiness">
                       <div
-                        className="h-full bg-cq-sage-ink rounded-full transition-all duration-300"
+                        className="h-full bg-leaf rounded-full transition-[width] duration-500"
                         style={{ width: `${progressPct}%` }}
                       />
                     </div>
@@ -229,34 +237,38 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                       return (
                         <div
                           key={req}
-                          className="rounded-xl border border-cq-line bg-cq-input px-4 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors hover:border-cq-sage-line"
+                          className={`rounded-xl border px-3 sm:px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
+                            uploadedDoc || isDone ? 'border-mint-line bg-mint-50' : 'border-cq-line bg-white'
+                          }`}
                         >
                           {/* Left: Checkbox & requirement name */}
                           <div className="flex items-start gap-3 min-w-0">
                             <button
                               type="button"
                               onClick={() => onToggleRequirement(app.id, req)}
-                              className="mt-0.5 shrink-0 focus:outline-hidden cursor-pointer"
+                              className="-m-2.5 w-11 h-11 inline-flex items-center justify-center shrink-0 rounded-xl cursor-pointer"
                               title="Toggle requirement completion"
+                              aria-pressed={!!(uploadedDoc || isDone)}
+                              aria-label={`${req}: ${uploadedDoc || isDone ? 'ready' : 'missing'}`}
                             >
                               {uploadedDoc || isDone ? (
-                                <CheckCircle2 className="w-5 h-5 text-cq-sage-ink fill-cq-sage" />
+                                <CheckCircle2 className="w-6 h-6 text-white fill-leaf-ink" />
                               ) : (
-                                <Circle className="w-5 h-5 text-cq-soft" />
+                                <Circle className="w-6 h-6 text-line-strong" />
                               )}
                             </button>
 
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-sm font-bold text-cq-ink">
+                                <span className="text-[15px] font-bold text-ink">
                                   {req}
                                 </span>
                                 {uploadedDoc || isDone ? (
-                                  <span className="text-xs font-semibold bg-cq-sage text-cq-sage-ink border border-cq-sage-line px-2 py-0.5 rounded-full">
+                                  <span className="text-xs font-bold bg-mint text-leaf-ink px-2 py-0.5 rounded-full">
                                     Ready
                                   </span>
                                 ) : (
-                                  <span className="text-xs font-semibold bg-cq-cream-amber text-cq-amber-ink border border-cq-sand-line-2 px-2 py-0.5 rounded-full">
+                                  <span className="text-xs font-bold bg-warning-bg text-warning px-2 py-0.5 rounded-full">
                                     Missing
                                   </span>
                                 )}
@@ -351,8 +363,8 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                   <div className="pt-4 border-t border-cq-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <p className="text-xs text-cq-muted">
                       {isAllReady ? (
-                        <span className="text-cq-sage-ink font-semibold flex items-center gap-1">
-                          <Check className="w-4 h-4" />
+                        <span className="text-success font-bold flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
                           All checklist requirements ready for review.
                         </span>
                       ) : (
@@ -380,24 +392,24 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
           </div>
         </div>
       ) : (
-        <Card className="p-10 text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-cq-sage text-cq-sage-ink flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
-          <h3 className="text-lg font-bold text-cq-ink">
-            No draft applications in progress
-          </h3>
-          <p className="text-sm text-cq-muted max-w-md mx-auto">
+        <Card>
+          <EmptyState
+            title="No draft applications in progress"
+            spot={<SpotChecklist />}
+            actions={
+              <>
+                <PrimaryButton arrow onClick={onNavigateToFind}>
+                  Find centres
+                </PrimaryButton>
+                <GhostButton onClick={onNavigateToTrack}>
+                  View track status
+                  <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                </GhostButton>
+              </>
+            }
+          >
             All your selected child care centres have been submitted, or you can find more centres to begin a new application.
-          </p>
-          <div className="pt-2 flex justify-center gap-3">
-            <PrimaryButton onClick={onNavigateToFind}>
-              Find centres
-            </PrimaryButton>
-            <GhostButton onClick={onNavigateToTrack}>
-              View track status
-            </GhostButton>
-          </div>
+          </EmptyState>
         </Card>
       )}
 

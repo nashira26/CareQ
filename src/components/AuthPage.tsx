@@ -6,12 +6,14 @@ import {
   Mail,
   ArrowRight,
   Check,
-  Sparkles,
+  Info,
+  ArrowLeft,
   ExternalLink,
   Heart,
 } from 'lucide-react';
 import { LogoFull } from './Logo';
 import { ResetDemo } from './ResetDemo';
+import { HouseIllustration } from './ui/CareUI';
 import { isValidEmail, MIN_PASSWORD_LENGTH, Child } from '../lib/family';
 
 export interface MockAccount {
@@ -136,7 +138,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     >
       {/* Top Row: Logo on left, Trust & Support link on right */}
       <header className="w-full">
-        <div className="max-w-6xl mx-auto px-6 pt-6 flex justify-between items-center">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-5 flex justify-between items-center gap-3">
           <div className="flex items-center gap-4">
             {onBackToLanding && (
               <button
@@ -144,150 +146,55 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 onClick={onBackToLanding}
                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-cq-brand-ink hover:underline cursor-pointer"
               >
-                <span>← Back</span>
+                <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+                <span>Back</span>
               </button>
             )}
-            <LogoFull size={44} />
+            <LogoFull size={36} />
           </div>
           <button
             type="button"
             onClick={onOpenTrustPage}
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-cq-brand-ink hover:underline cursor-pointer"
           >
-            <span>Need a hand? Trust &amp; support</span>
+            <span className="hidden sm:inline">Need a hand? Trust &amp; support</span>
+            <span className="sm:hidden">Trust &amp; support</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </header>
 
       {/* Main Grid: Left hero column, Right login card */}
-      <main className="max-w-6xl w-full mx-auto px-6 py-10 lg:py-14 grid lg:grid-cols-2 gap-12 lg:gap-16 items-start flex-1">
+      <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 lg:py-14 grid lg:grid-cols-2 gap-10 lg:gap-16 items-start flex-1">
         {/* LEFT COLUMN (hero) */}
         <div className="lg:pt-6">
           {/* 1. Pill */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-cq-sage-250 bg-cq-sage-50 px-4 py-1.5 text-xs font-semibold text-cq-sage-ink">
-            <Heart className="w-3.5 h-3.5 fill-cq-sage-ink/20" />
-            <span>For families &amp; the people who care</span>
-          </div>
+          <p className="text-sm font-bold text-coral-ink">For families &amp; the people who care</p>
 
           {/* 2. Headline h1 on two lines */}
-          <h1 className="text-4xl lg:text-[64px] font-bold leading-[1.08] text-cq-ink mt-7">
+          <h1 className="text-[34px] sm:text-5xl lg:text-[56px] font-extrabold leading-[1.08] text-brand mt-3">
             A little less admin.
             <br />
             A lot more connection.
           </h1>
 
           {/* 3. Paragraph */}
-          <p className="mt-7 max-w-md text-lg leading-8 text-cq-muted">
+          <p className="mt-5 max-w-md text-lg leading-8 text-ink-muted">
             One shared place to find child care, follow applications, and keep the conversation going.
           </p>
 
-          {/* 4. Illustration Card */}
-          <div className="mt-10 w-full max-w-full lg:max-w-[520px] rounded-3xl bg-cq-sage-100 p-3 shadow-xs">
-            <div className="rounded-3xl bg-cq-sage-150 overflow-hidden relative h-[280px]">
-              <svg
-                viewBox="0 0 520 280"
-                className="w-full h-full select-none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                {/* Background base */}
-                <rect width="520" height="280" fill="#DCE7DA" />
-
-                {/* Sun top-right r=28 #FBF3C4 */}
-                <circle cx="430" cy="62" r="28" fill="#FBF3C4" />
-
-                {/* 4-point sparkle top-left #8FAE97 */}
-                <path
-                  d="M 68 40 Q 68 54 54 54 Q 68 54 68 68 Q 68 54 82 54 Q 68 54 68 40 Z"
-                  fill="#8FAE97"
-                />
-
-                {/* Small birds "︶︶" stroke #4A7A62 top-right below the sun */}
-                <path
-                  d="M 364 96 Q 370 88 376 96 Q 382 88 388 96"
-                  fill="none"
-                  stroke="#4A7A62"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M 396 108 Q 401 101 406 108 Q 411 101 416 108"
-                  fill="none"
-                  stroke="#4A7A62"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-
-                {/* Two soft hills along the bottom: #C9DCC2 and #BFD4B7 */}
-                <path
-                  d="M 0 195 Q 160 145 320 180 T 520 165 L 520 280 L 0 280 Z"
-                  fill="#BFD4B7"
-                />
-                <path
-                  d="M 0 230 Q 180 170 360 200 T 520 195 L 520 280 L 0 280 Z"
-                  fill="#C9DCC2"
-                />
-
-                {/* Thin path line #4A7A62 from the door to the right */}
-                <path
-                  d="M 265 255 Q 315 258 370 264 T 520 268"
-                  fill="none"
-                  stroke="#4A7A62"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-
-                {/* Round sage tree on the left: two overlapping circles #9DBB86 on a thin trunk #4A7A62 */}
-                <rect x="98" y="168" width="6" height="74" rx="2" fill="#4A7A62" />
-                <circle cx="88" cy="158" r="32" fill="#9DBB86" />
-                <circle cx="112" cy="146" r="28" fill="#9DBB86" />
-
-                {/* House in the centre: cream body #FBF8EC (~190x130), dark green roof #4A7A62, arched door #3F6E55, windows #9DBB86 with cream cross */}
-                <rect x="175" y="132" width="180" height="123" rx="3" fill="#FBF8EC" />
-                <polygon points="158,132 265,70 372,132" fill="#4A7A62" />
-
-                {/* Left window */}
-                <rect x="198" y="152" width="30" height="30" rx="3" fill="#9DBB86" />
-                <line x1="213" y1="152" x2="213" y2="182" stroke="#FBF8EC" strokeWidth="2.5" />
-                <line x1="198" y1="167" x2="228" y2="167" stroke="#FBF8EC" strokeWidth="2.5" />
-
-                {/* Right window */}
-                <rect x="302" y="152" width="30" height="30" rx="3" fill="#9DBB86" />
-                <line x1="317" y1="152" x2="317" y2="182" stroke="#FBF8EC" strokeWidth="2.5" />
-                <line x1="302" y1="167" x2="332" y2="167" stroke="#FBF8EC" strokeWidth="2.5" />
-
-                {/* Arched door #3F6E55 */}
-                <path
-                  d="M 248 255 L 248 214 A 17 17 0 0 1 282 214 L 282 255 Z"
-                  fill="#3F6E55"
-                />
-                <circle cx="276" cy="235" r="2" fill="#FBF8EC" />
-
-                {/* Two tiny flowers near the door: circles #E9A27A and #F2C14E on thin stems */}
-                <line x1="238" y1="255" x2="238" y2="242" stroke="#4A7A62" strokeWidth="1.5" />
-                <circle cx="238" cy="240" r="4.5" fill="#E9A27A" />
-
-                <line x1="292" y1="255" x2="292" y2="244" stroke="#4A7A62" strokeWidth="1.5" />
-                <circle cx="292" cy="242" r="4" fill="#F2C14E" />
-
-                {/* Pine tree on the right: stacked triangles #3F6E55 with trunk */}
-                <rect x="424" y="196" width="7" height="46" rx="2" fill="#4A7A62" />
-                <polygon points="400,212 427.5,172 455,212" fill="#3F6E55" />
-                <polygon points="405,188 427.5,152 450,188" fill="#3F6E55" />
-                <polygon points="410,164 427.5,134 445,164" fill="#3F6E55" />
-              </svg>
-
-              {/* Floating label over the bottom-left of the illustration */}
-              <div className="absolute left-6 bottom-6 bg-white rounded-xl shadow-md px-5 py-3 text-sm text-cq-ink-body -rotate-2 flex items-center gap-2.5 border border-cq-stone-100">
-                <Check className="w-4 h-4 text-cq-sage-ink shrink-0 stroke-[2.5]" />
-                <span className="font-medium">Parents &amp; centres, on the same page.</span>
-              </div>
+          {/* 4. Illustration */}
+          <div className="mt-8 w-full lg:max-w-[520px] rounded-3xl overflow-hidden border border-mint-line relative hidden sm:block">
+            <HouseIllustration tone="sage" />
+            <div className="absolute left-4 bottom-4 bg-white rounded-xl shadow-md px-4 py-2.5 text-sm text-ink flex items-center gap-2">
+              <Check className="w-4 h-4 text-leaf-ink shrink-0" aria-hidden="true" />
+              <span className="font-semibold">Parents &amp; centres, on the same page.</span>
             </div>
           </div>
 
           {/* 5. Stat Row */}
           <div className="mt-8 flex items-center gap-5">
-            <span className="text-4xl font-semibold text-cq-sage-ink-5">5,989</span>
+            <span className="text-4xl font-extrabold text-brand">5,989</span>
             <div className="h-12 w-px bg-cq-stone-300 shrink-0" />
             <div>
               <p className="text-sm font-medium text-cq-ink-2">
@@ -302,7 +209,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
         {/* RIGHT COLUMN (the existing login card, restyled) */}
         <div className="w-full">
-          <div className="bg-white rounded-3xl border border-cq-line shadow-[0_20px_60px_-30px_rgba(23,63,66,0.25)] p-8 sm:p-10 w-full space-y-6">
+          <div className="bg-white rounded-3xl border border-cq-line shadow-lg p-5 sm:p-10 w-full space-y-6">
             {/* Parent / Centre role switch: two side-by-side selectable cards */}
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -310,8 +217,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 onClick={() => handleRoleSwitch('parent')}
                 className={`rounded-2xl border p-4 text-left relative transition-all cursor-pointer ${
                   targetRole === 'parent'
-                    ? 'border-cq-brand/60 bg-cq-sage-50'
-                    : 'border-cq-line bg-white hover:bg-cq-stone-50'
+                    ? 'border-brand bg-mint'
+                    : 'border-cq-line bg-white hover:bg-mint-50'
                 }`}
               >
                 {targetRole === 'parent' && (
@@ -328,8 +235,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 onClick={() => handleRoleSwitch('centre')}
                 className={`rounded-2xl border p-4 text-left relative transition-all cursor-pointer ${
                   targetRole === 'centre'
-                    ? 'border-cq-brand/60 bg-cq-sage-50'
-                    : 'border-cq-line bg-white hover:bg-cq-stone-50'
+                    ? 'border-brand bg-mint'
+                    : 'border-cq-line bg-white hover:bg-mint-50'
                 }`}
               >
                 {targetRole === 'centre' && (
@@ -551,11 +458,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             )}
 
             {/* DEMO ACCOUNTS NOTE ON LOGIN PAGE */}
-            <div className="pt-2 border-t border-cq-line-input">
+            <div className="pt-2 border-t border-cq-line">
               <div className="rounded-2xl bg-cq-sand-25 border border-cq-sand-200 p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-cq-sand-ink">
-                    <Sparkles className="w-3.5 h-3.5 text-cq-sand-600" />
+                    <Info className="w-4 h-4" aria-hidden="true" />
                     <span>Demo accounts</span>
                   </div>
                   <span className="text-xs font-semibold text-cq-sand-ink/80 bg-white px-2 py-0.5 rounded-full border border-cq-sand-200">
