@@ -14,6 +14,7 @@ import {
 } from '../ui/CareUI';
 import { FileText, Clock, Heart, ArrowRight, Leaf, Check } from 'lucide-react';
 import { EmptyState, SpotChecklist } from '../ui/Illustrations';
+import { newestRequests } from '../../lib/centreQueue';
 
 export interface CentreOverviewProps {
   singleCentre: Centre;
@@ -37,10 +38,8 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
   ).length;
   const offerCount = applications.filter((a) => a.status === 'Offer').length;
 
-  // Newest 5 applications skipping 'Draft'
-  const nonDraftApps = applications
-    .filter((a) => a.status !== 'Draft')
-    .slice(0, 5);
+  // Newest 5 sent applications, by submission date (newest first)
+  const nonDraftApps = newestRequests(applications, 5);
 
   // Families waiting longest for news: 'Waitlisted' apps sorted by waitlistReportedTimestamp oldest first (none first)
   const waitingLongest = applications
