@@ -42,7 +42,7 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
           <ShieldCheck className="w-3.5 h-3.5 text-cq-secondary" />
           <span>Transparency & Ethical AI Policy</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-cq-stone-900 tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-cq-stone-900">
           Trust and Transparency
         </h1>
         <p className="mt-2 text-sm sm:text-base text-cq-stone-600 leading-relaxed max-w-2xl">
@@ -229,7 +229,7 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
 
         {/* Ontario official regulatory links */}
         <div className="space-y-2">
-          <h3 className="text-xs font-bold text-cq-stone-500 uppercase tracking-wider">
+          <h3 className="text-xs font-bold text-cq-stone-500">
             Ontario Licensed Child Care Information
           </h3>
 
@@ -244,7 +244,7 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
                 <span className="font-semibold text-xs sm:text-sm text-cq-stone-900 group-hover:text-cq-brand block">
                   Licensed Child Care Spaces in Ontario
                 </span>
-                <span className="text-[11px] text-cq-stone-500">Government of Ontario (Ontario.ca)</span>
+                <span className="text-xs text-cq-stone-500">Government of Ontario (Ontario.ca)</span>
               </div>
               <ExternalLink className="w-4 h-4 text-cq-stone-400 group-hover:text-cq-brand shrink-0" />
             </a>
@@ -259,7 +259,7 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
                 <span className="font-semibold text-xs sm:text-sm text-cq-stone-900 group-hover:text-cq-brand block">
                   Child Care and Early Years Act, 2014 (CCEYA)
                 </span>
-                <span className="text-[11px] text-cq-stone-500">e-Laws Ontario</span>
+                <span className="text-xs text-cq-stone-500">e-Laws Ontario</span>
               </div>
               <ExternalLink className="w-4 h-4 text-cq-stone-400 group-hover:text-cq-brand shrink-0" />
             </a>
@@ -274,7 +274,7 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
                 <span className="font-semibold text-xs sm:text-sm text-cq-stone-900 group-hover:text-cq-brand block">
                   Find and Check Licensed Child Care
                 </span>
-                <span className="text-[11px] text-cq-stone-500">Ontario Licensed Provider Directory</span>
+                <span className="text-xs text-cq-stone-500">Ontario Licensed Provider Directory</span>
               </div>
               <ExternalLink className="w-4 h-4 text-cq-stone-400 group-hover:text-cq-brand shrink-0" />
             </a>
@@ -289,7 +289,7 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
                 <span className="font-semibold text-xs sm:text-sm text-cq-stone-900 group-hover:text-cq-brand block">
                   City of Toronto Children's Services
                 </span>
-                <span className="text-[11px] text-cq-stone-500">Municipal Operating Guidelines & Fee Subsidy</span>
+                <span className="text-xs text-cq-stone-500">Municipal Operating Guidelines & Fee Subsidy</span>
               </div>
               <ExternalLink className="w-4 h-4 text-cq-stone-400 group-hover:text-cq-brand shrink-0" />
             </a>
@@ -298,7 +298,7 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
 
         {/* Data sources for the real licensed centres on the Find page */}
         <div className="space-y-2 pt-2">
-          <h3 className="text-xs font-bold text-cq-stone-500 uppercase tracking-wider">
+          <h3 className="text-xs font-bold text-cq-stone-500">
             Data sources
           </h3>
           <div className="p-4 rounded-xl bg-cq-stone-50 border border-cq-stone-200 text-xs sm:text-sm text-cq-stone-700 space-y-2 leading-relaxed">
@@ -356,7 +356,7 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
 
         {/* Direct links to each centre's published policy */}
         <div className="space-y-2 pt-2">
-          <h3 className="text-xs font-bold text-cq-stone-500 uppercase tracking-wider">
+          <h3 className="text-xs font-bold text-cq-stone-500">
             Demo centres and where their requirements come from
           </h3>
 
@@ -372,13 +372,13 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
                   >
                     <div className="min-w-0">
                       <span className="font-semibold text-xs sm:text-sm text-cq-stone-900 block">{c.name}</span>
-                      <span className="text-[11px] text-cq-stone-500 block">
+                      <span className="text-xs text-cq-stone-500 block">
                         {c.demoKind === 'open-data'
                           ? `Ontario open data${c.licenceNumber ? ` • Licence #${c.licenceNumber}` : ''} • Simulated demo account`
                           : 'Fictional demo centre • Sample admission policy'}
                       </span>
                       {doc && (
-                        <span className="text-[11px] text-cq-stone-500 block">
+                        <span className="text-xs text-cq-stone-500 block">
                           Requirements extracted from {doc.docTitle}
                           {doc.sourceUrl ? '' : ' (source link not found)'} • retrieved {formatSourceDate(doc.retrieved)}
                           {doc.fallback === 'licensing-manual' && doc.sourceNote ? ` • ${doc.sourceNote}` : ''}
@@ -390,7 +390,7 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
                         href={doc.sourceUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold text-cq-brand bg-white border border-cq-stone-200 px-2 py-1 rounded-lg hover:underline"
+                        className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold text-cq-brand bg-white border border-cq-stone-200 px-2 py-1 rounded-lg hover:underline"
                       >
                         <FileText className="w-3 h-3 text-cq-secondary" />
                         <span>Source</span>

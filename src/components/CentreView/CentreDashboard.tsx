@@ -424,11 +424,11 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                 <Card className="p-0 overflow-hidden shadow-2xs">
                   {/* Table Header Row */}
                   <div className="grid grid-cols-[2fr_1.4fr_1fr_1fr_1fr] gap-4 items-center bg-cq-page border-b border-cq-line px-6 py-4">
-                    <Eyebrow className="text-[10px]">CHILD / FAMILY</Eyebrow>
-                    <Eyebrow className="text-[10px]">PROGRAM / START</Eyebrow>
-                    <Eyebrow className="text-[10px]">STATUS</Eyebrow>
-                    <Eyebrow className="text-[10px]">QUEUE</Eyebrow>
-                    <Eyebrow className="text-[10px] text-right">ACTIONS</Eyebrow>
+                    <Eyebrow className="text-xs">CHILD / FAMILY</Eyebrow>
+                    <Eyebrow className="text-xs">PROGRAM / START</Eyebrow>
+                    <Eyebrow className="text-xs">STATUS</Eyebrow>
+                    <Eyebrow className="text-xs">QUEUE</Eyebrow>
+                    <Eyebrow className="text-xs text-right">ACTIONS</Eyebrow>
                   </div>
 
                   {/* Rows */}
@@ -458,11 +458,11 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                               <div className="text-sm font-bold text-cq-ink truncate">
                                 {app.childName}
                               </div>
-                              <div className="text-[11px] text-cq-sage-ink font-medium mt-0.5 truncate">
+                              <div className="text-xs text-cq-sage-ink font-medium mt-0.5 truncate">
                                 {app.parentName} · {app.id}
                               </div>
                               {app.submittedAt && (
-                                <div className="text-[11px] text-cq-soft mt-0.5">
+                                <div className="text-xs text-cq-soft mt-0.5">
                                   Submitted {app.submittedAt}
                                 </div>
                               )}
@@ -473,7 +473,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                               <div className="text-xs font-semibold text-cq-ink-2">
                                 {getAgeGroup(app.childAgeMonths)}
                               </div>
-                              <div className="text-[11px] text-cq-soft mt-0.5">
+                              <div className="text-xs text-cq-soft mt-0.5">
                                 {app.careType} · {app.preferredStartDate}
                               </div>
                             </div>
@@ -491,7 +491,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                                     #{app.waitlistPosition}
                                   </div>
                                   {app.waitlistEstimate && (
-                                    <div className="text-[10px] text-cq-soft mt-0.5 leading-tight">
+                                    <div className="text-xs text-cq-soft mt-0.5 leading-tight">
                                       Estimate: {app.waitlistEstimate}
                                     </div>
                                   )}
@@ -541,7 +541,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                               {/* Uploaded Documents Chips */}
                               {Object.keys(app.uploadedDocuments || {}).length > 0 && (
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <span className="text-[11px] font-semibold text-cq-muted">
+                                  <span className="text-xs font-semibold text-cq-muted">
                                     Submitted documents:
                                   </span>
                                   {Object.entries(app.uploadedDocuments || {}).map(
@@ -651,11 +651,11 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                           <div className="text-sm font-bold text-cq-ink">
                             {app.childName}
                           </div>
-                          <div className="text-[11px] text-cq-sage-ink font-medium mt-0.5">
+                          <div className="text-xs text-cq-sage-ink font-medium mt-0.5">
                             {app.parentName} · {app.id}
                           </div>
                           {app.submittedAt && (
-                            <div className="text-[10px] text-cq-soft mt-0.5">
+                            <div className="text-xs text-cq-soft mt-0.5">
                               Submitted {app.submittedAt}
                             </div>
                           )}
@@ -665,19 +665,19 @@ A signed Photography & Media Consent Form is required for classroom developmenta
 
                       <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-cq-line">
                         <div>
-                          <span className="text-[10px] uppercase font-semibold text-cq-muted block">
+                          <span className="text-xs font-semibold text-cq-muted block">
                             Program
                           </span>
                           <span className="font-semibold text-cq-ink">
                             {getAgeGroup(app.childAgeMonths)}
                           </span>
-                          <span className="block text-[11px] text-cq-soft">
+                          <span className="block text-xs text-cq-soft">
                             {app.careType}
                           </span>
                         </div>
 
                         <div>
-                          <span className="text-[10px] uppercase font-semibold text-cq-muted block">
+                          <span className="text-xs font-semibold text-cq-muted block">
                             Queue
                           </span>
                           {hasPosition ? (
@@ -686,7 +686,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                                 #{app.waitlistPosition}
                               </span>
                               {app.waitlistEstimate && (
-                                <span className="block text-[10px] text-cq-soft">
+                                <span className="block text-xs text-cq-soft">
                                   {app.waitlistEstimate}
                                 </span>
                               )}
@@ -778,7 +778,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                 <div className="text-sm font-semibold text-cq-ink">
                   Positions are only shown to families after you save them.
                 </div>
-                <div className="text-[11px] text-cq-soft mt-0.5">
+                <div className="text-xs text-cq-soft mt-0.5">
                   Centres hold authority over admissions ordering and reporting dates.
                 </div>
               </div>
@@ -805,7 +805,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
             <Card className="p-6 sm:p-7 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-lg font-bold text-cq-ink">Load a published document</h3>
-                <span className="text-[11px] text-cq-soft">Each requirement keeps its exact quote, page and document</span>
+                <span className="text-xs text-cq-soft">Each requirement keeps its exact quote, page and document</span>
               </div>
               {centreDocs.length === 0 ? (
                 <p className="text-xs text-cq-soft">
@@ -825,13 +825,13 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                       />
                       <span className="min-w-0">
                         <span className="block text-sm font-semibold text-cq-ink">{d.docTitle}</span>
-                        <span className="block text-[11px] text-cq-soft">
+                        <span className="block text-xs text-cq-soft">
                           {d.operatorName} · {d.pages ? `${d.pages} pages` : 'web page'} · {d.chunks} passages
                           {d.uploaded ? ' · uploaded by your centre, not verified' : ''}
                           {d.sourceNote && !d.uploaded && d.sourceNote !== 'Exact file' ? ` · ${d.sourceNote}` : ''}
                         </span>
                         {d.sourceUrl && (
-                          <a href={d.sourceUrl} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-cq-brand hover:underline">
+                          <a href={d.sourceUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold text-cq-brand hover:underline">
                             Source
                           </a>
                         )}
@@ -867,7 +867,7 @@ A Developmental History Questionnaire must be submitted for toddler program plac
 Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                     )
                   }
-                  className="text-[11px] font-semibold text-cq-brand hover:underline cursor-pointer"
+                  className="text-xs font-semibold text-cq-brand hover:underline cursor-pointer"
                 >
                   Preset: Sample policy
                 </button>
@@ -984,12 +984,12 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
 
                           {/* Source sentence quote block */}
                           <div className="border-l-2 border-cq-sage-200 pl-3 text-xs italic text-cq-muted mt-2">
-                            <Eyebrow className="text-[10px] not-italic mb-0.5">
+                            <Eyebrow className="text-xs not-italic mb-0.5">
                               {item.docTitle ? `From ${item.docTitle}, ${item.page}` : 'From your policy'}
                             </Eyebrow>
                             <span>"{item.sourceSentence}"</span>
                             {item.docTitle && (item.sourceUrl || item.sourceNote) && (
-                              <span className="block not-italic text-[10px] text-cq-soft mt-0.5">
+                              <span className="block not-italic text-xs text-cq-soft mt-0.5">
                                 {item.sourceUrl && (
                                   <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="font-semibold text-cq-brand hover:underline">
                                     Source
@@ -1033,7 +1033,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
           <Card className="bg-cq-sage p-6 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-cq-sage-line">
               <div>
-                <Eyebrow className="text-[10px]">Live for parents now</Eyebrow>
+                <Eyebrow className="text-xs">Live for parents now</Eyebrow>
                 <h4 className="text-lg font-bold text-cq-ink mt-1">
                   Active checklist for {singleCentre.name}
                 </h4>
@@ -1087,7 +1087,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
               <div>
                 <label
                   htmlFor="waitlist-pos-input"
-                  className="text-xs font-semibold text-cq-ink uppercase tracking-wider block mb-1"
+                  className="text-xs font-semibold text-cq-ink block mb-1"
                 >
                   Queue position number:
                 </label>
@@ -1110,7 +1110,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
               <div>
                 <label
                   htmlFor="waitlist-est-input"
-                  className="text-xs font-semibold text-cq-ink uppercase tracking-wider block mb-1"
+                  className="text-xs font-semibold text-cq-ink block mb-1"
                 >
                   Centre's typical wait estimate:
                 </label>
@@ -1128,7 +1128,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                       key={preset}
                       type="button"
                       onClick={() => setWaitEstimateInput(preset)}
-                      className={`text-[10px] px-2 py-0.5 rounded-lg border transition-colors cursor-pointer ${
+                      className={`text-xs px-2 py-0.5 rounded-lg border transition-colors cursor-pointer ${
                         waitEstimateInput === preset
                           ? 'bg-cq-brand text-white border-cq-brand font-semibold'
                           : 'bg-white text-cq-muted hover:bg-cq-page border-cq-line'
@@ -1140,14 +1140,14 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                   <button
                     type="button"
                     onClick={() => setWaitEstimateInput('')}
-                    className="text-[10px] px-2 py-0.5 rounded-lg border text-cq-soft hover:text-cq-ink hover:bg-cq-page border-cq-line cursor-pointer"
+                    className="text-xs px-2 py-0.5 rounded-lg border text-cq-soft hover:text-cq-ink hover:bg-cq-page border-cq-line cursor-pointer"
                   >
                     Clear (no estimate)
                   </button>
                 </div>
               </div>
 
-              <p className="text-[11px] text-cq-soft pt-1">
+              <p className="text-xs text-cq-soft pt-1">
                 Parent {activeWaitlistApp.parentName} will see "Position {positionInput} · reported by {singleCentre.name} on today's date".
               </p>
             </div>

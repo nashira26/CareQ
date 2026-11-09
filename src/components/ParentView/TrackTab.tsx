@@ -133,7 +133,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
           <div className="hidden md:block">
             <Card className="p-0 overflow-hidden shadow-2xs">
               {/* Table Header Row */}
-              <div className="grid grid-cols-12 gap-4 px-6 py-3.5 bg-cq-page text-[11px] font-semibold uppercase tracking-[0.18em] text-cq-muted border-b border-cq-line">
+              <div className="grid grid-cols-12 gap-4 px-6 py-3.5 bg-cq-page text-xs font-semibold text-cq-muted border-b border-cq-line">
                 <div className="col-span-4">CHILD CARE CENTRE</div>
                 <div className="col-span-2">PROGRAM / START</div>
                 <div className="col-span-2">STATUS</div>
@@ -168,11 +168,11 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                         <div className="text-sm font-bold text-cq-ink truncate">
                           {centre?.name || 'Child Care Centre'}
                         </div>
-                        <div className="text-[11px] text-cq-soft mt-0.5 truncate">
+                        <div className="text-xs text-cq-soft mt-0.5 truncate">
                           {centre?.neighbourhood || 'Toronto'} · {app.id}
                         </div>
                         {app.submittedAt && (
-                          <div className="text-[11px] text-cq-soft mt-0.5">
+                          <div className="text-xs text-cq-soft mt-0.5">
                             Submitted {app.submittedAt}
                           </div>
                         )}
@@ -183,7 +183,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                         <div className="text-xs font-semibold text-cq-ink">
                           {app.careType || parentProfile.careType}
                         </div>
-                        <div className="text-[11px] text-cq-muted mt-0.5">
+                        <div className="text-xs text-cq-muted mt-0.5">
                           Start {app.preferredStartDate || parentProfile.preferredStartDate}
                         </div>
                       </div>
@@ -201,17 +201,17 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                               #{app.waitlistPosition}
                               <SimTag />
                             </div>
-                            <div className="text-[10px] text-cq-soft mt-0.5 leading-tight">
+                            <div className="text-xs text-cq-soft mt-0.5 leading-tight">
                               {reportedLine(app.waitlistReportedBy || centre?.name || 'centre', app.waitlistReportedDate || 'recently')}
                             </div>
                             {app.waitlistEstimate && (
-                              <div className="text-[10px] text-cq-soft mt-1 leading-tight">
+                              <div className="text-xs text-cq-soft mt-1 leading-tight">
                                 {estimateLine(app.waitlistEstimate)}
                               </div>
                             )}
                           </div>
                         ) : app.waitlistEstimate ? (
-                          <div className="text-[10px] text-cq-soft leading-tight">
+                          <div className="text-xs text-cq-soft leading-tight">
                             {estimateLine(app.waitlistEstimate)}
                           </div>
                         ) : (
@@ -235,7 +235,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                             <button
                               type="button"
                               onClick={() => setHistoryModalAppId(app.id)}
-                              className="text-[11px] font-semibold text-cq-brand hover:underline cursor-pointer"
+                              className="text-xs font-semibold text-cq-brand hover:underline cursor-pointer"
                             >
                               History
                             </button>
@@ -255,7 +255,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                             <button
                               type="button"
                               onClick={onNavigateToApply}
-                              className="text-[11px] font-semibold text-cq-brand hover:underline cursor-pointer"
+                              className="text-xs font-semibold text-cq-brand hover:underline cursor-pointer"
                             >
                               Complete apply →
                             </button>
@@ -265,20 +265,20 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                             <button
                               type="button"
                               onClick={() => onWithdrawApplication(app.id)}
-                              className="text-[11px] font-medium text-cq-soft hover:text-cq-rose-600 cursor-pointer transition-colors"
+                              className="text-xs font-medium text-cq-soft hover:text-cq-rose-600 cursor-pointer transition-colors"
                             >
                               Withdraw
                             </button>
                           )}
 
                           {isAccepted && (
-                            <span className="text-[11px] font-bold text-cq-sage-ink">
+                            <span className="text-xs font-bold text-cq-sage-ink">
                               ✓ Confirmed
                             </span>
                           )}
 
                           {isWithdrawn && (
-                            <span className="text-[11px] text-cq-soft italic">
+                            <span className="text-xs text-cq-soft italic">
                               Withdrawn
                             </span>
                           )}
@@ -314,11 +314,11 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                       <div className="text-sm font-bold text-cq-ink">
                         {centre?.name || 'Child Care Centre'}
                       </div>
-                      <div className="text-[11px] text-cq-soft mt-0.5">
+                      <div className="text-xs text-cq-soft mt-0.5">
                         {centre?.neighbourhood || 'Toronto'} · {app.id}
                       </div>
                       {app.submittedAt && (
-                        <div className="text-[10px] text-cq-soft mt-0.5">
+                        <div className="text-xs text-cq-soft mt-0.5">
                           Submitted {app.submittedAt}
                         </div>
                       )}
@@ -328,19 +328,19 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 
                   <div className="grid grid-cols-2 gap-3 pt-3 border-t border-cq-line text-xs">
                     <div>
-                      <span className="text-[10px] uppercase font-semibold text-cq-muted block">
+                      <span className="text-xs font-semibold text-cq-muted block">
                         Program
                       </span>
                       <span className="text-cq-ink font-semibold">
                         {app.careType || parentProfile.careType}
                       </span>
-                      <span className="block text-[11px] text-cq-muted">
+                      <span className="block text-xs text-cq-muted">
                         Start {app.preferredStartDate || parentProfile.preferredStartDate}
                       </span>
                     </div>
 
                     <div>
-                      <span className="text-[10px] uppercase font-semibold text-cq-muted block">
+                      <span className="text-xs font-semibold text-cq-muted block">
                         Queue
                       </span>
                       {hasPosition ? (
@@ -349,7 +349,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                             #{app.waitlistPosition}
                             <SimTag />
                           </span>
-                          <span className="block text-[10px] text-cq-soft mt-0.5">
+                          <span className="block text-xs text-cq-soft mt-0.5">
                             {reportedLine(app.waitlistReportedBy || centre?.name || 'centre', app.waitlistReportedDate || 'recently')}
                           </span>
                         </div>
@@ -360,7 +360,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                   </div>
 
                   {app.waitlistEstimate && (
-                    <div className="text-[11px] text-cq-soft bg-cq-page p-2.5 rounded-lg border border-cq-line">
+                    <div className="text-xs text-cq-soft bg-cq-page p-2.5 rounded-lg border border-cq-line">
                       {estimateLine(app.waitlistEstimate)}
                     </div>
                   )}
@@ -428,7 +428,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
             <div className="text-sm font-semibold text-cq-ink">
               Queues are shown only when the centre records one.
             </div>
-            <div className="text-[11px] text-cq-soft mt-0.5">
+            <div className="text-xs text-cq-soft mt-0.5">
               Centres manage their own admissions policies and waitlist updates.
             </div>
           </div>
@@ -492,7 +492,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                   })}
                 </div>
 
-                <p className="text-[11px] text-cq-soft pt-1 border-t border-cq-line">
+                <p className="text-xs text-cq-soft pt-1 border-t border-cq-line">
                   Withdrawing other applications frees up waitlist spots for other Ontario families.
                 </p>
               </div>
@@ -585,7 +585,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                       {history.length === 1 && (
                         <div className="text-sm text-cq-ink">
                           - Position {history[0].position} (joined the waitlist)
-                          <span className="block pl-3 text-[11px] text-cq-soft">{reportedLine(historyReporter, history[0].date)}</span>
+                          <span className="block pl-3 text-xs text-cq-soft">{reportedLine(historyReporter, history[0].date)}</span>
                         </div>
                       )}
                       <p className="text-xs text-cq-soft italic">No changes recorded yet.</p>
@@ -605,7 +605,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                           <span>
                             Position {item.position}
                             {isOldest ? ' (joined the waitlist)' : ''}
-                            <span className="block text-[11px] text-cq-soft">{reportedLine(historyReporter, item.date)}</span>
+                            <span className="block text-xs text-cq-soft">{reportedLine(historyReporter, item.date)}</span>
                           </span>
                         </li>
                       );

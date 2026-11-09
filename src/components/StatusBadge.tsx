@@ -1,6 +1,6 @@
 import React from 'react';
 import { ApplicationStatus } from '../data/mockData';
-import { Clock, AlertCircle, FileText, Check, Ban, Sparkles } from 'lucide-react';
+import { FileText, Send, Search, ListOrdered, Gift, Check, Ban } from 'lucide-react';
 import { SimTag } from './ui/CareUI';
 
 interface StatusBadgeProps {
@@ -16,67 +16,48 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, waitlistPositi
   // A draft is the parent's own unsent work, not a simulated centre status
   if (!simulated || status === 'Draft' || !badge) return badge;
   return (
-    <span className="inline-flex items-center gap-1">
+    <span className="inline-flex items-center gap-1.5 flex-wrap">
       {badge}
       <SimTag />
     </span>
   );
 };
 
-const Badge: React.FC<Omit<StatusBadgeProps, 'simulated'>> = ({ status, waitlistPosition }) => {
-  const base = 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold select-none';
+/**
+ * One colour and one icon per status, so colour is never the only cue.
+ * Wording is the product's status wording; only the waitlist position format is "Waitlisted · #4".
+ */
+const STYLES: Record<ApplicationStatus, { cls: string; Icon: React.ComponentType<{ className?: string }> }> = {
+  Draft: { cls: 'bg-stone text-status-draft border border-dashed border-[#A7ADA9]', Icon: FileText },
+  Submitted: { cls: 'bg-info-bg text-info border border-transparent', Icon: Send },
+  'Under review': { cls: 'bg-peach text-status-review border border-transparent', Icon: Search },
+  Waitlisted: { cls: 'bg-status-wait-bg text-status-wait border border-transparent', Icon: ListOrdered },
+  Offer: { cls: 'bg-sun text-status-offer border border-transparent', Icon: Gift },
+  Accepted: { cls: 'bg-mint text-leaf-ink border border-transparent', Icon: Check },
+  Withdrawn: { cls: 'bg-stone text-status-withdrawn border border-transparent line-through', Icon: Ban },
+};
 
-  switch (status) {
-    case 'Draft':
-      return (
-        <span className={`${base} bg-cq-surface-stone-2 text-cq-muted-2 border-cq-line`}>
-          <FileText className="w-3 h-3 text-cq-muted-2" />
-          Draft
-        </span>
-      );
-    case 'Submitted':
-      return (
-        <span className={`${base} bg-cq-sky text-cq-sky-ink border-cq-sky-line`}>
-          <Clock className="w-3 h-3 text-cq-sky-ink" />
-          Submitted
-        </span>
-      );
-    case 'Under review':
-      return (
-        <span className={`${base} bg-cq-cream-amber text-cq-amber-ink border-cq-amber-line`}>
-          <AlertCircle className="w-3 h-3 text-cq-amber-ink" />
-          Under review
-        </span>
-      );
-    case 'Waitlisted':
-      return (
-        <span className={`${base} bg-cq-lilac-50 text-cq-lilac-ink border-cq-lilac-line`}>
-          <Clock className="w-3 h-3 text-cq-lilac-ink" />
-          Waitlisted {waitlistPosition ? `(#${waitlistPosition})` : ''}
-        </span>
-      );
-    case 'Offer':
-      return (
-        <span className={`${base} bg-cq-cream-amber-2 text-cq-amber-ink-2 border-cq-accent`}>
-          <Sparkles className="w-3 h-3 text-cq-amber-ink-2" />
-          Offer Available
-        </span>
-      );
-    case 'Accepted':
-      return (
-        <span className={`${base} bg-cq-sage text-cq-sage-ink-4 border-cq-sage-200`}>
-          <Check className="w-3 h-3 text-cq-sage-ink-4" />
-          Accepted
-        </span>
-      );
-    case 'Withdrawn':
-      return (
-        <span className={`${base} bg-cq-surface-stone-2 text-cq-faint border-cq-line line-through`}>
-          <Ban className="w-3 h-3 text-cq-faint" />
-          Withdrawn
-        </span>
-      );
-    default:
-      return null;
-  }
+const LABEL: Record<ApplicationStatus, string> = {
+  Draft: 'Draft',
+  Submitted: 'Submitted',
+  'Under review': 'Under review',
+  Waitlisted: 'Waitlisted',
+  Offer: 'Offer Available',
+  Accepted: 'Accepted',
+  Withdrawn: 'Withdrawn',
+};
+
+const Badge: React.FC<Omit<StatusBadgeProps, 'simulated'>> = ({ status, waitlistPosition }) => {
+  const s = STYLES[status];
+  if (!s) return null;
+  const { cls, Icon } = s;
+  const label = status === 'Waitlisted' && waitlistPosition ? `Waitlisted · #${waitlistPosition}` : LABEL[status];
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 h-[26px] rounded-full px-2.5 text-xs font-bold leading-none whitespace-nowrap select-none transition-colors duration-300 ${cls}`}
+    >
+      <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+      {label}
+    </span>
+  );
 };

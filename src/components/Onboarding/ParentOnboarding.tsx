@@ -160,7 +160,7 @@ export const ParentOnboarding: React.FC<Props> = ({ parentName, areas, onComplet
                 <li key={c.id} className="rounded-xl border border-cq-line bg-cq-input p-4 space-y-1">
                   <p className="flex items-center gap-2 text-sm font-bold text-cq-ink">
                     <Baby className="w-4 h-4 text-cq-sage-ink" /> {c.firstName}, {formatAge(ageInMonths(c.dateOfBirth))}
-                    {i === 0 && <span className="ml-auto text-[10px] font-semibold text-cq-sage-ink">Active child</span>}
+                    {i === 0 && <span className="ml-auto text-xs font-semibold text-cq-sage-ink">Active child</span>}
                   </p>
                   <p className="text-xs text-cq-muted">
                     {c.careType} · from {c.preferredStartDate}

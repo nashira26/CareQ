@@ -34,7 +34,7 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({
           <div className="flex justify-center mb-1">
             <LogoFull size={40} />
           </div>
-          <h2 className="text-xl font-bold text-cq-stone-900 tracking-tight">
+          <h2 className="text-xl font-bold text-cq-stone-900">
             Create Your CareQ Account
           </h2>
           <p className="text-xs text-cq-stone-500 leading-relaxed">
@@ -45,7 +45,7 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Role Choice */}
           <div>
-            <label className="block text-xs font-semibold text-cq-stone-700 mb-1.5 uppercase tracking-wider">
+            <label className="block text-xs font-semibold text-cq-stone-700 mb-1.5">
               I am registering as:
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -119,7 +119,7 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({
               </span>
             </label>
 
-            <div className="pl-6.5 text-[11px] text-cq-stone-500 flex items-center gap-1">
+            <div className="pl-6.5 text-xs text-cq-stone-500 flex items-center gap-1">
               <button
                 type="button"
                 onClick={onOpenTrustPage}

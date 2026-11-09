@@ -178,7 +178,7 @@ export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, onRegis
           {uploadsAvailable && (
             <div className="max-w-md mx-auto text-left rounded-xl border border-cq-line bg-cq-page p-4 space-y-2">
               <p className="text-sm font-semibold text-cq-ink">Upload your documents</p>
-              <p className="text-[11px] text-cq-muted">
+              <p className="text-xs text-cq-muted">
                 Your parent handbook or admission policy (PDF, HTML or Word, up to 6 MB). CareQ reads it so parents get answers and a checklist
                 with quotes from it. The file itself is not kept.
               </p>
@@ -187,9 +187,9 @@ export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, onRegis
                 {uploading ? 'Reading your document…' : 'Choose a file'}
                 <input type="file" accept=".pdf,.html,.htm,.docx" className="sr-only" disabled={uploading} onChange={handleUpload} />
               </label>
-              {uploadError && <p role="alert" className="text-[11px] font-medium text-cq-rust">{uploadError}</p>}
+              {uploadError && <p role="alert" className="text-xs font-medium text-cq-rust">{uploadError}</p>}
               {uploaded.map((d) => (
-                <p key={d.docKey} className="text-[11px] text-cq-ink flex items-start gap-1.5">
+                <p key={d.docKey} className="text-xs text-cq-ink flex items-start gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-cq-sage-ink shrink-0 mt-0.5" />
                   <span>
                     <span className="font-semibold">{d.docTitle}</span>: {d.pages ? `${d.pages} pages, ` : ''}
@@ -215,7 +215,7 @@ export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, onRegis
             </GhostButton>
           </div>
           {registered.registration!.policyText && (
-            <p className="text-[11px] text-cq-soft">The AI suggests a checklist from your policy; you confirm it before families see it.</p>
+            <p className="text-xs text-cq-soft">The AI suggests a checklist from your policy; you confirm it before families see it.</p>
           )}
         </Card>
       </OnboardingShell>
@@ -341,7 +341,7 @@ export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, onRegis
                 <input type="file" accept="image/*" onChange={handlePhoto} className="sr-only" />
               </label>
             </div>
-            <p className="mt-1 text-[11px] text-cq-soft">Image only. Resized and kept in this browser; shown as “Photo provided by the centre”.</p>
+            <p className="mt-1 text-xs text-cq-soft">Image only. Resized and kept in this browser; shown as “Photo provided by the centre”.</p>
             {photoError && <p className="mt-1 text-xs font-medium text-cq-rust">{photoError}</p>}
           </div>
 

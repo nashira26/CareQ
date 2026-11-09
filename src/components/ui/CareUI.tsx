@@ -1,16 +1,20 @@
 import React from 'react';
 import { isAiOffline } from '../../lib/aiFetch';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Info } from 'lucide-react';
+import type { ApplicationStatus } from '../../data/mockData';
+
+/* ---------------------------------------------------------------------------
+   Text
+   ------------------------------------------------------------------------ */
 
 export interface EyebrowProps {
   children: React.ReactNode;
   className?: string;
 }
 
+/** Small section label. Sentence case, no letter spacing. */
 export const Eyebrow: React.FC<EyebrowProps> = ({ children, className = '' }) => (
-  <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] text-cq-muted ${className}`}>
-    {children}
-  </p>
+  <p className={`text-sm font-semibold text-ink-muted ${className}`}>{children}</p>
 );
 
 export interface PageHeaderProps {
@@ -20,23 +24,20 @@ export interface PageHeaderProps {
   action?: React.ReactNode;
 }
 
-export const PageHeader: React.FC<PageHeaderProps> = ({
-  eyebrow,
-  title,
-  subtitle,
-  action,
-}) => (
-  <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-6 mb-8">
-    <div>
+export const PageHeader: React.FC<PageHeaderProps> = ({ eyebrow, title, subtitle, action }) => (
+  <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 sm:gap-6 mb-6 sm:mb-8">
+    <div className="min-w-0">
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-      <h1 className="mt-2 text-[34px] sm:text-[40px] font-bold leading-tight tracking-[-0.03em] text-cq-ink">
-        {title}
-      </h1>
-      {subtitle && <p className="mt-2 text-sm text-cq-muted">{subtitle}</p>}
+      <h1 className="mt-1 text-2xl sm:text-[30px] sm:leading-[38px] font-extrabold leading-tight text-brand">{title}</h1>
+      {subtitle && <p className="mt-1.5 text-base text-ink-muted max-w-2xl">{subtitle}</p>}
     </div>
     {action && <div className="shrink-0">{action}</div>}
   </div>
 );
+
+/* ---------------------------------------------------------------------------
+   Surfaces
+   ------------------------------------------------------------------------ */
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
@@ -44,30 +45,42 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export const Card: React.FC<CardProps> = ({ className = '', children, ...props }) => (
-  <div className={`bg-white rounded-2xl border border-cq-line p-6 ${className}`} {...props}>
+  <div className={`bg-white rounded-2xl border border-cq-line p-5 sm:p-6 ${className}`} {...props}>
     {children}
   </div>
 );
 
+/* ---------------------------------------------------------------------------
+   Buttons: primary (solid teal), secondary (outlined), tertiary (link), danger.
+   Arrows only on buttons that take you to another screen (`arrow`).
+   ------------------------------------------------------------------------ */
+
+const pressable =
+  'cursor-pointer select-none transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100';
+
 export interface PrimaryButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
+  /** Show a forward arrow: use for buttons that move to another screen. */
+  arrow?: boolean;
+  /** @deprecated arrows are now opt-in via `arrow`; kept so existing calls compile. */
   noArrow?: boolean;
   className?: string;
 }
 
 export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   children,
-  noArrow = false,
+  arrow = false,
+  noArrow: _noArrow,
   className = '',
   ...props
 }) => (
   <button
     type="button"
-    className={`inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-cq-brand hover:bg-cq-brand-hover text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${className}`}
+    className={`inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-cq-brand hover:bg-cq-brand-hover active:bg-brand-press text-white text-sm font-bold disabled:bg-stone disabled:text-ink-faint ${pressable} ${className}`}
     {...props}
   >
     <span>{children}</span>
-    {!noArrow && <ArrowRight className="w-4 h-4 shrink-0" />}
+    {arrow && <ArrowRight className="w-4 h-4 shrink-0" aria-hidden="true" />}
   </button>
 );
 
@@ -76,19 +89,44 @@ export interface GhostButtonProps extends React.ButtonHTMLAttributes<HTMLButtonE
   className?: string;
 }
 
-export const GhostButton: React.FC<GhostButtonProps> = ({
-  children,
-  className = '',
-  ...props
-}) => (
+/** Secondary button: white, strong outline, teal text. */
+export const GhostButton: React.FC<GhostButtonProps> = ({ children, className = '', ...props }) => (
   <button
     type="button"
-    className={`h-10 px-4 rounded-xl border border-cq-line bg-white text-sm font-semibold text-cq-ink hover:bg-cq-page transition-colors inline-flex items-center justify-center gap-2 cursor-pointer ${className}`}
+    className={`h-10 px-4 rounded-xl border border-line-strong bg-white text-sm font-bold text-brand hover:bg-mint inline-flex items-center justify-center gap-2 disabled:bg-stone disabled:text-ink-faint disabled:border-cq-line ${pressable} ${className}`}
     {...props}
   >
     {children}
   </button>
 );
+
+export const SecondaryButton = GhostButton;
+
+/** Tertiary: a link-style button for low-emphasis actions (History, View details). */
+export const TertiaryButton: React.FC<GhostButtonProps> = ({ children, className = '', ...props }) => (
+  <button
+    type="button"
+    className={`inline-flex items-center gap-1.5 h-10 px-2 rounded-lg text-sm font-bold text-brand underline decoration-brand/35 underline-offset-4 hover:decoration-brand disabled:text-ink-faint disabled:no-underline ${pressable} ${className}`}
+    {...props}
+  >
+    {children}
+  </button>
+);
+
+/** Destructive action (Withdraw, Remove). Outlined so it never competes with the primary action. */
+export const DangerButton: React.FC<GhostButtonProps> = ({ children, className = '', ...props }) => (
+  <button
+    type="button"
+    className={`h-10 px-4 rounded-xl border border-[#E2B4AF] bg-white text-sm font-bold text-error hover:bg-error-bg inline-flex items-center justify-center gap-2 disabled:text-ink-faint disabled:border-cq-line ${pressable} ${className}`}
+    {...props}
+  >
+    {children}
+  </button>
+);
+
+/* ---------------------------------------------------------------------------
+   Icon tiles and centre avatars
+   ------------------------------------------------------------------------ */
 
 export type IconTileTone = 'sage' | 'peach' | 'lilac' | 'sand';
 
@@ -98,28 +136,97 @@ export interface IconTileProps {
   className?: string;
 }
 
-export const IconTile: React.FC<IconTileProps> = ({
-  icon: Icon,
-  tone = 'sage',
-  className = '',
-}) => {
-  const tones: Record<IconTileTone, { bg: string; text: string }> = {
-    sage: { bg: 'bg-cq-sage', text: 'text-cq-sage-ink' },
-    peach: { bg: 'bg-cq-peach', text: 'text-cq-peach-ink' },
-    lilac: { bg: 'bg-cq-lilac', text: 'text-cq-lilac-ink' },
-    sand: { bg: 'bg-cq-sand', text: 'text-cq-sand-ink-2' },
+export const IconTile: React.FC<IconTileProps> = ({ icon: Icon, tone = 'sage', className = '' }) => {
+  const tones: Record<IconTileTone, string> = {
+    sage: 'bg-mint text-leaf-ink',
+    peach: 'bg-peach text-coral-ink',
+    lilac: 'bg-status-wait-bg text-status-wait',
+    sand: 'bg-butter text-sun-ink',
   };
-
-  const current = tones[tone] || tones.sage;
-
   return (
-    <div
-      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${current.bg} ${current.text} ${className}`}
-    >
+    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${tones[tone] || tones.sage} ${className}`}>
       <Icon className="w-5 h-5" />
     </div>
   );
 };
+
+const AVATAR_FILLS = ['bg-mint', 'bg-peach', 'bg-butter', 'bg-stone'] as const;
+const AVATAR_DOORS = ['fill-leaf', 'fill-coral', 'fill-sun', 'fill-leaf'] as const;
+
+/** Stable index 0-3 from a centre id, so a centre always gets the same tile colour. */
+export const centreTone = (centreId: string): number => {
+  let h = 0;
+  for (let i = 0; i < centreId.length; i++) h = (h * 31 + centreId.charCodeAt(i)) >>> 0;
+  return h % AVATAR_FILLS.length;
+};
+
+/** Small house tile that gives each centre a recognisable mark in lists. Decorative. */
+export const CentreAvatar: React.FC<{ centreId: string; size?: 'sm' | 'md' | 'lg'; className?: string }> = ({
+  centreId,
+  size = 'md',
+  className = '',
+}) => {
+  const t = centreTone(centreId);
+  const box = size === 'sm' ? 'w-9 h-9' : size === 'lg' ? 'w-14 h-14' : 'w-11 h-11';
+  const icon = size === 'sm' ? 22 : size === 'lg' ? 34 : 26;
+  return (
+    <span aria-hidden="true" className={`${box} ${AVATAR_FILLS[t]} rounded-xl inline-flex items-center justify-center shrink-0 ${className}`}>
+      <svg width={icon} height={icon} viewBox="0 0 48 48" fill="none" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="stroke-brand">
+        <path d="M8 22 24 9l16 13" />
+        <path d="M12 19v20h24V19" className="fill-white" />
+        <path d="M20.5 39v-8a3.5 3.5 0 0 1 7 0v8" className={AVATAR_DOORS[t]} />
+      </svg>
+    </span>
+  );
+};
+
+/* ---------------------------------------------------------------------------
+   Progress strip: Sent -> Reviewed -> Waitlist -> Offer.
+   Shows how far the application has got by its current (centre-reported)
+   status. Never predicts the next step.
+   ------------------------------------------------------------------------ */
+
+const STEPS = ['Sent', 'Reviewed', 'Waitlist', 'Offer'] as const;
+const STEP_INDEX: Partial<Record<ApplicationStatus, number>> = {
+  Submitted: 0,
+  'Under review': 1,
+  Waitlisted: 2,
+  Offer: 3,
+  Accepted: 4,
+};
+
+export const ProgressStrip: React.FC<{ status: ApplicationStatus; compact?: boolean; className?: string }> = ({
+  status,
+  compact = false,
+  className = '',
+}) => {
+  const current = STEP_INDEX[status];
+  if (current === undefined) return null; // Draft and Withdrawn have no progress
+  const label = current >= 4 ? 'Offer accepted' : `${STEPS[current]} (step ${current + 1} of 4)`;
+  return (
+    <ol aria-label={`Application progress: ${label}`} className={`grid grid-cols-4 gap-1 ${className}`}>
+      {STEPS.map((s, i) => {
+        const state = i < current ? 'done' : i === current ? 'now' : 'todo';
+        return (
+          <li key={s} className="flex flex-col gap-1 min-w-0" aria-current={state === 'now' ? 'step' : undefined}>
+            <span
+              className={`block h-1.5 rounded-full transition-colors duration-500 ${
+                state === 'done' ? 'bg-leaf' : state === 'now' ? 'bg-coral' : 'bg-stone'
+              }`}
+            />
+            {!compact && (
+              <span className={`text-xs truncate ${state === 'todo' ? 'text-ink-faint' : 'font-bold text-ink'}`}>{s}</span>
+            )}
+          </li>
+        );
+      })}
+    </ol>
+  );
+};
+
+/* ---------------------------------------------------------------------------
+   Trust and simulation labels (wording unchanged)
+   ------------------------------------------------------------------------ */
 
 export interface SimNoteProps {
   children: React.ReactNode;
@@ -127,8 +234,8 @@ export interface SimNoteProps {
 }
 
 export const SimNote: React.FC<SimNoteProps> = ({ children, className = '' }) => (
-  <div className={`text-[11px] text-cq-soft flex items-center gap-1.5 ${className}`}>
-    <Sparkles className="w-3 h-3 text-cq-soft shrink-0" />
+  <div className={`text-xs text-ink-soft flex items-start gap-1.5 ${className}`}>
+    <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
     <span>{children}</span>
   </div>
 );
@@ -139,7 +246,7 @@ export const SimNote: React.FC<SimNoteProps> = ({ children, className = '' }) =>
  */
 export const SimTag: React.FC<{ className?: string }> = ({ className = '' }) => (
   <span
-    className={`inline-flex items-center rounded px-1.5 py-0.5 bg-cq-band text-cq-sand-ink text-[10px] font-semibold leading-none align-middle ${className}`}
+    className={`inline-flex items-center rounded-md px-1.5 h-5 bg-butter text-sim border border-butter-line text-xs font-bold leading-none align-middle whitespace-nowrap ${className}`}
   >
     Simulated
   </span>
@@ -153,17 +260,17 @@ export const CentreDemoBanner: React.FC<{ centreName: string; realCentre: boolea
 }) => (
   <div
     role="note"
-    className={`rounded-xl border border-cq-sand-line bg-cq-sand-50 px-4 py-2.5 text-xs text-cq-sand-ink flex items-start gap-2 ${className}`}
+    className={`rounded-xl border border-butter-line bg-butter px-4 py-2.5 text-sm text-cq-sand-ink flex items-start gap-2 ${className}`}
   >
-    <Sparkles className="w-3.5 h-3.5 shrink-0 mt-0.5 text-cq-sand-ink-2" />
+    <Info className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
     <span>
       {realCentre ? (
         <>
-          <span className="font-semibold">Simulated demo account.</span> Not operated by or affiliated with {centreName}.
+          <span className="font-bold">Simulated demo account.</span> Not operated by or affiliated with {centreName}.
         </>
       ) : (
         <>
-          <span className="font-semibold">Simulated demo account.</span> {centreName} is a fictional centre.
+          <span className="font-bold">Simulated demo account.</span> {centreName} is a fictional centre.
         </>
       )}
     </span>
@@ -173,19 +280,19 @@ export const CentreDemoBanner: React.FC<{ centreName: string; realCentre: boolea
 export type AiMode = 'gemini' | 'fallback';
 
 /** Small grey note shown when an AI endpoint answered with its non-AI fallback. */
-export const AiFallbackNote: React.FC<{ aiMode?: AiMode | null; className?: string }> = ({
-  aiMode,
-  className = '',
-}) =>
+export const AiFallbackNote: React.FC<{ aiMode?: AiMode | null; className?: string }> = ({ aiMode, className = '' }) =>
   aiMode === 'fallback' ? (
-    <p className={`text-[11px] text-cq-soft ${className}`}>{isAiOffline() ? 'Offline demo: AI unavailable, basic mode used' : 'AI unavailable: basic mode used'}</p>
+    <p className={`text-xs text-ink-soft flex items-center gap-1.5 ${className}`}>
+      <Info className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+      {isAiOffline() ? 'Offline demo: AI unavailable, basic mode used' : 'AI unavailable: basic mode used'}
+    </p>
   ) : null;
 
 /** Plain-language notice when an AI feature can't run (rate limit, signed out, server unreachable). */
 export const AiNotice: React.FC<{ message?: string | null; className?: string }> = ({ message, className = '' }) =>
   message ? (
     // Offline demo: the only notices are basic-mode notes, so they're grey like AiFallbackNote, not error-red
-    <p role="status" className={`text-[11px] ${isAiOffline() ? 'text-cq-soft' : 'font-medium text-cq-rust'} ${className}`}>
+    <p role="status" className={`text-xs ${isAiOffline() ? 'text-ink-soft' : 'font-semibold text-error'} ${className}`}>
       {message}
     </p>
   ) : null;
@@ -196,21 +303,20 @@ export interface DemoBannerProps {
   className?: string;
 }
 
-export const DemoBanner: React.FC<DemoBannerProps> = ({
-  title,
-  children,
-  className = '',
-}) => (
-  <div
-    className={`rounded-2xl bg-cq-sage-75 border border-cq-sage-line-2 px-5 py-4 text-sm text-cq-ink-2 flex items-start gap-3 ${className}`}
-  >
-    <Sparkles className="w-4 h-4 text-cq-sage-ink shrink-0 mt-0.5" />
+export const DemoBanner: React.FC<DemoBannerProps> = ({ title, children, className = '' }) => (
+  <div className={`rounded-xl bg-butter border border-butter-line px-4 py-3 text-sm text-cq-sand-ink flex items-start gap-2.5 ${className}`}>
+    <Info className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
     <div>
       <span className="font-bold">{title} </span>
       <span>{children}</span>
     </div>
   </div>
 );
+
+/* ---------------------------------------------------------------------------
+   House scene (landing, auth, centre without a photo). Same line style as the
+   spot illustrations in ./Illustrations.
+   ------------------------------------------------------------------------ */
 
 export type HouseIllustrationTone = 'sage' | 'lilac' | 'sky';
 
@@ -219,127 +325,37 @@ export interface HouseIllustrationProps {
   className?: string;
 }
 
-export const HouseIllustration: React.FC<HouseIllustrationProps> = ({
-  tone = 'sage',
-  className = '',
-}) => {
-  const palettes = {
-    sage: {
-      bg: '#DCE7DA',
-      hill1: '#C9DCC2',
-      hill2: '#BFD4B7',
-      dark: '#4A7A62',
-      accent: '#9DBB86',
-    },
-    lilac: {
-      bg: '#E6E2F0',
-      hill1: '#D6D0E8',
-      hill2: '#CCC4E2',
-      dark: '#8A7FB0',
-      accent: '#B7AED3',
-    },
-    sky: {
-      bg: '#DCE6EA',
-      hill1: '#C8D8DE',
-      hill2: '#BCD0D8',
-      dark: '#5F8A9A',
-      accent: '#9DB9C3',
-    },
-  };
-
-  const p = palettes[tone] || palettes.sage;
-
-  return (
-    <svg
-      viewBox="0 0 520 280"
-      className={`w-full h-auto select-none ${className}`}
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      {/* Background base */}
-      <rect width="520" height="280" fill={p.bg} />
-
-      {/* Pale sun circle top-right r=28 #FBF3C4 */}
-      <circle cx="430" cy="62" r="28" fill="#FBF3C4" />
-
-      {/* 4-point sparkle top-left */}
-      <path
-        d="M 68 40 Q 68 54 54 54 Q 68 54 68 68 Q 68 54 82 54 Q 68 54 68 40 Z"
-        fill={p.accent}
-      />
-
-      {/* Small bird "︶︶" stroke */}
-      <path
-        d="M 364 96 Q 370 88 376 96 Q 382 88 388 96"
-        fill="none"
-        stroke={p.dark}
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M 396 108 Q 401 101 406 108 Q 411 101 416 108"
-        fill="none"
-        stroke={p.dark}
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-
-      {/* Soft hills along the bottom */}
-      <path
-        d="M 0 195 Q 160 145 320 180 T 520 165 L 520 280 L 0 280 Z"
-        fill={p.hill2}
-      />
-      <path
-        d="M 0 230 Q 180 170 360 200 T 520 195 L 520 280 L 0 280 Z"
-        fill={p.hill1}
-      />
-
-      {/* Thin path line from door to the right */}
-      <path
-        d="M 265 255 Q 315 258 370 264 T 520 268"
-        fill="none"
-        stroke={p.dark}
-        strokeWidth="2.5"
-        strokeLinecap="round"
-      />
-
-      {/* Round sage tree on the left: two overlapping circles on a thin trunk */}
-      <rect x="98" y="168" width="6" height="74" rx="2" fill={p.dark} />
-      <circle cx="88" cy="158" r="32" fill={p.accent} />
-      <circle cx="112" cy="146" r="28" fill={p.accent} />
-
-      {/* House in the centre: cream body #FBF8EC (~190x130), triangular roof, arched door, two square windows with cream cross */}
-      <rect x="175" y="132" width="180" height="123" rx="3" fill="#FBF8EC" />
-      <polygon points="158,132 265,70 372,132" fill={p.dark} />
-
-      {/* Left window */}
-      <rect x="198" y="152" width="30" height="30" rx="3" fill={p.accent} />
-      <line x1="213" y1="152" x2="213" y2="182" stroke="#FBF8EC" strokeWidth="2.5" />
-      <line x1="198" y1="167" x2="228" y2="167" stroke="#FBF8EC" strokeWidth="2.5" />
-
-      {/* Right window */}
-      <rect x="302" y="152" width="30" height="30" rx="3" fill={p.accent} />
-      <line x1="317" y1="152" x2="317" y2="182" stroke="#FBF8EC" strokeWidth="2.5" />
-      <line x1="302" y1="167" x2="332" y2="167" stroke="#FBF8EC" strokeWidth="2.5" />
-
-      {/* Arched door */}
-      <path
-        d="M 248 255 L 248 214 A 17 17 0 0 1 282 214 L 282 255 Z"
-        fill={p.dark}
-      />
-      <circle cx="276" cy="235" r="2" fill="#FBF8EC" />
-
-      {/* Two tiny flowers (#E9A27A, #F2C14E) by the door */}
-      <line x1="238" y1="255" x2="238" y2="242" stroke={p.dark} strokeWidth="1.5" />
-      <circle cx="238" cy="240" r="4.5" fill="#E9A27A" />
-
-      <line x1="292" y1="255" x2="292" y2="244" stroke={p.dark} strokeWidth="1.5" />
-      <circle cx="292" cy="242" r="4" fill="#F2C14E" />
-
-      {/* Pine tree on the right: stacked triangles with trunk */}
-      <rect x="424" y="196" width="7" height="46" rx="2" fill={p.dark} />
-      <polygon points="400,212 427.5,172 455,212" fill={p.dark} />
-      <polygon points="405,188 427.5,152 450,188" fill={p.dark} />
-      <polygon points="410,164 427.5,134 445,164" fill={p.dark} />
-    </svg>
-  );
+const HOUSE_BG: Record<HouseIllustrationTone, string> = {
+  sage: 'fill-mint',
+  lilac: 'fill-status-wait-bg',
+  sky: 'fill-info-bg',
 };
+
+export const HouseIllustration: React.FC<HouseIllustrationProps> = ({ tone = 'sage', className = '' }) => (
+  <svg
+    viewBox="0 0 520 280"
+    className={`w-full h-auto select-none ${className}`}
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+    fill="none"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect width="520" height="280" className={HOUSE_BG[tone] || HOUSE_BG.sage} />
+    <circle cx="420" cy="70" r="30" className="fill-sun" />
+    <path d="M0 236 H520" className="stroke-brand" strokeWidth="3" />
+    <path d="M300 236 c40 0 70 -8 120 -8 s60 8 100 8" className="stroke-leaf" strokeWidth="3" />
+    {/* tree */}
+    <path d="M96 236 V178" className="stroke-brand" strokeWidth="3" />
+    <path d="M66 182 c0 -34 16 -54 30 -54 s30 20 30 54 z" className="fill-leaf stroke-brand" strokeWidth="3" />
+    {/* house */}
+    <path d="M168 126 260 62 352 126" className="stroke-brand" strokeWidth="3.5" />
+    <path d="M186 114 V236 H334 V114" className="fill-white stroke-brand" strokeWidth="3.5" />
+    <rect x="206" y="140" width="34" height="30" rx="5" className="fill-peach stroke-brand" strokeWidth="3" />
+    <rect x="280" y="140" width="34" height="30" rx="5" className="fill-peach stroke-brand" strokeWidth="3" />
+    <path d="M242 236 V204 a18 18 0 0 1 36 0 V236" className="fill-sun stroke-brand" strokeWidth="3" />
+    {/* Q-ring path echoing the logo */}
+    <path d="M430 196 a22 22 0 1 1 10 -18" className="stroke-coral" strokeWidth="3.5" />
+    <path d="M436 188 l10 10" className="stroke-coral" strokeWidth="3.5" />
+  </svg>
+);

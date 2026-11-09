@@ -67,7 +67,7 @@ export const CentreMessages: React.FC<CentreMessagesProps> = ({
 
               return (
                 <div key={app.id} className="py-6 flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-cq-sage border border-cq-sage-line-2 text-[11px] font-bold text-cq-sage-ink flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-cq-sage border border-cq-sage-line-2 text-xs font-bold text-cq-sage-ink flex items-center justify-center shrink-0">
                     {getInitials(app.parentName)}
                   </div>
 
@@ -76,7 +76,7 @@ export const CentreMessages: React.FC<CentreMessagesProps> = ({
                       <span className="text-sm font-bold text-cq-ink">
                         {app.parentName}
                       </span>
-                      <span className="text-[11px] text-cq-soft">
+                      <span className="text-xs text-cq-soft">
                         {' · '}
                         {app.childName}
                       </span>
@@ -87,11 +87,11 @@ export const CentreMessages: React.FC<CentreMessagesProps> = ({
                         : 'No messages yet. Start a conversation.'}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-cq-soft">
+                      <span className="text-xs text-cq-soft">
                         {app.id} · {app.status}
                       </span>
                       {lastMessage?.aiAssisted && (
-                        <span className="rounded-full bg-cq-lilac text-cq-lilac-ink text-[10px] font-semibold px-2 py-0.5">
+                        <span className="rounded-full bg-cq-lilac text-cq-lilac-ink text-xs font-semibold px-2 py-0.5">
                           AI-assisted draft
                         </span>
                       )}

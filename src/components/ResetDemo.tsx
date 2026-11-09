@@ -97,7 +97,7 @@ export const ResetDemo: React.FC<ResetDemoProps> = ({ variant = 'sidebar', class
           {adminLocked ? <KeyRound className="w-3.5 h-3.5" /> : <RotateCcw className="w-3.5 h-3.5" />}
           <span>{adminLocked ? 'Admin reset' : 'Reset demo'}</span>
         </button>
-        <p className="text-[10px] text-cq-soft pl-2 mt-1">
+        <p className="text-xs text-cq-soft pl-2 mt-1">
           {mode === 'local' ? 'Demo data is saved only in this browser.' : 'Demo data is shared by everyone using this demo.'}
         </p>
       </div>
@@ -110,7 +110,7 @@ export const ResetDemo: React.FC<ResetDemoProps> = ({ variant = 'sidebar', class
         >
           {adminLocked ? 'Admin reset' : 'Reset demo'}
         </button>
-        {mode === 'local' && <span className="text-[10px] text-cq-soft">Demo data is saved only in this browser.</span>}
+        {mode === 'local' && <span className="text-xs text-cq-soft">Demo data is saved only in this browser.</span>}
       </span>
     );
 

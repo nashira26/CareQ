@@ -43,6 +43,7 @@ import fsaCentroids from './data/fsaCentroids.json';
 import { LogoFull } from './components/Logo';
 import { setAiOffline } from './lib/aiFetch';
 import { CentreDemoBanner } from './components/ui/CareUI';
+import { StepComplete, StepCompleteInfo } from './components/ui/StepComplete';
 import {
   Search,
   FileEdit,
@@ -73,6 +74,8 @@ export default function App() {
   const [store, setStore] = useState<DemoStore | null>(null);
   const [resetAvailable, setResetAvailable] = useState(false);
   const [bootError, setBootError] = useState<string | null>(null);
+  const [stepDone, setStepDone] = useState<StepCompleteInfo | null>(null);
+  const closeStepDone = useCallback(() => setStepDone(null), []);
   const [snapshot, setRawSnapshot] = useState<Snapshot>(EMPTY_SNAPSHOT);
   const [outage, setOutage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -312,12 +315,26 @@ export default function App() {
     if (store) scheduleWrite(`draft:${applicationId}`, () => store.updateDraft(applicationId, { kind: 'preparedDraft', draft }));
   };
 
+  const centreNameFor = (applicationId: string) => {
+    const app = applications.find((a) => a.id === applicationId);
+    return centres.find((c) => c.id === app?.centreId)?.name ?? 'the centre';
+  };
   const handleSubmitApplication = async (applicationId: string) => {
     if (!store) return;
+    const centreName = centreNameFor(applicationId);
     await flushWrites(); // the reviewed draft and note must be saved before sending
-    if (await run(store.submit(applicationId))) setParentTab('track');
+    if (await run(store.submit(applicationId))) {
+      setParentTab('track');
+      setStepDone({ message: `Your application was sent to ${centreName}.` });
+    }
   };
-  const handleAcceptOffer = (applicationId: string, withdrawOthers: boolean) => store && run(store.acceptOffer(applicationId, withdrawOthers));
+  const handleAcceptOffer = async (applicationId: string, withdrawOthers: boolean) => {
+    if (!store) return;
+    const centreName = centreNameFor(applicationId);
+    if (await run(store.acceptOffer(applicationId, withdrawOthers))) {
+      setStepDone({ message: `You accepted the offer from ${centreName}.` });
+    }
+  };
   const handleWithdrawApplication = (applicationId: string) => store && run(store.withdraw(applicationId));
 
   // Centre actions
@@ -390,34 +407,35 @@ export default function App() {
   const offerCount = myApplications.filter((a) => a.status === 'Offer').length;
 
   const parentSidebarItems: SidebarItem[] = [
-    { id: 'home', label: 'Overview', icon: Home },
-    { id: 'find', label: 'Find Centres', icon: Search },
-    { id: 'apply', label: 'Apply', icon: FileEdit, badge: draftCount > 0 ? `${draftCount} in progress` : undefined },
-    { id: 'track', label: 'Track Status', icon: ListFilter, badge: offerCount > 0 ? 'Offer' : undefined },
-    { id: 'companion', label: 'Parent companion', icon: Heart },
-    { id: 'help', label: 'Help & Support', icon: HelpCircle },
+    { id: 'home', label: 'Overview', shortLabel: 'Home', icon: Home },
+    { id: 'find', label: 'Find Centres', shortLabel: 'Find', icon: Search },
+    { id: 'apply', label: 'Apply', shortLabel: 'Apply', icon: FileEdit, badge: draftCount > 0 ? `${draftCount} in progress` : undefined },
+    { id: 'track', label: 'Track Status', shortLabel: 'Track', icon: ListFilter, badge: offerCount > 0 ? 'Offer' : undefined },
+    { id: 'companion', label: 'Parent companion', shortLabel: 'Companion', icon: Heart },
+    { id: 'help', label: 'Help & Support', shortLabel: 'Help', icon: HelpCircle },
   ];
 
   const centreApplications = currentRole === 'centre' ? applications : [];
   const centreSubmittedCount = centreApplications.filter((app) => app.status === 'Submitted').length;
   const centreSidebarItems: SidebarItem[] = [
-    { id: 'home', label: 'Centre overview', icon: LayoutGrid },
+    { id: 'home', label: 'Centre overview', shortLabel: 'Overview', icon: LayoutGrid },
     {
       id: 'applications',
       label: 'Applications & queue',
+      shortLabel: 'Queue',
       icon: FileText,
       badge: centreSubmittedCount > 0 ? String(centreSubmittedCount) : undefined,
     },
-    { id: 'messages', label: 'Family messages', icon: Heart },
-    { id: 'policy', label: 'Policy & requirements', icon: ScrollText },
-    { id: 'help', label: 'Contact & support', icon: Users },
+    { id: 'messages', label: 'Family messages', shortLabel: 'Messages', icon: Heart },
+    { id: 'policy', label: 'Policy & requirements', shortLabel: 'Policy', icon: ScrollText },
+    { id: 'help', label: 'Contact & support', shortLabel: 'Support', icon: Users },
   ];
 
   // ---------------- Banners ----------------
   const banners = (
     <>
       {modeNotice && !outage && (
-        <div role="status" className="fixed bottom-4 left-4 z-[65] max-w-sm rounded-xl bg-cq-band border border-cq-sand-line shadow-lg p-3 pr-9 text-xs text-cq-sand-ink flex items-start gap-2">
+        <div role="status" className="fixed bottom-4 left-4 z-[65] above-tabbar max-w-sm rounded-xl bg-cq-band border border-cq-sand-line shadow-lg p-3 pr-9 text-xs text-cq-sand-ink flex items-start gap-2">
           <WifiOff className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{modeNotice}</span>
           <button type="button" onClick={() => setModeNotice(null)} aria-label="Dismiss" className="absolute top-2 right-2 p-1 cursor-pointer">
@@ -594,11 +612,10 @@ export default function App() {
           }}
           onLogout={handleLogout}
         />
-        <div className="flex-1 min-w-0 flex flex-col">
+        <div className="flex-1 min-w-0 flex flex-col pb-tabbar">
           {/* Thin simulation prototype notice band above Navbar */}
-          <div className="h-8 bg-cq-band text-[11px] text-cq-sand-ink flex items-center justify-center gap-3 px-4 shrink-0 select-none">
-            <span className="w-1.5 h-1.5 rounded-full bg-cq-sand-500 shrink-0" />
-            <span className="font-bold tracking-[0.14em]">PROTOTYPE</span>
+          <div className="min-h-8 py-1.5 bg-butter border-b border-butter-line text-xs text-cq-sand-ink flex items-center justify-center gap-2 px-4 shrink-0 select-none">
+            <span className="font-extrabold">Prototype</span>
             <span className="hidden sm:inline">Families, applications, positions, offers and messages in this demo are simulated.</span>
             <span className="sm:hidden">Simulated data prototype.</span>
             <Info className="w-3.5 h-3.5 text-cq-sand-ink shrink-0" />
@@ -616,8 +633,7 @@ export default function App() {
           />
 
           {/* Main Container: Strictly one role view visible or Trust & Transparency page */}
-          <main className="flex-1 max-w-[1180px] w-full mx-auto px-6 lg:px-10 py-10">
-            <div id="app-sidebar-mobile-mount" />
+          <main className="flex-1 max-w-[1180px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8 lg:py-10 animate-fadeIn">
             {isTrustPageOpen ? (
               <TrustTransparencyPage onBack={() => setIsTrustPageOpen(false)} centres={centres} />
             ) : currentRole === 'parent' ? (
@@ -787,6 +803,7 @@ export default function App() {
 
         {/* Ask CareQ Assistant Floating on every screen */}
         <AskCareQAssistant />
+        <StepComplete info={stepDone} onClose={closeStepDone} />
       </div>
     </ResetContext.Provider>
   );

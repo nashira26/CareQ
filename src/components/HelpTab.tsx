@@ -150,7 +150,7 @@ export const HelpTab: React.FC<HelpTabProps> = ({
                       <div className="mt-3 text-sm text-cq-muted leading-relaxed animate-in fade-in-50 duration-150 space-y-1.5">
                         <p>{faq.answer}</p>
                         {faq.source && (
-                          <div className="text-[11px] text-cq-soft font-medium pt-1">
+                          <div className="text-xs text-cq-soft font-medium pt-1">
                             Source: {faq.source}
                           </div>
                         )}
@@ -197,7 +197,7 @@ export const HelpTab: React.FC<HelpTabProps> = ({
                           <span className="text-sm font-bold text-cq-ink">
                             {req.subject}
                           </span>
-                          <span className="text-[10px] font-semibold uppercase tracking-wider bg-white text-cq-muted border border-cq-line px-2 py-0.5 rounded-md">
+                          <span className="text-xs font-semibold bg-white text-cq-muted border border-cq-line px-2 py-0.5 rounded-md">
                             {req.type === 'concern'
                               ? 'Concern'
                               : req.type === 'tech_support'
@@ -205,7 +205,7 @@ export const HelpTab: React.FC<HelpTabProps> = ({
                               : 'Contact'}
                           </span>
                           {req.category && (
-                            <span className="text-[10px] font-semibold bg-cq-sage text-cq-sage-ink px-2 py-0.5 rounded-md">
+                            <span className="text-xs font-semibold bg-cq-sage text-cq-sage-ink px-2 py-0.5 rounded-md">
                               {req.category}
                             </span>
                           )}
@@ -216,7 +216,7 @@ export const HelpTab: React.FC<HelpTabProps> = ({
                             {req.submittedAt}
                           </span>
                           <span
-                            className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                            className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
                               req.status === 'Resolved'
                                 ? 'bg-cq-sage text-cq-sage-ink border-cq-sage-line'
                                 : req.status === 'In progress'
@@ -238,7 +238,7 @@ export const HelpTab: React.FC<HelpTabProps> = ({
                       {isConcern && (
                         <div className="pt-2 border-t border-cq-line space-y-3">
                           <div className="flex items-center justify-between flex-wrap gap-2">
-                            <span className="text-xs font-bold text-cq-ink flex items-center gap-1.5 uppercase tracking-wider">
+                            <span className="text-xs font-bold text-cq-ink flex items-center gap-1.5">
                               <ShieldAlert className="w-3.5 h-3.5 text-cq-brand" />
                               Concern resolution path
                             </span>
@@ -288,7 +288,7 @@ export const HelpTab: React.FC<HelpTabProps> = ({
                                     <span>Step {idx + 1}</span>
                                   </div>
                                   <div
-                                    className={`text-[11px] leading-tight font-semibold ${
+                                    className={`text-xs leading-tight font-semibold ${
                                       isCurrent
                                         ? 'text-white'
                                         : isCompleted
@@ -300,7 +300,7 @@ export const HelpTab: React.FC<HelpTabProps> = ({
                                   </div>
                                   {stepHistory && (
                                     <div
-                                      className={`text-[10px] mt-1.5 ${
+                                      className={`text-xs mt-1.5 ${
                                         isCurrent ? 'text-white/80' : 'text-cq-soft'
                                       }`}
                                     >
@@ -313,7 +313,7 @@ export const HelpTab: React.FC<HelpTabProps> = ({
                           </div>
 
                           {/* Target response note */}
-                          <div className="text-[11px] text-cq-soft bg-white p-2.5 rounded-lg border border-cq-line flex items-center justify-between">
+                          <div className="text-xs text-cq-soft bg-white p-2.5 rounded-lg border border-cq-line flex items-center justify-between">
                             <span className="font-medium text-cq-ink">
                               Prototype: target response within 2 business days.
                             </span>
@@ -438,7 +438,7 @@ export const HelpTab: React.FC<HelpTabProps> = ({
               </div>
 
               {/* Required demo checkbox row */}
-              <div className="rounded-xl bg-cq-surface-sage border border-cq-line p-4 text-[11px]">
+              <div className="rounded-xl bg-cq-surface-sage border border-cq-line p-4 text-xs">
                 <label className="flex items-start gap-3 cursor-pointer select-none">
                   <input
                     type="checkbox"

@@ -156,7 +156,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
           <Card className="space-y-6">
             <div className="flex items-center justify-between pb-3 border-b border-cq-line">
               <h2 className="text-base font-bold text-cq-ink">Latest updates</h2>
-              <span className="text-[10px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-full bg-cq-page text-cq-soft border border-cq-line">
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-cq-page text-cq-soft border border-cq-line">
                 Simulated data
               </span>
             </div>
@@ -249,7 +249,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-cq-soft uppercase tracking-wide">
+                          <span className="text-xs text-cq-soft">
                             {notif.type} · Simulated · {notif.timestamp}
                           </span>
                           {isUnread && (
@@ -548,7 +548,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
                           {rem.text}
                         </p>
                         {rem.date && (
-                          <span className="text-[10px] text-cq-soft block mt-0.5">
+                          <span className="text-xs text-cq-soft block mt-0.5">
                             Due {rem.date}
                           </span>
                         )}
@@ -568,7 +568,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
               </div>
             )}
 
-            <p className="text-[11px] text-cq-soft pt-1">Only on this page · No notifications sent</p>
+            <p className="text-xs text-cq-soft pt-1">Only on this page · No notifications sent</p>
           </Card>
 
           {/* Centred quote under right column: Sparkles (#C9B98A) then "One little step / at your family's pace." */}

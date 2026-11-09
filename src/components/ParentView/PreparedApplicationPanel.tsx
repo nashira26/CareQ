@@ -119,7 +119,7 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
             <h5 className="text-sm font-bold text-cq-ink flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-cq-sand-ink-2" /> AI draft — review before sending
             </h5>
-            <span className="rounded px-1.5 py-0.5 bg-cq-band text-cq-sand-ink text-[10px] font-semibold">
+            <span className="rounded px-1.5 py-0.5 bg-cq-band text-cq-sand-ink text-xs font-semibold">
               {centre.demoKind === 'open-data' ? 'Simulated application' : 'Simulated centre'}
             </span>
           </div>
@@ -128,13 +128,13 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
 
           {/* Fields */}
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cq-muted mb-2">Application details</p>
+            <p className="text-xs font-semibold text-cq-muted mb-2">Application details</p>
             <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-2.5">
               {draft.fields.map((f, i) => (
                 <div key={f.label} className="flex flex-col gap-0.5">
-                  <dt className="text-[11px] text-cq-soft">
+                  <dt className="text-xs text-cq-soft">
                     {f.label}
-                    <span className="ml-1 text-[10px]">· {f.source}</span>
+                    <span className="ml-1 text-xs">· {f.source}</span>
                   </dt>
                   <dd>
                     {f.source === 'parent to provide' ? (
@@ -161,7 +161,7 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
 
           {/* Checklist */}
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cq-muted mb-2">
+            <p className="text-xs font-semibold text-cq-muted mb-2">
               Checklist from {centre.name}&apos;s policy
             </p>
             <ul className="space-y-2.5">
@@ -170,7 +170,7 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-sm font-semibold text-cq-ink">{c.requirement}</span>
                     <div className="flex items-center gap-2">
-                      <span className={`text-[10px] font-semibold border px-2 py-0.5 rounded-full ${STATUS_STYLE[c.status]}`}>
+                      <span className={`text-xs font-semibold border px-2 py-0.5 rounded-full ${STATUS_STYLE[c.status]}`}>
                         {STATUS_LABEL[c.status]}
                         {c.setBy === 'parent' ? ' · your choice' : ''}
                       </span>
@@ -184,7 +184,7 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
                             ),
                           })
                         }
-                        className="rounded-md border border-cq-line bg-white px-1.5 py-0.5 text-[11px] text-cq-muted"
+                        className="rounded-md border border-cq-line bg-white px-1.5 py-0.5 text-xs text-cq-muted"
                       >
                         {CHECKLIST_STATUSES.map((s) => (
                           <option key={s} value={s}>
@@ -195,7 +195,7 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
                     </div>
                   </div>
                   {c.matchedDocument && (
-                    <p className="text-[11px] text-cq-sage-ink flex items-center gap-1">
+                    <p className="text-xs text-cq-sage-ink flex items-center gap-1">
                       <FileCheck2 className="w-3.5 h-3.5" /> Matched document: {c.matchedDocument}
                     </p>
                   )}
@@ -213,7 +213,7 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
                       I confirm this applies to us (CareQ can&apos;t check this)
                     </label>
                   )}
-                  <blockquote className="flex gap-2 border-l-2 border-cq-sage-line-2 pl-2.5 text-[11px] italic text-cq-muted">
+                  <blockquote className="flex gap-2 border-l-2 border-cq-sage-line-2 pl-2.5 text-xs italic text-cq-muted">
                     <Quote className="w-3 h-3 shrink-0 mt-0.5 text-cq-sage-accent" />
                     <span>
                       “{c.sourceSentence}”
@@ -250,7 +250,7 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
 
           {/* Note */}
           <div>
-            <label htmlFor={`note-${app.id}`} className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cq-muted">
+            <label htmlFor={`note-${app.id}`} className="text-xs font-semibold text-cq-muted">
               Note to {centre.name} (optional)
             </label>
             <textarea
@@ -261,7 +261,7 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
               className="mt-1 w-full rounded-xl border border-cq-line bg-white p-2.5 text-sm text-cq-ink focus:outline-hidden focus:ring-2 focus:ring-cq-sage-line"
             />
           </div>
-          <p className="text-[11px] text-cq-soft">Nothing is sent until you press “Approve and send” and confirm.</p>
+          <p className="text-xs text-cq-soft">Nothing is sent until you press “Approve and send” and confirm.</p>
         </section>
       )}
     </div>

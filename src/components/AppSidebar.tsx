@@ -1,13 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { LogoFull } from './Logo';
-import { Sparkles, Clover, ArrowLeftRight } from 'lucide-react';
+import { LogOut } from 'lucide-react';
+import { SpotJourney } from './ui/Illustrations';
 
 import { ResetDemo } from './ResetDemo';
 
 export interface SidebarItem {
   id: string;
   label: string;
+  /** Label for the phone bottom tab bar (falls back to `label`). */
+  shortLabel?: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: string;
 }
@@ -20,79 +23,82 @@ export interface AppSidebarProps {
   onLogout?: () => void;
 }
 
-export const AppSidebar: React.FC<AppSidebarProps> = ({
-  role,
-  items,
-  activeId,
-  onSelect,
-  onLogout,
-}) => {
-  const [mobileMount, setMobileMount] = useState<HTMLElement | null>(null);
-
+/**
+ * Navigation. Desktop (lg+): a sidebar. Phones and tablets: a bottom tab bar with the same
+ * items, the same order and the same state.
+ */
+export const AppSidebar: React.FC<AppSidebarProps> = ({ role, items, activeId, onSelect, onLogout }) => {
+  // Lets floating elements (Ask CareQ) move above the tab bar while it is on screen
   useEffect(() => {
-    const el =
-      document.getElementById('app-sidebar-mobile-mount') ||
-      document.querySelector('main');
-    setMobileMount(el as HTMLElement | null);
+    document.body.dataset.tabbar = '1';
+    return () => {
+      delete document.body.dataset.tabbar;
+    };
   }, []);
 
-  const mobilePillRow = (
-    <div className="lg:hidden w-full overflow-x-auto flex gap-2 pb-3 mb-4 sm:mb-6 no-scrollbar">
-      {items.map((item) => {
-        const Icon = item.icon;
-        const isActive = item.id === activeId;
-        const isNum = item.badge && !isNaN(Number(item.badge));
-        return (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => onSelect(item.id)}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
-              isActive
-                ? 'bg-cq-brand text-white font-semibold shadow-2xs'
-                : 'text-cq-ink-2 bg-white border border-cq-line hover:bg-cq-page'
-            }`}
-          >
-            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-white' : 'text-cq-muted'}`} />
-            <span>{item.label}</span>
-            {item.badge && (
-              <span
-                className={`text-[10px] ${
-                  isActive
-                    ? 'bg-white/20 rounded-md px-1.5 py-0.2 text-white font-medium'
-                    : isNum
-                    ? 'text-cq-soft'
-                    : 'text-cq-muted bg-cq-surface-sage border border-cq-line rounded-md px-1.5 py-0.2'
+  const tabBar = (
+    <nav
+      aria-label={role === 'parent' ? 'Family navigation' : 'Centre navigation'}
+      className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-white border-t border-cq-line pb-[env(safe-area-inset-bottom)]"
+    >
+      <ul className="flex">
+        {items.map((item) => {
+          const Icon = item.icon;
+          const isActive = item.id === activeId;
+          return (
+            <li key={item.id} className="flex-1 min-w-0">
+              <button
+                type="button"
+                onClick={() => onSelect(item.id)}
+                aria-current={isActive ? 'page' : undefined}
+                aria-label={item.badge ? `${item.label} (${item.badge})` : item.label}
+                className={`relative w-full h-16 flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-colors ${
+                  isActive ? 'text-brand' : 'text-ink-muted hover:text-brand'
                 }`}
               >
-                {item.badge}
-              </span>
-            )}
-          </button>
-        );
-      })}
-    </div>
+                <span
+                  aria-hidden="true"
+                  className={`absolute top-0 inset-x-3 h-[3px] rounded-b-full transition-colors ${isActive ? 'bg-coral' : 'bg-transparent'}`}
+                />
+                <span
+                  className={`relative inline-flex items-center justify-center w-12 h-7 rounded-full transition-colors ${
+                    isActive ? 'bg-mint' : ''
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  {item.badge && (
+                    <span
+                      aria-hidden="true"
+                      className={`absolute -top-0.5 right-1.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
+                        item.badge === 'Offer' ? 'bg-sun' : 'bg-coral'
+                      }`}
+                    />
+                  )}
+                </span>
+                <span className={`text-[12px] leading-tight truncate max-w-full ${isActive ? 'font-extrabold' : 'font-semibold'}`}>
+                  {item.shortLabel ?? item.label}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 
   return (
     <>
-      {/* Desktop aside: w-[220px] bg-white border-r border-cq-line h-screen sticky top-0 flex flex-col px-4 py-6 */}
-      <aside className="hidden lg:flex w-[220px] bg-white border-r border-cq-line h-screen sticky top-0 flex-col px-4 py-6 shrink-0 select-none">
-        {/* Top: LogoFull size 36; tagline "A little care, every step." text-xs text-cq-soft mt-1 pl-1 */}
-        <div>
+      <aside className="hidden lg:flex w-[264px] bg-white border-r border-cq-line h-screen sticky top-0 flex-col px-4 py-6 shrink-0 select-none">
+        <div className="px-2">
           <LogoFull size={36} />
-          <p className="text-xs text-cq-soft mt-1 pl-1">A little care, every step.</p>
+          <p className="text-sm text-ink-soft mt-1.5">A little care, every step.</p>
         </div>
 
-        {/* Section Label mt-10 mb-3 pl-2: Eyebrow "Your family space" (parent) / "Your centre space" (centre) */}
-        <div className="mt-10 mb-3 pl-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cq-muted">
-            {role === 'parent' ? 'Your family space' : 'Your centre space'}
-          </p>
-        </div>
+        <p className="mt-8 mb-2 px-3 text-sm font-semibold text-ink-muted">
+          {role === 'parent' ? 'Your family space' : 'Your centre space'}
+        </p>
 
-        {/* Vertical nav items */}
-        <nav className="space-y-1 overflow-y-auto">
+        <nav aria-label={role === 'parent' ? 'Family navigation' : 'Centre navigation'} className="space-y-1 overflow-y-auto">
           {items.map((item) => {
             const Icon = item.icon;
             const isActive = item.id === activeId;
@@ -102,24 +108,25 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 key={item.id}
                 type="button"
                 onClick={() => onSelect(item.id)}
-                className={`h-11 w-full flex items-center gap-3 px-3.5 rounded-xl text-sm transition-colors cursor-pointer text-left ${
-                  isActive
-                    ? 'bg-cq-brand text-white font-semibold'
-                    : 'text-cq-ink-2 hover:bg-cq-page'
+                aria-current={isActive ? 'page' : undefined}
+                className={`relative h-11 w-full flex items-center gap-3 pl-4 pr-3 rounded-xl text-sm transition-colors cursor-pointer text-left ${
+                  isActive ? 'bg-mint text-brand font-extrabold' : 'text-ink-muted font-semibold hover:bg-page hover:text-brand'
                 }`}
               >
-                <Icon
-                  className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-cq-muted'}`}
+                <span
+                  aria-hidden="true"
+                  className={`absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full ${isActive ? 'bg-coral' : 'bg-transparent'}`}
                 />
+                <Icon className="w-[18px] h-[18px] shrink-0" />
                 <span className="truncate">{item.label}</span>
                 {item.badge && (
                   <span
-                    className={`ml-auto shrink-0 text-xs ${
-                      isActive
-                        ? 'bg-white/20 rounded-md px-1.5 py-0.5 text-white font-medium'
+                    className={`ml-auto shrink-0 text-xs font-bold rounded-full px-2 py-0.5 ${
+                      item.badge === 'Offer'
+                        ? 'bg-sun text-status-offer'
                         : isNum
-                        ? 'text-cq-soft'
-                        : 'text-cq-soft bg-cq-stone-100 rounded-md px-1.5 py-0.5'
+                        ? 'bg-coral text-white'
+                        : 'bg-stone text-ink-muted'
                     }`}
                   >
                     {item.badge}
@@ -130,38 +137,34 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           })}
         </nav>
 
-        {/* Bottom (mt-auto) card */}
         <div className="mt-auto pt-4">
-          <div className="rounded-2xl bg-cq-surface-sage border border-cq-line p-5 relative overflow-hidden">
-            <Sparkles className="w-5 h-5 text-cq-sage-accent" />
-            <h4 className="text-sm font-bold text-cq-ink mt-3">
+          <div className="rounded-2xl bg-page border border-cq-line p-4">
+            <SpotJourney className="w-24 -ml-1" />
+            <p className="text-sm font-bold text-ink mt-2">
               {role === 'parent' ? 'Big steps. Little humans.' : 'Every family, a clear answer.'}
-            </h4>
-            <p className="text-xs text-cq-muted leading-relaxed mt-1">
+            </p>
+            <p className="text-xs text-ink-muted leading-relaxed mt-0.5">
               {role === 'parent'
                 ? "You don't have to figure it all out at once."
                 : 'A quick update today saves a parent a week of wondering.'}
             </p>
-            <Clover className="w-14 h-14 text-cq-sage-200 stroke-[1.25] absolute bottom-2 right-2 pointer-events-none" />
           </div>
 
-          {/* Log out text button under the card */}
           {onLogout && (
             <button
               type="button"
               onClick={onLogout}
-              className="flex items-center gap-2 text-xs text-cq-muted hover:text-cq-ink mt-4 pl-2 transition-colors cursor-pointer"
+              className="flex items-center gap-2 h-10 px-3 mt-3 rounded-lg text-sm font-semibold text-ink-muted hover:text-brand hover:bg-page transition-colors cursor-pointer"
             >
-              <ArrowLeftRight className="w-3.5 h-3.5" />
+              <LogOut className="w-4 h-4" />
               <span>Log out</span>
             </button>
           )}
-          <ResetDemo className="mt-3" />
+          <ResetDemo className="mt-1 px-3" />
         </div>
       </aside>
 
-      {/* Below lg: render the same items as a horizontal scrollable pill row at the top of the main content */}
-      {mobileMount && createPortal(mobilePillRow, mobileMount)}
+      {typeof document !== 'undefined' && createPortal(tabBar, document.body)}
     </>
   );
 };

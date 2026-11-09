@@ -122,7 +122,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
       {draftApps.length > 0 ? (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-cq-muted">
+            <h3 className="text-sm font-semibold text-cq-muted">
               Applications In Progress ({draftApps.length})
             </h3>
             <span className="text-xs text-cq-soft">
@@ -176,7 +176,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                         You can still send your application with a note. The centre may ask for documents later.
                       </p>
                       <div>
-                        <label htmlFor={`note-only-${app.id}`} className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cq-muted">
+                        <label htmlFor={`note-only-${app.id}`} className="text-xs font-semibold text-cq-muted">
                           Note to {centre.name}
                         </label>
                         <textarea
@@ -211,7 +211,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
 
                   {/* Where the checklist comes from (real centres: quoted from their published handbook) */}
                   {!noRequirements && centre.requirementsExtractedFrom && (
-                    <p className="text-[11px] text-cq-muted">
+                    <p className="text-xs text-cq-muted">
                       Extracted from {centre.requirementsExtractedFrom.docTitle}
                       {centre.requirementsExtractedFrom.sourceUrl ? '' : ' (source link not found)'}
                       {centre.requirementsExtractedFrom.fallback === 'licensing-manual' && centre.requirementsExtractedFrom.sourceNote
@@ -252,11 +252,11 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                                   {req}
                                 </span>
                                 {uploadedDoc || isDone ? (
-                                  <span className="text-[10px] font-semibold bg-cq-sage text-cq-sage-ink border border-cq-sage-line px-2 py-0.5 rounded-full">
+                                  <span className="text-xs font-semibold bg-cq-sage text-cq-sage-ink border border-cq-sage-line px-2 py-0.5 rounded-full">
                                     Ready
                                   </span>
                                 ) : (
-                                  <span className="text-[10px] font-semibold bg-cq-cream-amber text-cq-amber-ink border border-cq-sand-line-2 px-2 py-0.5 rounded-full">
+                                  <span className="text-xs font-semibold bg-cq-cream-amber text-cq-amber-ink border border-cq-sand-line-2 px-2 py-0.5 rounded-full">
                                     Missing
                                   </span>
                                 )}
@@ -278,7 +278,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                                   <div className="text-xs font-semibold text-cq-ink max-w-[140px] truncate">
                                     {uploadedDoc.fileName}
                                   </div>
-                                  <div className="text-[10px] text-cq-soft">
+                                  <div className="text-xs text-cq-soft">
                                     {uploadedDoc.fileSize}
                                   </div>
                                 </div>
@@ -456,7 +456,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
 
             {/* Checklist summary */}
             <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cq-muted">
+              <p className="text-xs font-semibold text-cq-muted">
                 {reviewingDraft
                   ? 'Checklist as you reviewed it:'
                   : `Attached Checklist (${reviewingApp.completedRequirements.length}/${reviewingCentre.requirements.length}):`}
@@ -471,11 +471,11 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                     <div className="truncate pr-2">
                       <span className="text-cq-ink font-medium">{c.requirement}</span>
                       {c.matchedDocument && (
-                        <span className="block text-[10px] text-cq-soft truncate">File: {c.matchedDocument}</span>
+                        <span className="block text-xs text-cq-soft truncate">File: {c.matchedDocument}</span>
                       )}
                     </div>
                     <span
-                      className={`shrink-0 text-[11px] font-semibold ${
+                      className={`shrink-0 text-xs font-semibold ${
                         c.status === 'ready' ? 'text-cq-sage-ink' : c.status === 'missing' ? 'text-cq-amber-ink' : 'text-cq-lilac-ink-2'
                       }`}
                     >
@@ -495,17 +495,17 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                       <div className="truncate pr-2">
                         <span className="text-cq-ink font-medium">{req}</span>
                         {doc && (
-                          <span className="block text-[10px] text-cq-soft truncate">
+                          <span className="block text-xs text-cq-soft truncate">
                             File: {doc.fileName}
                           </span>
                         )}
                       </div>
                       {isDone || doc ? (
-                        <span className="text-cq-sage-ink font-semibold shrink-0 flex items-center gap-1 text-[11px]">
+                        <span className="text-cq-sage-ink font-semibold shrink-0 flex items-center gap-1 text-xs">
                           <Check className="w-3.5 h-3.5" /> Ready
                         </span>
                       ) : (
-                        <span className="text-cq-amber-ink font-semibold shrink-0 text-[11px]">
+                        <span className="text-cq-amber-ink font-semibold shrink-0 text-xs">
                           Missing
                         </span>
                       )}

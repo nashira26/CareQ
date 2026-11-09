@@ -302,17 +302,17 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                   key={msg.id}
                   className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
                 >
-                  <div className="text-[11px] font-semibold text-cq-stone-500 mb-1 px-1 flex items-center gap-1">
+                  <div className="text-xs font-semibold text-cq-stone-500 mb-1 px-1 flex items-center gap-1">
                     <span>{msg.senderName}</span>
                     {/* Every centre message in the demo is simulated */}
                     {msg.sender === 'centre' && <SimTag />}
                     {msg.aiAssisted && (
-                      <span className="text-[10px] text-cq-teal-800 bg-cq-teal-100 font-bold px-1.5 py-0.2 rounded">
+                      <span className="text-xs text-cq-teal-800 bg-cq-teal-100 font-bold px-1.5 py-0.2 rounded">
                         AI Drafted
                       </span>
                     )}
                     {msg.basedOnSimulatedData && (
-                      <span className="inline-flex items-center rounded px-1.5 py-0.5 bg-cq-band text-cq-sand-ink text-[10px] font-semibold leading-none">
+                      <span className="inline-flex items-center rounded px-1.5 py-0.5 bg-cq-band text-cq-sand-ink text-xs font-semibold leading-none">
                         Based on simulated application data
                       </span>
                     )}
@@ -326,7 +326,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                   >
                     {msg.text}
                   </div>
-                  <span className="text-[10px] text-cq-stone-400 mt-1 px-1">
+                  <span className="text-xs text-cq-stone-400 mt-1 px-1">
                     {msg.timestamp}
                   </span>
                 </div>
@@ -401,7 +401,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
 
               {/* Calmer Suggested Version */}
               <div className="bg-white border border-cq-amber-200 rounded-lg p-3 text-xs sm:text-sm text-cq-stone-800 space-y-1">
-                <span className="text-[10px] font-bold text-cq-brand uppercase tracking-wider block">
+                <span className="text-xs font-bold text-cq-brand block">
                   Calmer suggested version:
                 </span>
                 <p className="text-cq-stone-700 italic">"{toneWarning.suggestedVersion}"</p>
@@ -479,7 +479,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                   <Sparkles className="w-3.5 h-3.5 text-cq-amber-700" />
                   AI Draft Generated — Review & Approve to Send:
                 </span>
-                <span className="text-[11px] text-cq-amber-700 font-normal">
+                <span className="text-xs text-cq-amber-700 font-normal">
                   You can edit the text below before sending
                 </span>
               </div>
@@ -494,8 +494,8 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
 
               {draftContext && draftContext.facts.length > 0 && (
                 <div className="rounded-lg border border-cq-amber-200 bg-white/70 px-2.5 py-2 space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-cq-muted">Facts used in this draft</p>
-                  <ul className="text-[11px] text-cq-stone-700 space-y-0.5">
+                  <p className="text-xs font-bold text-cq-muted">Facts used in this draft</p>
+                  <ul className="text-xs text-cq-stone-700 space-y-0.5">
                     {draftContext.facts.map((f) => (
                       <li key={f.label} className="flex flex-wrap items-center gap-1">
                         <span className="font-semibold">{f.label}:</span>
@@ -505,13 +505,13 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                     ))}
                   </ul>
                   {draftContext.citation && (
-                    <div className="pt-1 mt-1 border-t border-cq-amber-100 text-[11px] text-cq-stone-700">
+                    <div className="pt-1 mt-1 border-t border-cq-amber-100 text-xs text-cq-stone-700">
                       <p className="font-semibold text-cq-muted">
                         From {draftContext.citation.operatorName}'s {draftContext.citation.docTitle}, {draftContext.citation.page}
                       </p>
                       <p className="italic">“{draftContext.citation.quote}”</p>
                       {(draftContext.citation.sourceUrl || draftContext.citation.sourceNote) && (
-                        <p className="text-[10px] text-cq-soft">
+                        <p className="text-xs text-cq-soft">
                           {draftContext.citation.sourceUrl && (
                             <a href={draftContext.citation.sourceUrl} target="_blank" rel="noreferrer" className="font-semibold text-cq-brand hover:underline">
                               Source
@@ -524,7 +524,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                       )}
                     </div>
                   )}
-                  <p className="text-[10px] text-cq-soft">Edit anything before sending. Nothing is sent until you approve.</p>
+                  <p className="text-xs text-cq-soft">Edit anything before sending. Nothing is sent until you approve.</p>
                 </div>
               )}
 

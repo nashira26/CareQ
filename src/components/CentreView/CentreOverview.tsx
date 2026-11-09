@@ -80,17 +80,17 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
       />
 
       {/* 2. Centre Identity Card */}
-      <div className="rounded-[28px] bg-cq-sage border border-cq-sage-line-2 p-8 sm:p-10 flex items-center justify-between gap-6">
+      <div className="rounded-3xl bg-cq-sage border border-cq-sage-line-2 p-8 sm:p-10 flex items-center justify-between gap-6">
         <div>
-          <Eyebrow className="text-[10px]">Simulated centre workspace</Eyebrow>
-          <h2 className="mt-3 text-[28px] sm:text-[32px] font-bold tracking-[-0.02em] text-cq-ink leading-tight">
+          <Eyebrow className="text-xs">Simulated centre workspace</Eyebrow>
+          <h2 className="mt-3 text-[28px] sm:text-[32px] font-bold text-cq-ink leading-tight">
             {singleCentre.name}
           </h2>
           <p className="mt-3 text-sm text-cq-muted">
             {singleCentre.address || singleCentre.neighbourhood}
             {singleCentre.hours ? ` · ${singleCentre.hours}` : ''}
           </p>
-          <span className="mt-4 inline-block rounded-md border border-cq-sage-200 bg-white/70 px-2.5 py-1 text-[10px] text-cq-sage-ink font-semibold">
+          <span className="mt-4 inline-block rounded-md border border-cq-sage-200 bg-white/70 px-2.5 py-1 text-xs text-cq-sage-ink font-semibold">
             {singleCentre.demoKind === 'open-data'
               ? `Licensed centre · Ontario open data${singleCentre.licenceNumber ? ` (licence #${singleCentre.licenceNumber})` : ''}`
               : singleCentre.demoKind === 'fictional'
@@ -99,7 +99,7 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
           </span>
         </div>
 
-        <div className="hidden sm:flex w-[72px] h-[72px] rounded-[22px] bg-cq-sage-250 rotate-[-6deg] items-center justify-center shrink-0 shadow-2xs">
+        <div className="hidden sm:flex w-[72px] h-[72px] rounded-3xl bg-cq-sage-250 rotate-[-6deg] items-center justify-center shrink-0 shadow-2xs">
           <Users className="w-8 h-8 text-cq-sage-ink rotate-[6deg]" />
         </div>
       </div>
@@ -200,11 +200,11 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
               <Card className="p-0 overflow-hidden shadow-2xs">
                 {/* Header row */}
                 <div className="grid grid-cols-[2fr_1.4fr_1fr_1fr_1fr] gap-4 items-center bg-cq-page border-b border-cq-line px-6 py-4">
-                  <Eyebrow className="text-[10px]">CHILD / FAMILY</Eyebrow>
-                  <Eyebrow className="text-[10px]">PROGRAM / START</Eyebrow>
-                  <Eyebrow className="text-[10px]">STATUS</Eyebrow>
-                  <Eyebrow className="text-[10px]">QUEUE</Eyebrow>
-                  <Eyebrow className="text-[10px] text-right">ACTIONS</Eyebrow>
+                  <Eyebrow className="text-xs">CHILD / FAMILY</Eyebrow>
+                  <Eyebrow className="text-xs">PROGRAM / START</Eyebrow>
+                  <Eyebrow className="text-xs">STATUS</Eyebrow>
+                  <Eyebrow className="text-xs">QUEUE</Eyebrow>
+                  <Eyebrow className="text-xs text-right">ACTIONS</Eyebrow>
                 </div>
 
                 {/* Rows */}
@@ -219,11 +219,11 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
                         <div className="text-sm font-bold text-cq-ink truncate">
                           {app.childName}
                         </div>
-                        <div className="text-[11px] text-cq-sage-ink font-medium mt-0.5 truncate">
+                        <div className="text-xs text-cq-sage-ink font-medium mt-0.5 truncate">
                           {app.parentName} · {app.id}
                         </div>
                         {app.submittedAt && (
-                          <div className="text-[11px] text-cq-soft mt-0.5">
+                          <div className="text-xs text-cq-soft mt-0.5">
                             Submitted {app.submittedAt}
                           </div>
                         )}
@@ -234,7 +234,7 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
                         <div className="text-xs font-semibold text-cq-ink-2">
                           {getAgeGroup(app.childAgeMonths)}
                         </div>
-                        <div className="text-[11px] text-cq-soft mt-0.5">
+                        <div className="text-xs text-cq-soft mt-0.5">
                           {app.careType} · {app.preferredStartDate}
                         </div>
                       </div>
@@ -280,11 +280,11 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
                       <div className="text-sm font-bold text-cq-ink">
                         {app.childName}
                       </div>
-                      <div className="text-[11px] text-cq-sage-ink font-medium mt-0.5">
+                      <div className="text-xs text-cq-sage-ink font-medium mt-0.5">
                         {app.parentName} · {app.id}
                       </div>
                       {app.submittedAt && (
-                        <div className="text-[10px] text-cq-soft mt-0.5">
+                        <div className="text-xs text-cq-soft mt-0.5">
                           Submitted {app.submittedAt}
                         </div>
                       )}
@@ -294,19 +294,19 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
 
                   <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-cq-line">
                     <div>
-                      <span className="text-[10px] uppercase font-semibold text-cq-muted block">
+                      <span className="text-xs font-semibold text-cq-muted block">
                         Program
                       </span>
                       <span className="font-semibold text-cq-ink">
                         {getAgeGroup(app.childAgeMonths)}
                       </span>
-                      <span className="block text-[11px] text-cq-soft">
+                      <span className="block text-xs text-cq-soft">
                         {app.careType}
                       </span>
                     </div>
 
                     <div>
-                      <span className="text-[10px] uppercase font-semibold text-cq-muted block">
+                      <span className="text-xs font-semibold text-cq-muted block">
                         Queue
                       </span>
                       {typeof app.waitlistPosition === 'number' &&
@@ -366,13 +366,13 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
                         <div className="text-xs font-bold text-cq-ink truncate">
                           {app.childName} · {app.parentName}
                         </div>
-                        <div className="text-[11px] text-cq-muted mt-0.5">
+                        <div className="text-xs text-cq-muted mt-0.5">
                           {typeof app.waitlistPosition === 'number' &&
                           app.waitlistPosition > 0
                             ? `Position #${app.waitlistPosition}`
                             : 'No position set'}
                         </div>
-                        <div className="text-[10px] text-cq-soft">
+                        <div className="text-xs text-cq-soft">
                           {app.waitlistReportedDate
                             ? `Last updated ${app.waitlistReportedDate}`
                             : 'Never updated'}
@@ -401,7 +401,7 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
         <Card className="p-6 bg-cq-sand flex flex-col justify-between space-y-5">
           <div className="space-y-4">
             <div>
-              <Eyebrow className="text-[10px]">Your live checklist</Eyebrow>
+              <Eyebrow className="text-xs">Your live checklist</Eyebrow>
               <h4 className="text-2xl font-bold text-cq-ink mt-2 mb-1">
                 {singleCentre.requirements.length} requirements
               </h4>
@@ -435,7 +435,7 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
                   </div>
                 ))}
                 {singleCentre.requirements.length > 4 && (
-                  <p className="text-[11px] text-cq-soft pl-1">
+                  <p className="text-xs text-cq-soft pl-1">
                     +{singleCentre.requirements.length - 4} more checklist items
                   </p>
                 )}
@@ -452,7 +452,7 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
               <span>Review policy</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
-            <span className="text-[11px] text-cq-soft">
+            <span className="text-xs text-cq-soft">
               Self-managed intake rules
             </span>
           </div>

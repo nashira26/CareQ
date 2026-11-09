@@ -296,7 +296,7 @@ export const FindTab: React.FC<FindTabProps> = ({
       return (
         <span className="inline-flex flex-wrap items-center gap-1.5">
           <Chip tone="sage">{appliedLabel(app.status)}</Chip>
-          {pos && <span className="text-[10px] text-cq-muted">{pos}</span>}
+          {pos && <span className="text-xs text-cq-muted">{pos}</span>}
         </span>
       );
     }
@@ -321,7 +321,7 @@ export const FindTab: React.FC<FindTabProps> = ({
             ) : (
               <HouseIllustration tone={tone} className="w-full h-full object-cover" />
             )}
-            <span className="absolute bottom-2.5 left-3 text-[10px] bg-white/80 backdrop-blur-xs text-cq-muted font-medium rounded px-1.5 py-0.5 border border-cq-line">
+            <span className="absolute bottom-2.5 left-3 text-xs bg-white/80 backdrop-blur-xs text-cq-muted font-medium rounded px-1.5 py-0.5 border border-cq-line">
               {reg?.photoDataUrl ? 'Photo provided by the centre' : 'Illustration · not a site photo'}
             </span>
           </div>
@@ -330,20 +330,20 @@ export const FindTab: React.FC<FindTabProps> = ({
             <div className="flex items-start justify-between gap-2">
               {reg ? (
                 <span
-                  className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                  className={`inline-block rounded px-1.5 py-0.5 text-xs font-semibold ${
                     reg.licenceVerified ? 'bg-cq-sage text-cq-sage-ink' : 'bg-cq-peach text-cq-rust'
                   }`}
                 >
                   {licenceLabel(centre)}
                 </span>
               ) : (
-                <span className="inline-block rounded px-1.5 py-0.5 bg-cq-brand/10 text-cq-brand text-[10px] font-semibold">
+                <span className="inline-block rounded px-1.5 py-0.5 bg-cq-brand/10 text-cq-brand text-xs font-semibold">
                   {demoCentreLabel(centre)}
                 </span>
               )}
               <HeartButton name={centre.name} active={shortlist.includes(centre.id)} onToggle={() => toggleShortlist(centre.id)} />
             </div>
-            <div className="flex items-center gap-1.5 text-[11px] text-cq-soft mt-1">
+            <div className="flex items-center gap-1.5 text-xs text-cq-soft mt-1">
               <MapPin className="w-3 h-3 shrink-0" />
               <span>{centre.neighbourhood}</span>
               {result?.distanceKm != null && (
@@ -357,18 +357,18 @@ export const FindTab: React.FC<FindTabProps> = ({
             <div className="mt-1.5">{statusPill(centre.id)}</div>
             {centre.address && <p className="text-xs text-cq-muted mt-2">{centre.address}</p>}
             {centre.demoKind === 'open-data' && (
-              <p className="text-[11px] text-cq-soft mt-1">
+              <p className="text-xs text-cq-soft mt-1">
                 {centre.licenceNumber ? `Licence #${centre.licenceNumber} · ` : ''}Ontario open data
                 {centre.capacity ? ` · ${centre.capacity} licensed spaces (capacity, not availability)` : ''}
               </p>
             )}
             {notServed && (
-              <p className="mt-2 inline-block rounded-md border border-cq-sand-line-2 bg-cq-cream-amber px-2 py-0.5 text-[11px] font-semibold text-cq-amber-ink">
+              <p className="mt-2 inline-block rounded-md border border-cq-sand-line-2 bg-cq-cream-amber px-2 py-0.5 text-xs font-semibold text-cq-amber-ink">
                 {notServed}
               </p>
             )}
             {reg && (
-              <p className="text-[11px] text-cq-soft mt-1">
+              <p className="text-xs text-cq-soft mt-1">
                 {reg.licenceNumber ? `Licence #${reg.licenceNumber} · ${reg.licenceVerified ? 'matches Ontario open data' : 'Self-reported, not verified'} · ` : ''}
                 Approximate location ({reg.locationSource})
                 {reg.capacity ? ` · ${reg.capacity} licensed spaces (capacity, not availability)` : ''}
@@ -383,29 +383,29 @@ export const FindTab: React.FC<FindTabProps> = ({
 
             <div className="flex flex-wrap gap-1.5 mt-3">
               {centre.ageGroups.map((age) => (
-                <span key={age} className="rounded-md border border-cq-sage-line-2 bg-cq-surface-sage px-2 py-0.5 text-[10px] text-cq-sage-ink font-medium">
+                <span key={age} className="rounded-md border border-cq-sage-line-2 bg-cq-surface-sage px-2 py-0.5 text-xs text-cq-sage-ink font-medium">
                   {age}
                 </span>
               ))}
               {centre.hours && (
-                <span className="rounded-md border border-cq-sage-line-2 bg-cq-surface-sage px-2 py-0.5 text-[10px] text-cq-sage-ink font-medium flex items-center gap-1">
+                <span className="rounded-md border border-cq-sage-line-2 bg-cq-surface-sage px-2 py-0.5 text-xs text-cq-sage-ink font-medium flex items-center gap-1">
                   <Clock className="w-3 h-3 text-cq-sage-ink" />
                   {centre.hours}
                 </span>
               )}
               {centre.feeNote && (
-                <span className="rounded-md border border-cq-sand-line bg-cq-sand-50 px-2 py-0.5 text-[10px] text-cq-sand-ink-2 font-medium">
+                <span className="rounded-md border border-cq-sand-line bg-cq-sand-50 px-2 py-0.5 text-xs text-cq-sand-ink-2 font-medium">
                   CWELCC ($10/day)
                 </span>
               )}
             </div>
             {centre.programOptions && centre.programOptions.length > 0 && (
-              <p className="text-[11px] text-cq-muted mt-2">
+              <p className="text-xs text-cq-muted mt-2">
                 <span className="font-semibold">Programs:</span> {centre.programOptions.join(', ')}
               </p>
             )}
             {centre.languages && centre.languages.length > 0 && (
-              <p className="text-[11px] text-cq-muted mt-0.5">
+              <p className="text-xs text-cq-muted mt-0.5">
                 <span className="font-semibold">Language:</span> {centre.languages.join(', ')}
               </p>
             )}
@@ -416,7 +416,7 @@ export const FindTab: React.FC<FindTabProps> = ({
         </div>
 
         <div className="px-5 pb-5 pt-4 border-t border-cq-line flex items-center justify-between gap-2">
-          <span className="text-[11px] text-cq-soft">Availability reported by centre only</span>
+          <span className="text-xs text-cq-soft">Availability reported by centre only</span>
           <div className="flex items-center gap-3 shrink-0">
             <button
               type="button"
@@ -474,7 +474,7 @@ export const FindTab: React.FC<FindTabProps> = ({
               const app = appByCentre.get(id);
               return (
                 <div key={id} className="shrink-0 w-[230px] sm:w-auto rounded-xl border border-cq-line bg-white p-3 space-y-1.5">
-                  <p className="text-[10px] font-semibold text-cq-soft">
+                  <p className="text-xs font-semibold text-cq-soft">
                     {e.kind === 'open-data'
                       ? 'Not on CareQ yet · Ontario open data'
                       : (e.centre as Centre).registration
@@ -485,7 +485,7 @@ export const FindTab: React.FC<FindTabProps> = ({
                   <div className="flex items-center justify-between gap-2">
                     {statusPill(id)}
                     {app && (
-                      <button type="button" onClick={onNavigateToApply} className="text-[11px] font-semibold text-cq-brand hover:underline cursor-pointer">
+                      <button type="button" onClick={onNavigateToApply} className="text-xs font-semibold text-cq-brand hover:underline cursor-pointer">
                         Manage
                       </button>
                     )}
@@ -673,7 +673,7 @@ export const FindTab: React.FC<FindTabProps> = ({
 
       {searching && (
         <div className="space-y-1">
-          <p className="text-[11px] text-cq-soft">
+          <p className="text-xs text-cq-soft">
             {areaUnplaced
               ? 'Ordered by fit with what you asked for, then by name. CareQ never knows availability unless a centre reports it.'
               : 'Ranked by distance and fit with what you asked for. CareQ never knows availability unless a centre reports it.'}

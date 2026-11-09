@@ -146,10 +146,10 @@ export const HomeTab: React.FC<HomeTabProps> = ({
       {/* Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
         <div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-cq-secondary">
+          <span className="text-xs font-bold text-cq-secondary">
             YOUR FAMILY SPACE
           </span>
-          <h1 className="text-2xl sm:text-3xl font-bold text-cq-stone-900 tracking-tight mt-0.5">
+          <h1 className="text-2xl sm:text-3xl font-bold text-cq-stone-900 mt-0.5">
             Hi {parentProfile.name}, here's where things stand.
           </h1>
           <p className="text-xs sm:text-sm text-cq-stone-600 mt-1">
@@ -171,7 +171,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
         {/* LEFT COLUMN – Latest updates card (~2/3) */}
         <div className="lg:col-span-2 bg-white rounded-xl border border-cq-stone-200 p-5 sm:p-6 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cq-stone-100 pb-3">
-            <h2 className="text-base font-bold text-cq-stone-900 tracking-tight">
+            <h2 className="text-base font-bold text-cq-stone-900">
               Latest updates
             </h2>
 
@@ -240,7 +240,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
 
                     <div className="flex-1 min-w-0">
                       {/* Tiny grey label: {type} · {timestamp} */}
-                      <div className="flex items-center gap-1.5 text-[11px] text-cq-stone-400 capitalize">
+                      <div className="flex items-center gap-1.5 text-xs text-cq-stone-400 capitalize">
                         <span>{notif.type || 'Update'}</span>
                         <span>·</span>
                         <span>Simulated</span>
@@ -262,7 +262,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                       <button
                         type="button"
                         onClick={() => onMarkAsRead(notif.id)}
-                        className="text-[11px] font-semibold text-cq-brand hover:text-cq-secondary shrink-0 pt-1 cursor-pointer transition-colors"
+                        className="text-xs font-semibold text-cq-brand hover:text-cq-secondary shrink-0 pt-1 cursor-pointer transition-colors"
                       >
                         Mark as read ✓
                       </button>
@@ -279,7 +279,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
           {/* CARD 1: Your next steps */}
           <div className="bg-white rounded-xl border border-cq-stone-200 p-5 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-cq-stone-900 tracking-tight">
+              <h2 className="text-sm font-bold text-cq-stone-900">
                 Your next steps
               </h2>
               <span className="text-xs font-bold text-cq-brand bg-cq-secondary/15 px-2 py-0.5 rounded-full">
@@ -321,7 +321,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                   <button
                     type="button"
                     onClick={() => onNavigate('find')}
-                    className="px-2 py-0.5 text-[11px] font-bold bg-cq-brand hover:bg-cq-brand-hover text-white rounded-md transition-colors cursor-pointer"
+                    className="px-2 py-0.5 text-xs font-bold bg-cq-brand hover:bg-cq-brand-hover text-white rounded-md transition-colors cursor-pointer"
                   >
                     Find
                   </button>
@@ -352,7 +352,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                   <button
                     type="button"
                     onClick={() => onNavigate('apply')}
-                    className="px-2 py-0.5 text-[11px] font-bold bg-cq-brand hover:bg-cq-brand-hover text-white rounded-md transition-colors cursor-pointer"
+                    className="px-2 py-0.5 text-xs font-bold bg-cq-brand hover:bg-cq-brand-hover text-white rounded-md transition-colors cursor-pointer"
                   >
                     Review
                   </button>
@@ -383,7 +383,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                   <button
                     type="button"
                     onClick={() => onNavigate('apply')}
-                    className="px-2 py-0.5 text-[11px] font-bold bg-cq-brand hover:bg-cq-brand-hover text-white rounded-md transition-colors cursor-pointer"
+                    className="px-2 py-0.5 text-xs font-bold bg-cq-brand hover:bg-cq-brand-hover text-white rounded-md transition-colors cursor-pointer"
                   >
                     Apply
                   </button>
@@ -414,7 +414,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                   <button
                     type="button"
                     onClick={() => onNavigate('track')}
-                    className="px-2 py-0.5 text-[11px] font-bold bg-cq-accent hover:bg-cq-sun-deep text-cq-amber-ink-4 rounded-md transition-colors cursor-pointer"
+                    className="px-2 py-0.5 text-xs font-bold bg-cq-accent hover:bg-cq-sun-deep text-cq-amber-ink-4 rounded-md transition-colors cursor-pointer"
                   >
                     Offers
                   </button>
@@ -423,14 +423,14 @@ export const HomeTab: React.FC<HomeTabProps> = ({
             </div>
 
             {/* Footer line */}
-            <p className="text-[11px] text-cq-stone-400 text-center pt-1 border-t border-cq-stone-100">
+            <p className="text-xs text-cq-stone-400 text-center pt-1 border-t border-cq-stone-100">
               At your pace. One step at a time.
             </p>
           </div>
 
           {/* CARD 2: At a glance */}
           <div className="bg-white rounded-xl border border-cq-stone-200 p-5 shadow-xs space-y-4">
-            <h2 className="text-sm font-bold text-cq-stone-900 tracking-tight">
+            <h2 className="text-sm font-bold text-cq-stone-900">
               At a glance
             </h2>
 
@@ -440,7 +440,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                 <div className="text-lg font-bold text-cq-brand">
                   {applicationsSentCount}
                 </div>
-                <div className="text-[10px] text-cq-stone-500 font-medium leading-tight mt-0.5">
+                <div className="text-xs text-cq-stone-500 font-medium leading-tight mt-0.5">
                   Applications sent
                 </div>
               </div>
@@ -449,7 +449,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                 <div className="text-lg font-bold text-cq-brand">
                   {onWaitlistCount}
                 </div>
-                <div className="text-[10px] text-cq-stone-500 font-medium leading-tight mt-0.5">
+                <div className="text-xs text-cq-stone-500 font-medium leading-tight mt-0.5">
                   On a waitlist
                 </div>
               </div>
@@ -458,7 +458,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                 <div className="text-lg font-bold text-cq-amber-ink-4">
                   {offersCount}
                 </div>
-                <div className="text-[10px] text-cq-stone-500 font-medium leading-tight mt-0.5">
+                <div className="text-xs text-cq-stone-500 font-medium leading-tight mt-0.5">
                   Offers
                 </div>
               </div>
@@ -466,7 +466,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
 
             {/* Best position info */}
             <div className="p-2.5 rounded-lg bg-cq-teal-50/60 border border-cq-secondary/30 text-xs">
-              <span className="text-[10px] font-bold text-cq-teal-800 uppercase tracking-wider block mb-0.5">
+              <span className="text-xs font-bold text-cq-teal-800 block mb-0.5">
                 Current Best Position
               </span>
               {bestWaitlistApp && bestWaitlistApp.waitlistPosition ? (
@@ -496,7 +496,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
 
           {/* CARD 3: My reminders */}
           <div className="bg-white rounded-xl border border-cq-stone-200 p-5 shadow-xs space-y-3.5">
-            <h2 className="text-sm font-bold text-cq-stone-900 tracking-tight">
+            <h2 className="text-sm font-bold text-cq-stone-900">
               My reminders
             </h2>
 
@@ -530,7 +530,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                           {r.text}
                         </span>
                         {r.date && (
-                          <span className="text-[10px] text-cq-stone-400 flex items-center gap-1 mt-0.5">
+                          <span className="text-xs text-cq-stone-400 flex items-center gap-1 mt-0.5">
                             <Calendar className="w-2.5 h-2.5" />
                             {r.date}
                           </span>
@@ -541,7 +541,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                     <button
                       type="button"
                       onClick={() => handleRemoveReminder(r.id)}
-                      className="text-cq-stone-300 hover:text-cq-rose-600 transition-colors p-0.5 shrink-0"
+                      className="text-cq-faint hover:text-cq-rose-600 transition-colors p-0.5 shrink-0"
                       title="Remove reminder"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -586,7 +586,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
             </form>
 
             {/* Note */}
-            <p className="text-[10px] text-cq-stone-400 italic text-center">
+            <p className="text-xs text-cq-stone-400 italic text-center">
               Only on this page · no notifications sent
             </p>
           </div>

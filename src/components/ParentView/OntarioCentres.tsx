@@ -73,7 +73,7 @@ export const Chip: React.FC<{ children: React.ReactNode; tone?: 'sage' | 'sand' 
     grey: 'border-cq-line bg-cq-page text-cq-soft',
     peach: 'border-cq-peach-line bg-cq-peach text-cq-rust',
   };
-  return <span className={`rounded-md border px-2 py-0.5 text-[10px] font-medium ${tones[tone]}`}>{children}</span>;
+  return <span className={`rounded-md border px-2 py-0.5 text-xs font-medium ${tones[tone]}`}>{children}</span>;
 };
 
 /** Search result extras shown on both card types. */
@@ -98,10 +98,10 @@ export const OntarioCentreCard: React.FC<{
       <div>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <span className="inline-block rounded px-1.5 py-0.5 bg-cq-lilac text-cq-lilac-ink-2 text-[10px] font-semibold">
+            <span className="inline-block rounded px-1.5 py-0.5 bg-cq-lilac text-cq-lilac-ink-2 text-xs font-semibold">
               Not on CareQ yet · Ontario open data
             </span>
-            <div className="flex items-center gap-1.5 text-[11px] text-cq-soft mt-2">
+            <div className="flex items-center gap-1.5 text-xs text-cq-soft mt-2">
               <MapPin className="w-3 h-3 shrink-0" />
               <span>{centre.area}</span>
               {result?.distanceKm != null && (
@@ -122,7 +122,7 @@ export const OntarioCentreCard: React.FC<{
         )}
 
         <p className="text-xs text-cq-muted mt-2">{centre.address}</p>
-        <p className="text-[11px] text-cq-soft mt-1">
+        <p className="text-xs text-cq-soft mt-1">
           Licence {centre.licenceStatus.toLowerCase()} · #{centre.licenceNumber}
         </p>
 
@@ -146,17 +146,17 @@ export const OntarioCentreCard: React.FC<{
         </div>
 
         {centre.programOptions.length > 0 && (
-          <p className="text-[11px] text-cq-muted mt-2">
+          <p className="text-xs text-cq-muted mt-2">
             <span className="font-semibold">Programs:</span> {centre.programOptions.join(', ')}
           </p>
         )}
         {centre.languages.length > 0 && (
-          <p className="text-[11px] text-cq-muted mt-0.5">
+          <p className="text-xs text-cq-muted mt-0.5">
             <span className="font-semibold">Language:</span> {centre.languages.join(', ')}
           </p>
         )}
         {centre.capacity !== null && (
-          <p className="text-[11px] text-cq-muted mt-0.5 flex items-center gap-1">
+          <p className="text-xs text-cq-muted mt-0.5 flex items-center gap-1">
             <Users className="w-3 h-3" />
             <span>{centre.capacity} licensed spaces in total (capacity, not availability)</span>
           </p>
@@ -168,8 +168,8 @@ export const OntarioCentreCard: React.FC<{
 
       <div className="border-t border-cq-line pt-3 space-y-1">
         <p className="text-xs font-semibold text-cq-muted">Availability not reported</p>
-        <p className="text-[11px] text-cq-soft">Not part of the CareQ demo; contact the centre directly.</p>
-        <div className="pt-1 space-y-0.5 text-[10px] text-cq-soft">
+        <p className="text-xs text-cq-soft">Not part of the CareQ demo; contact the centre directly.</p>
+        <div className="pt-1 space-y-0.5 text-xs text-cq-soft">
           <p className="flex items-center gap-1">
             <Database className="w-3 h-3 shrink-0" />
             Ontario open data · {formatSourceDate(sources.ontario.dataDate)}

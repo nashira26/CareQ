@@ -60,7 +60,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
 
         {/* Unread count badge */}
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-cq-brand rounded-full shadow-xs ring-2 ring-white animate-in zoom-in-50">
+          <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold text-white bg-cq-brand rounded-full shadow-xs ring-2 ring-white animate-in zoom-in-50">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -74,11 +74,11 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
             <div className="flex items-center gap-2">
               <span className="font-bold text-sm text-cq-brand">Notifications</span>
               {unreadCount > 0 ? (
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-cq-secondary/20 text-cq-brand">
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-cq-secondary/20 text-cq-brand">
                   {unreadCount} new
                 </span>
               ) : (
-                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-cq-stone-200 text-cq-stone-600">
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-cq-stone-200 text-cq-stone-600">
                   All caught up
                 </span>
               )}
@@ -143,7 +143,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
                     >
                       {notif.message}
                     </p>
-                    <div className="flex items-center justify-between mt-1.5 text-[11px] text-cq-stone-400">
+                    <div className="flex items-center justify-between mt-1.5 text-xs text-cq-stone-400">
                       <span className="inline-flex items-center gap-1.5">
                         <SimTag />
                         {notif.timestamp}
@@ -152,7 +152,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
                         <button
                           type="button"
                           onClick={() => onMarkAsRead(notif.id)}
-                          className="text-[11px] text-cq-brand hover:text-cq-secondary font-semibold flex items-center gap-1 transition-colors hover:underline"
+                          className="text-xs text-cq-brand hover:text-cq-secondary font-semibold flex items-center gap-1 transition-colors hover:underline"
                         >
                           <Check className="w-3 h-3" />
                           <span>Mark read</span>
@@ -166,7 +166,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
           </div>
 
           {/* Footer */}
-          <div className="px-4 py-2 bg-cq-stone-50 border-t border-cq-stone-100 text-[11px] text-cq-stone-500 text-center">
+          <div className="px-4 py-2 bg-cq-stone-50 border-t border-cq-stone-100 text-xs text-cq-stone-500 text-center">
             {currentRole === 'parent' ? 'Parent in-app notifications' : 'Centre in-app notifications'}
           </div>
         </div>

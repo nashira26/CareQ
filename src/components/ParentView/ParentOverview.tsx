@@ -85,7 +85,7 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
       )}
 
       {/* Hero Card */}
-      <div className="rounded-[28px] bg-cq-sage border border-cq-sage-line-2 p-7 sm:p-9 overflow-hidden">
+      <div className="rounded-3xl bg-cq-sage border border-cq-sage-line-2 p-7 sm:p-9 overflow-hidden">
         <div className="grid lg:grid-cols-12 gap-8 items-center">
           {/* Left Column */}
           <div className="lg:col-span-7 space-y-4">
@@ -94,7 +94,7 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
               Your next chapter, together
             </span>
 
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-cq-ink leading-tight">
+            <h2 className="text-3xl sm:text-4xl font-bold text-cq-ink leading-tight">
               Find their place.
               <br />
               Keep every step close.
@@ -127,7 +127,7 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
                 <div className="text-xs font-bold text-cq-ink">
                   A little more clarity
                 </div>
-                <div className="text-[11px] text-cq-muted">
+                <div className="text-xs text-cq-muted">
                   for your family's next step
                 </div>
               </div>
@@ -330,7 +330,7 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
                 <div className="font-bold text-xs text-cq-ink">
                   Two sides. One care journey.
                 </div>
-                <div className="text-[11px] text-cq-soft mt-0.5 leading-relaxed">
+                <div className="text-xs text-cq-soft mt-0.5 leading-relaxed">
                   Centres review on their timeline. CareQ keeps communication
                   transparent and calm.
                 </div>

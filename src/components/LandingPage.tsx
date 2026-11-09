@@ -73,12 +73,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {/* 1. HERO SECTION */}
         <section className="max-w-6xl w-full mx-auto px-6 pt-12 pb-16 lg:pt-20 lg:pb-24 grid lg:grid-cols-2 gap-12 lg:gap-14 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cq-sage-250 bg-cq-sage-50 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-cq-sage-ink mb-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-cq-sage-250 bg-cq-sage-50 px-4 py-1.5 text-xs font-semibold text-cq-sage-ink mb-6">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Ontario Child Care Platform</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-bold tracking-[-0.03em] text-cq-ink leading-[1.12]">
+            <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-bold text-cq-ink leading-[1.12]">
               Your child-care applications, followed through to a spot.
             </h1>
 
@@ -112,8 +112,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           <div className="w-full max-w-[540px] mx-auto lg:max-w-none">
-            <div className="rounded-[28px] bg-cq-sage-100 p-3 shadow-xs border border-cq-sage-line-2">
-              <div className="rounded-[22px] bg-cq-sage-150 overflow-hidden relative">
+            <div className="rounded-3xl bg-cq-sage-100 p-3 shadow-xs border border-cq-sage-line-2">
+              <div className="rounded-3xl bg-cq-sage-150 overflow-hidden relative">
                 <HouseIllustration tone="sage" className="w-full h-auto" />
               </div>
             </div>
@@ -124,10 +124,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <section className="bg-white border-y border-cq-line py-16 lg:py-24">
           <div className="max-w-6xl w-full mx-auto px-6">
             <div className="max-w-2xl mx-auto text-center mb-12 sm:mb-16">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cq-muted mb-3">
+              <p className="text-xs font-semibold text-cq-muted mb-3">
                 The current reality
               </p>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-cq-ink">
+              <h2 className="text-3xl sm:text-4xl font-bold text-cq-ink">
                 Getting a child-care spot shouldn't be a second job
               </h2>
             </div>
@@ -180,7 +180,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {/* 3 Stat Cards with Sources */}
             <div className="grid md:grid-cols-3 gap-6 pt-4 border-t border-cq-line">
               <div className="rounded-2xl border border-cq-line bg-white p-6">
-                <p className="text-2xl sm:text-3xl font-extrabold text-cq-brand tracking-tight">
+                <p className="text-2xl sm:text-3xl font-extrabold text-cq-brand">
                   ~15,000
                 </p>
                 <p className="mt-2 text-sm font-semibold text-cq-ink">
@@ -192,7 +192,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
 
               <div className="rounded-2xl border border-cq-line bg-white p-6">
-                <p className="text-2xl sm:text-3xl font-extrabold text-cq-brand tracking-tight">
+                <p className="text-2xl sm:text-3xl font-extrabold text-cq-brand">
                   ~8,500
                 </p>
                 <p className="mt-2 text-sm font-semibold text-cq-ink">
@@ -204,7 +204,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
 
               <div className="rounded-2xl border border-cq-line bg-white p-6">
-                <p className="text-2xl sm:text-3xl font-extrabold text-cq-brand tracking-tight">
+                <p className="text-2xl sm:text-3xl font-extrabold text-cq-brand">
                   47
                 </p>
                 <p className="mt-2 text-sm font-semibold text-cq-ink">
@@ -222,10 +222,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <section id="how-it-works" className="py-16 lg:py-24 scroll-mt-24">
           <div className="max-w-6xl w-full mx-auto px-6">
             <div className="max-w-2xl mx-auto text-center mb-12 sm:mb-16">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cq-muted mb-3">
+              <p className="text-xs font-semibold text-cq-muted mb-3">
                 A calmer path
               </p>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-cq-ink">
+              <h2 className="text-3xl sm:text-4xl font-bold text-cq-ink">
                 How CareQ works
               </h2>
             </div>
@@ -299,10 +299,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <section className="bg-white border-y border-cq-line py-16 lg:py-24">
           <div className="max-w-6xl w-full mx-auto px-6">
             <div className="max-w-2xl mx-auto text-center mb-12 sm:mb-16">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cq-muted mb-3">
+              <p className="text-xs font-semibold text-cq-muted mb-3">
                 Two sides, one calm system
               </p>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-cq-ink">
+              <h2 className="text-3xl sm:text-4xl font-bold text-cq-ink">
                 Built for both sides
               </h2>
             </div>
@@ -357,10 +357,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <section className="py-16 lg:py-24">
           <div className="max-w-6xl w-full mx-auto px-6">
             <div className="max-w-2xl mx-auto text-center mb-12">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cq-muted mb-3">
+              <p className="text-xs font-semibold text-cq-muted mb-3">
                 Ethical &amp; Transparent
               </p>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-cq-ink">
+              <h2 className="text-3xl sm:text-4xl font-bold text-cq-ink">
                 AI that helps, never decides
               </h2>
             </div>
@@ -419,10 +419,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <section className="bg-white border-y border-cq-line py-16 lg:py-24">
           <div className="max-w-4xl w-full mx-auto px-6">
             <div className="text-center mb-12">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cq-muted mb-3">
+              <p className="text-xs font-semibold text-cq-muted mb-3">
                 Clear answers
               </p>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-cq-ink">
+              <h2 className="text-3xl sm:text-4xl font-bold text-cq-ink">
                 Questions parents ask
               </h2>
             </div>
@@ -461,17 +461,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {/* WHO WE ARE BLOCK */}
         <section className="py-16 lg:py-20">
           <div className="max-w-4xl w-full mx-auto px-6 text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cq-muted mb-3">
+            <p className="text-xs font-semibold text-cq-muted mb-3">
               About the project
             </p>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-cq-ink mb-4">
+            <h2 className="text-2xl sm:text-3xl font-bold text-cq-ink mb-4">
               Who we are
             </h2>
             <p className="text-base sm:text-lg text-cq-muted leading-relaxed max-w-2xl mx-auto">
               CareQ is a women-led prototype that helps Ontario families find, apply for and track licensed child care in one place: helpful AI, with people in control.
             </p>
             <div className="mt-6 inline-flex flex-col items-center justify-center rounded-2xl bg-white border border-cq-line px-6 py-4 shadow-xs">
-              <span className="text-xs font-bold uppercase tracking-wider text-cq-brand">
+              <span className="text-xs font-bold text-cq-brand">
                 Team 38 – Coalesce
               </span>
               <span className="text-sm text-cq-soft mt-1">

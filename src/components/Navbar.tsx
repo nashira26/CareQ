@@ -1,5 +1,5 @@
 import React from 'react';
-import { Lock, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { ParentProfile, Centre, InAppNotification } from '../data/mockData';
 import { LogoFull, LogoMark } from './Logo';
 import { NotificationBell } from './NotificationBell';
@@ -41,23 +41,20 @@ export const Navbar: React.FC<NavbarProps> = ({
       .toUpperCase() || 'C';
 
   return (
-    <header className="bg-white border-b border-cq-line sticky top-0 z-40 h-[72px] flex items-center">
+    <header className="bg-white border-b border-cq-line sticky top-0 z-40 h-16 lg:h-[68px] flex items-center">
       <div className="max-w-[1180px] w-full mx-auto px-4 sm:px-6 lg:px-10 flex items-center justify-between">
-        {/* Left: Logo (mobile/tablet only) + Portal Tag & subtitle */}
-        <div className="flex items-center gap-3">
-          {/* Header logo hidden on lg */}
-          <div className="flex items-center lg:hidden mr-1">
-            <LogoFull size={34} className="hidden sm:inline-flex" />
-            <LogoMark size={30} className="inline-flex sm:hidden" />
+        {/* Left: Logo (below lg, where the sidebar is hidden) + portal name */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center lg:hidden">
+            <LogoFull size={32} className="hidden sm:inline-flex" />
+            <LogoMark size={34} className="inline-flex sm:hidden" />
           </div>
 
-          <div className="flex flex-col justify-center">
-            <div className="flex items-center gap-2">
-              <span className="rounded-md border border-cq-sky-line bg-cq-sky px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-cq-sky-ink">
-                {currentRole === 'parent' ? 'Parent portal' : 'Centre portal'}
-              </span>
-            </div>
-            <p className="text-[11px] text-cq-soft mt-0.5 hidden sm:block">
+          <div className="hidden sm:flex flex-col justify-center min-w-0 sm:pl-3 sm:border-l sm:border-cq-line lg:pl-0 lg:border-0">
+            <span className="text-sm font-extrabold text-brand">
+              {currentRole === 'parent' ? 'Parent portal' : 'Centre portal'}
+            </span>
+            <p className="text-xs text-ink-soft hidden md:block truncate">
               Ontario Licensed Child Care Queue &amp; Communication System
             </p>
           </div>
@@ -70,14 +67,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             4. Avatar circle w-9 h-9 with initials
             5. Name text-xs font-bold + sub-line
             6. Log out as GhostButton size h-9 text-xs */}
-        <div className="flex items-center gap-3 sm:gap-4">
-          {/* 1. Lock icon + Prototype */}
-          <div className="hidden md:flex items-center gap-1.5 text-[11px] text-cq-soft font-medium">
-            <Lock className="w-3.5 h-3.5 text-cq-soft" />
-            <span>Prototype</span>
-          </div>
-
-          {/* 2. Notification Bell */}
+        <div className="flex items-center gap-2 sm:gap-4">
+          {/* "Prototype" is already stated in the band above the header */}
+          {/* Notification Bell */}
           <NotificationBell
             notifications={notifications}
             currentRole={currentRole}
@@ -85,12 +77,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             onMarkAllAsRead={onMarkAllAsRead}
           />
 
-          {/* 3. 1px divider h-8 */}
-          <div className="h-8 w-px bg-cq-line" />
+          <div className="hidden sm:block h-8 w-px bg-cq-line" />
 
-          {/* 4 & 5. Avatar and Name/Sub-line */}
+          {/* Avatar and name */}
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-full bg-cq-sage text-cq-sage-ink text-xs font-bold flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-full bg-mint text-brand text-sm font-extrabold flex items-center justify-center shrink-0">
               {currentRole === 'parent' ? parentInitials : centreInitials}
             </div>
 
@@ -98,7 +89,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="font-bold text-cq-ink leading-tight">
                 {currentRole === 'parent' ? parentProfile.name : singleCentre.name}
               </div>
-              <div className="text-[11px] text-cq-soft">
+              <div className="text-xs text-cq-soft">
                 {currentRole === 'parent'
                   ? `Parent demo · ${parentProfile.childName}`
                   : singleCentre.demoKind === 'open-data'
@@ -112,10 +103,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onLogout}
-            className="h-9 px-3 rounded-xl border border-cq-line bg-white text-xs font-semibold text-cq-ink hover:bg-cq-page transition-colors inline-flex items-center gap-1.5 cursor-pointer ml-1"
+            className="h-10 w-10 sm:w-auto sm:px-3 rounded-xl border border-line-strong bg-white text-sm font-bold text-brand hover:bg-mint transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer lg:hidden"
             title="Log out of session"
+            aria-label="Log out"
           >
-            <LogOut className="w-3.5 h-3.5 text-cq-muted" />
+            <LogOut className="w-4 h-4" />
             <span className="hidden sm:inline">Log out</span>
           </button>
         </div>

@@ -1,148 +1,285 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   CareQ design tokens
+   Core palette first; then the legacy names from phase 0 (cq-*), re-pointed
+   at the core palette so every existing screen picks up the new identity.
+   Text-safe pairs are >= 4.5:1 (checked); coral, sunshine and leaf fills are
+   never used as text.
+   ========================================================================== */
 @theme static {
-  /* Phase 0: every colour the app used, as named tokens with their exact previous values.
-     Phase 1 re-points these at the new CareQ palette. */
-  /* Brand face: body, headings, landing and auth. The app shell uses Tailwind's default font-sans (system stack). */
-  --font-brand: 'Manrope', system-ui, sans-serif;
-  /* Landing and auth pages (previously an inline style with this exact fallback) */
-  --font-brand-page: Manrope, sans-serif;
-  --color-cq-brand: #0B4A52;
-  --color-cq-brand-hover: #08383E;
-  --color-cq-brand-ink: #1E4A4E;
-  --color-cq-ink: #173F42;
-  --color-cq-ink-body: #1E3F42;
-  --color-cq-ink-2: #3F5250;
-  --color-cq-muted: #5B6B66;
-  --color-cq-muted-2: #6E7C77;
-  --color-cq-soft: #7A8A84;
-  --color-cq-faint: #9AA59F;
-  --color-cq-faint-2: #B9C4C0;
-  --color-cq-grey-sage: #6E8C7E;
-  --color-cq-line: #E7E4DA;
-  --color-cq-line-input: #E8E4D6;
-  --color-cq-line-warm: #E7DFCF;
-  --color-cq-line-sand: #E3DAC7;
-  --color-cq-line-sand-2: #D8CFBC;
-  --color-cq-page: #FAF9F4;
-  --color-cq-input: #FBFAF3;
-  --color-cq-surface-grey: #F7F8F7;
-  --color-cq-surface-sage: #F4F6F1;
-  --color-cq-surface-stone: #F3F2EE;
-  --color-cq-surface-stone-2: #F3F1EA;
-  --color-cq-surface-cream: #FFFCF4;
-  --color-cq-sage: #E4ECE1;
-  --color-cq-sage-line: #CBD9C6;
-  --color-cq-sage-line-2: #D9E4D3;
-  --color-cq-sage-200: #C9DCC2;
-  --color-cq-sage-250: #CFE0C9;
-  --color-cq-sage-150: #DCE7DA;
-  --color-cq-sage-100: #E6EEE3;
-  --color-cq-sage-75: #EEF3EA;
-  --color-cq-sage-50: #F1F6EE;
-  --color-cq-sage-accent: #9DBB86;
-  --color-cq-sage-ink: #4E7A5A;
-  --color-cq-sage-ink-4: #2F5E45;
-  --color-cq-sage-ink-5: #4F7A5E;
-  --color-cq-secondary: #45B5A5;
-  --color-cq-secondary-50: #F0FDFA;
-  --color-cq-sand: #F3EEE3;
-  --color-cq-band: #F3EBDD;
-  --color-cq-sand-50: #FBF6EA;
-  --color-cq-sand-25: #FBF3E6;
-  --color-cq-sand-line: #E7D6A8;
-  --color-cq-sand-line-2: #EADBB8;
-  --color-cq-sand-200: #EFE3CC;
-  --color-cq-sand-400: #C9B98A;
-  --color-cq-sand-500: #B9933E;
-  --color-cq-sand-500b: #B38F3F;
-  --color-cq-sand-600: #A06C2D;
-  --color-cq-sand-ink-2: #8A6A3B;
-  --color-cq-sand-ink: #5B4A2E;
-  --color-cq-accent: #F9BE2F;
-  --color-cq-sun-deep: #E0A31A;
-  --color-cq-cream-amber-2: #FFF4D6;
-  --color-cq-cream-amber: #FDF3DD;
-  --color-cq-amber-line: #F2D9A0;
-  --color-cq-amber-ink: #8A6411;
-  --color-cq-amber-ink-2: #7A5A00;
-  --color-cq-amber-ink-4: #451A03;
-  --color-cq-peach-25: #FDF6F2;
-  --color-cq-peach: #FBE9E1;
-  --color-cq-peach-line: #F2D3C4;
-  --color-cq-peach-ink: #C46E4E;
-  --color-cq-rust: #A4543A;
-  --color-cq-rust-deep: #8C4530;
-  --color-cq-lilac-50: #EFEAF7;
-  --color-cq-lilac: #ECE8F5;
-  --color-cq-lilac-line: #D9D0EC;
-  --color-cq-lilac-line-2: #D6CFE8;
-  --color-cq-lilac-line-3: #D8D2E7;
-  --color-cq-lilac-ink: #6B5B95;
-  --color-cq-lilac-ink-2: #5A4A85;
-  --color-cq-sky: #E8F1F4;
-  --color-cq-sky-line: #CFE0E6;
-  --color-cq-sky-ink: #3F6E7E;
+  /* ---- Type: Nunito Sans everywhere ---- */
+  --font-sans: 'Nunito Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-brand: var(--font-sans);
+  --font-brand-page: var(--font-sans);
 
-  /* Former Tailwind palette classes (stone-*, teal-*, ...), same values as Tailwind's defaults */
-  --color-cq-amber-100: oklch(96.2% 0.059 95.617);
-  --color-cq-amber-200: oklch(92.4% 0.12 95.746);
-  --color-cq-amber-300: oklch(87.9% 0.169 91.605);
-  --color-cq-amber-400: oklch(82.8% 0.189 84.429);
-  --color-cq-amber-50: oklch(98.7% 0.022 95.277);
-  --color-cq-amber-500: oklch(76.9% 0.188 70.08);
-  --color-cq-amber-600: oklch(66.6% 0.179 58.318);
-  --color-cq-amber-700: oklch(55.5% 0.163 48.998);
-  --color-cq-amber-800: oklch(47.3% 0.137 46.201);
-  --color-cq-amber-900: oklch(41.4% 0.112 45.904);
-  --color-cq-amber-950: oklch(27.9% 0.077 45.635);
-  --color-cq-emerald-100: oklch(95% 0.052 163.051);
-  --color-cq-emerald-200: oklch(90.5% 0.093 164.15);
-  --color-cq-emerald-300: oklch(84.5% 0.143 164.978);
-  --color-cq-emerald-50: oklch(97.9% 0.021 166.113);
-  --color-cq-emerald-500: oklch(69.6% 0.17 162.48);
-  --color-cq-emerald-600: oklch(59.6% 0.145 163.225);
-  --color-cq-emerald-700: oklch(50.8% 0.118 165.612);
-  --color-cq-emerald-800: oklch(43.2% 0.095 166.913);
-  --color-cq-emerald-900: oklch(37.8% 0.077 168.94);
-  --color-cq-orange-50: oklch(98% 0.016 73.684);
-  --color-cq-rose-200: oklch(89.2% 0.058 10.001);
-  --color-cq-rose-50: oklch(96.9% 0.015 12.422);
-  --color-cq-rose-500: oklch(64.5% 0.246 16.439);
-  --color-cq-rose-600: oklch(58.6% 0.253 17.585);
-  --color-cq-rose-700: oklch(51.4% 0.222 16.935);
-  --color-cq-rose-900: oklch(41% 0.159 10.272);
-  --color-cq-stone-100: oklch(97% 0.001 106.424);
-  --color-cq-stone-200: oklch(92.3% 0.003 48.717);
-  --color-cq-stone-300: oklch(86.9% 0.005 56.366);
-  --color-cq-stone-400: oklch(70.9% 0.01 56.259);
-  --color-cq-stone-50: oklch(98.5% 0.001 106.423);
-  --color-cq-stone-500: oklch(55.3% 0.013 58.071);
-  --color-cq-stone-600: oklch(44.4% 0.011 73.639);
-  --color-cq-stone-700: oklch(37.4% 0.01 67.558);
-  --color-cq-stone-800: oklch(26.8% 0.007 34.298);
-  --color-cq-stone-900: oklch(21.6% 0.006 56.043);
-  --color-cq-stone-950: oklch(14.7% 0.004 49.25);
-  --color-cq-teal-100: oklch(95.3% 0.051 180.801);
-  --color-cq-teal-200: oklch(91% 0.096 180.426);
-  --color-cq-teal-300: oklch(85.5% 0.138 181.071);
-  --color-cq-teal-400: oklch(77.7% 0.152 181.912);
-  --color-cq-teal-50: oklch(98.4% 0.014 180.72);
-  --color-cq-teal-600: oklch(60% 0.118 184.704);
-  --color-cq-teal-700: oklch(51.1% 0.096 186.391);
-  --color-cq-teal-800: oklch(43.7% 0.078 188.216);
-  --color-cq-teal-900: oklch(38.6% 0.063 188.416);
+  /* Minimum UI text is 13px (was 10-12px) */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.375rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5625rem;
+
+  /* ---- Shape ---- */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;   /* 6  tags, checkboxes */
+  --radius-lg: 0.5rem;     /* 8  small controls */
+  --radius-xl: 0.625rem;   /* 10 buttons, inputs */
+  --radius-2xl: 0.875rem;  /* 14 cards, panels */
+  --radius-3xl: 1.25rem;   /* 20 landing / illustration panels */
+
+  /* ---- Depth: border first, shadow only where it helps ---- */
+  --shadow-2xs: 0 1px 1px rgb(18 75 80 / 0.04);
+  --shadow-xs: 0 1px 2px rgb(18 75 80 / 0.06), 0 1px 1px rgb(18 75 80 / 0.04);
+  --shadow-sm: 0 1px 2px rgb(18 75 80 / 0.06), 0 1px 1px rgb(18 75 80 / 0.04);
+  --shadow-md: 0 4px 12px rgb(18 75 80 / 0.08);
+  --shadow-lg: 0 8px 24px rgb(18 75 80 / 0.12);
+  --shadow-xl: 0 8px 24px rgb(18 75 80 / 0.12);
+  --shadow-2xl: 0 16px 40px rgb(18 75 80 / 0.16);
+
+  /* ---- Core colours ---- */
+  --color-brand: #124B50;          /* teal: nav, primary actions, key headings */
+  --color-brand-hover: #0D3A3E;
+  --color-brand-press: #0A2F32;
+  --color-coral: #F26D55;          /* fill / accent only (2.96:1) */
+  --color-coral-ink: #B23F27;      /* 5.8:1 on white */
+  --color-sun: #F4C95D;            /* fill only (1.57:1) */
+  --color-sun-ink: #7A5600;        /* 6.7:1 */
+  --color-leaf: #8FB99A;           /* fill only (2.19:1) */
+  --color-leaf-ink: #2E6741;       /* 6.7:1 */
+
+  --color-page: #FCF9F2;
+  --color-surface: #FFFFFF;
+  --color-mint: #E8F0EB;
+  --color-mint-50: #F3F7F4;
+  --color-mint-line: #C9DDD0;
+  --color-peach: #FCEBE4;
+  --color-peach-line: #F3CDBF;
+  --color-butter: #F4EFD9;
+  --color-butter-50: #FAF7EC;
+  --color-butter-line: #E5DAB4;
+  --color-stone: #F1EEE6;
+
+  --color-ink: #1B3438;            /* 12.5:1 */
+  --color-ink-muted: #55615E;      /* 6.1:1 */
+  --color-ink-soft: #5E6966;       /* 5.6:1, captions */
+  --color-ink-faint: #5F6865;      /* >= 4.6:1 on white, mint and stone */
+  --color-line: #E6E1D6;
+  --color-line-strong: #8C9794;    /* 3:1, input borders */
+  --color-focus: #C4492F;          /* focus ring, 4.6:1 on page */
+
+  /* ---- Semantic (feedback only, never application statuses) ---- */
+  --color-success: #256B3F;
+  --color-success-bg: #E7F3EA;
+  --color-warning: #7A4F00;
+  --color-warning-bg: #FDF3D8;
+  --color-error: #A8231A;
+  --color-error-bg: #FCE9E7;
+  --color-info: #245C8A;
+  --color-info-bg: #E6EFF7;
+
+  /* ---- Application status (each also has its own icon) ---- */
+  --color-status-draft: #525D5A;
+  --color-status-review: #9A3B22;
+  --color-status-wait: #5A4888;
+  --color-status-wait-bg: #EEEAF6;
+  --color-status-offer: #3A2C00;
+  --color-status-withdrawn: #5F6765;
+  --color-sim: #6A4B12;            /* "Simulated" tag text on butter */
+
+  /* ---- Legacy names (phase 0) -> core palette ---- */
+  --color-cq-brand: var(--color-brand);
+  --color-cq-brand-hover: var(--color-brand-hover);
+  --color-cq-brand-ink: var(--color-ink);
+  --color-cq-ink: var(--color-ink);
+  --color-cq-ink-body: var(--color-ink);
+  --color-cq-ink-2: var(--color-ink);
+  --color-cq-muted: var(--color-ink-muted);
+  --color-cq-muted-2: var(--color-ink-muted);
+  --color-cq-soft: var(--color-ink-soft);
+  --color-cq-faint: var(--color-ink-faint);
+  --color-cq-faint-2: #A7ADA9;
+  --color-cq-grey-sage: var(--color-ink-muted);
+  --color-cq-line: var(--color-line);
+  --color-cq-line-input: var(--color-line-strong);
+  --color-cq-line-warm: var(--color-line);
+  --color-cq-line-sand: var(--color-butter-line);
+  --color-cq-line-sand-2: var(--color-butter-line);
+  --color-cq-page: var(--color-page);
+  --color-cq-input: var(--color-surface);
+  --color-cq-surface-grey: var(--color-page);
+  --color-cq-surface-sage: var(--color-mint-50);
+  --color-cq-surface-stone: var(--color-stone);
+  --color-cq-surface-stone-2: var(--color-stone);
+  --color-cq-surface-cream: var(--color-butter-50);
+  --color-cq-sage: var(--color-mint);
+  --color-cq-sage-line: var(--color-mint-line);
+  --color-cq-sage-line-2: var(--color-mint-line);
+  --color-cq-sage-200: var(--color-mint-line);
+  --color-cq-sage-250: var(--color-mint-line);
+  --color-cq-sage-150: var(--color-mint);
+  --color-cq-sage-100: var(--color-mint);
+  --color-cq-sage-75: var(--color-mint-50);
+  --color-cq-sage-50: var(--color-mint-50);
+  --color-cq-sage-accent: var(--color-leaf);
+  --color-cq-sage-ink: var(--color-leaf-ink);
+  --color-cq-sage-ink-4: var(--color-leaf-ink);
+  --color-cq-sage-ink-5: var(--color-leaf-ink);
+  --color-cq-secondary: var(--color-brand);
+  --color-cq-secondary-50: var(--color-mint-50);
+  --color-cq-sand: var(--color-butter);
+  --color-cq-band: var(--color-butter);
+  --color-cq-sand-50: var(--color-butter-50);
+  --color-cq-sand-25: var(--color-butter-50);
+  --color-cq-sand-line: var(--color-butter-line);
+  --color-cq-sand-line-2: var(--color-butter-line);
+  --color-cq-sand-200: #EDE4C6;
+  --color-cq-sand-400: #C9B98A;
+  --color-cq-sand-500: var(--color-sun-ink);
+  --color-cq-sand-500b: var(--color-sun-ink);
+  --color-cq-sand-600: var(--color-sun-ink);
+  --color-cq-sand-ink-2: var(--color-sim);
+  --color-cq-sand-ink: #4F3A0E;
+  --color-cq-accent: var(--color-sun);
+  --color-cq-sun-deep: #C9900F;
+  --color-cq-cream-amber-2: var(--color-warning-bg);
+  --color-cq-cream-amber: var(--color-warning-bg);
+  --color-cq-amber-line: #EBD594;
+  --color-cq-amber-ink: var(--color-warning);
+  --color-cq-amber-ink-2: var(--color-warning);
+  --color-cq-amber-ink-4: var(--color-status-offer);
+  --color-cq-peach-25: #FEF6F2;
+  --color-cq-peach: var(--color-peach);
+  --color-cq-peach-line: var(--color-peach-line);
+  --color-cq-peach-ink: var(--color-coral-ink);
+  --color-cq-rust: var(--color-error);
+  --color-cq-rust-deep: #8A1C14;
+  --color-cq-lilac-50: #F3F0F9;
+  --color-cq-lilac: var(--color-status-wait-bg);
+  --color-cq-lilac-line: #DCD4EE;
+  --color-cq-lilac-line-2: #DCD4EE;
+  --color-cq-lilac-line-3: #DCD4EE;
+  --color-cq-lilac-ink: var(--color-status-wait);
+  --color-cq-lilac-ink-2: #4A3A78;
+  --color-cq-sky: var(--color-info-bg);
+  --color-cq-sky-line: #C9DAEA;
+  --color-cq-sky-ink: var(--color-info);
+
+  /* Former Tailwind palette classes -> CareQ neutrals and semantic colours */
+  --color-cq-stone-50: #FAF8F3;
+  --color-cq-stone-100: var(--color-stone);
+  --color-cq-stone-200: var(--color-line);
+  --color-cq-stone-300: #D3CDC0;
+  --color-cq-stone-400: var(--color-ink-faint);
+  --color-cq-stone-500: var(--color-ink-muted);
+  --color-cq-stone-600: #4A5552;
+  --color-cq-stone-700: #3A4643;
+  --color-cq-stone-800: #283538;
+  --color-cq-stone-900: var(--color-ink);
+  --color-cq-stone-950: #13272A;
+  --color-cq-teal-50: var(--color-mint-50);
+  --color-cq-teal-100: var(--color-mint);
+  --color-cq-teal-200: var(--color-mint-line);
+  --color-cq-teal-300: #9CC2AB;
+  --color-cq-teal-400: #5E9C8C;
+  --color-cq-teal-600: #1D6A6F;
+  --color-cq-teal-700: var(--color-brand);
+  --color-cq-teal-800: var(--color-brand-hover);
+  --color-cq-teal-900: var(--color-brand-press);
+  --color-cq-emerald-50: var(--color-success-bg);
+  --color-cq-emerald-100: #D5EBDC;
+  --color-cq-emerald-200: #BBDDC5;
+  --color-cq-emerald-300: #9CCBAA;
+  --color-cq-emerald-500: #3E8B5A;
+  --color-cq-emerald-600: #2F7A4B;
+  --color-cq-emerald-700: var(--color-success);
+  --color-cq-emerald-800: #1E5A34;
+  --color-cq-emerald-900: #174A2B;
+  --color-cq-amber-50: #FDF7E6;
+  --color-cq-amber-100: var(--color-warning-bg);
+  --color-cq-amber-200: #F6E2A8;
+  --color-cq-amber-300: #EFD07A;
+  --color-cq-amber-400: var(--color-sun);
+  --color-cq-amber-500: #E2A93A;
+  --color-cq-amber-600: #9A6A00;
+  --color-cq-amber-700: var(--color-warning);
+  --color-cq-amber-800: #6A4400;
+  --color-cq-amber-900: #5C3B00;
+  --color-cq-amber-950: var(--color-status-offer);
+  --color-cq-orange-50: #FEF4EE;
+  --color-cq-rose-50: var(--color-error-bg);
+  --color-cq-rose-200: #F2C2BD;
+  --color-cq-rose-500: #C8382D;
+  --color-cq-rose-600: var(--color-error);
+  --color-cq-rose-700: #8F1E16;
+  --color-cq-rose-900: #6B1610;
+
+  /* ---- Motion ---- */
+  --animate-fadeIn: cq-fade-in 0.2s ease-out both;
+  --animate-pop: cq-pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+@keyframes cq-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cq-pop {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cq-draw {
+  to { stroke-dashoffset: 0; }
 }
 
 @layer base {
   body {
-    background-color: var(--color-cq-page);
-    color: var(--color-cq-ink-body);
-    font-family: var(--font-brand);
+    background-color: var(--color-page);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    color: var(--color-cq-ink);
-    font-family: var(--font-brand);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    letter-spacing: 0;
+  }
+
+  /* Visible keyboard focus everywhere (mouse clicks don't show it) */
+  :where(a, button, summary, [role='button'], [role='tab'], [tabindex]:not([tabindex='-1'])):focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+    border-radius: var(--radius-lg);
+  }
+  :where(input, select, textarea):focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 1px;
+  }
+
+  ::selection {
+    background: var(--color-mint-line);
+    color: var(--color-ink);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  .no-scrollbar { scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  /* Room for the phone bottom tab bar */
+  .pb-tabbar { padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
+  @media (min-width: 64rem) { .pb-tabbar { padding-bottom: 0; } }
+  /* Floating elements sit above the phone tab bar while it is shown */
+  @media (max-width: 63.99rem) {
+    body[data-tabbar] .above-tabbar { bottom: calc(5rem + env(safe-area-inset-bottom)); }
   }
 }

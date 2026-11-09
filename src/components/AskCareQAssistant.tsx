@@ -30,7 +30,7 @@ const now = () => new Date().toLocaleTimeString('en-US', { hour: 'numeric', minu
 /** One source under an answer: a handbook quote card, or "From your application · Simulated". */
 const QuoteCard: React.FC<{ c: AskCitation }> = ({ c }) => (
   <div className="rounded-xl border border-cq-line bg-cq-page px-2.5 py-2 space-y-1">
-    <p className="text-[10px] font-semibold text-cq-muted flex items-center gap-1 flex-wrap">
+    <p className="text-xs font-semibold text-cq-muted flex items-center gap-1 flex-wrap">
       <span>{citationHeading(c)}</span>
       {c.kind === 'application' && c.simulated && (
         <>
@@ -39,10 +39,10 @@ const QuoteCard: React.FC<{ c: AskCitation }> = ({ c }) => (
         </>
       )}
     </p>
-    {c.kind === 'document' && <p className="text-[11px] text-cq-ink italic leading-snug">“{c.quote}”</p>}
-    {c.label && <p className="text-[10px] font-medium text-cq-sand-ink-2">{c.label}</p>}
+    {c.kind === 'document' && <p className="text-xs text-cq-ink italic leading-snug">“{c.quote}”</p>}
+    {c.label && <p className="text-xs font-medium text-cq-sand-ink-2">{c.label}</p>}
     {(c.sourceUrl || showSourceNote(c)) && (
-      <p className="text-[10px] text-cq-soft flex items-center gap-1 flex-wrap">
+      <p className="text-xs text-cq-soft flex items-center gap-1 flex-wrap">
         {c.sourceUrl && (
           <a
             href={c.sourceUrl}
@@ -152,19 +152,16 @@ export const AskCareQAssistant: React.FC = () => {
   return (
     <>
       {/* Floating Corner Button */}
-      <div className="fixed bottom-5 right-5 z-40">
+      <div className="fixed bottom-5 right-4 sm:right-5 z-40 above-tabbar">
         {!isOpen && (
           <button
             type="button"
             onClick={() => setIsOpen(true)}
-            className="flex items-center gap-2 px-4 py-3 bg-cq-brand hover:bg-cq-brand-hover text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-white cursor-pointer group"
+            className="flex items-center gap-2 h-12 pl-3.5 pr-4 bg-cq-brand hover:bg-cq-brand-hover text-white rounded-xl shadow-lg transition-[background-color,transform] duration-150 active:scale-[0.98] cursor-pointer group"
             title="Ask CareQ verified help assistant"
           >
-            <div className="w-6 h-6 rounded-full bg-cq-secondary/30 flex items-center justify-center text-white">
-              <Bot className="w-4 h-4" />
-            </div>
-            <span className="text-xs sm:text-sm font-bold tracking-tight">Ask CareQ</span>
-            <span className="w-2 h-2 rounded-full bg-cq-accent animate-pulse"></span>
+            <Bot className="w-5 h-5" aria-hidden="true" />
+            <span className="text-sm font-bold">Ask CareQ</span>
           </button>
         )}
       </div>
@@ -174,7 +171,7 @@ export const AskCareQAssistant: React.FC = () => {
         <div
           role="dialog"
           aria-label="Ask CareQ"
-          className="fixed bottom-5 right-5 z-50 w-96 max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-4rem)] bg-white rounded-2xl shadow-2xl border border-cq-stone-200 flex flex-col overflow-hidden animate-in fade-in-50 slide-in-from-bottom-4 duration-200"
+          className="fixed bottom-5 right-4 sm:right-5 z-50 above-tabbar w-96 max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-4rem)] bg-white rounded-2xl shadow-2xl border border-cq-stone-200 flex flex-col overflow-hidden animate-in fade-in-50 slide-in-from-bottom-4 duration-200"
         >
           {/* Top Panel Header */}
           <div className="bg-cq-brand text-white p-3.5 flex items-center justify-between shadow-xs">
@@ -183,8 +180,8 @@ export const AskCareQAssistant: React.FC = () => {
                 <Bot className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-sm tracking-tight leading-tight">Ask CareQ</h3>
-                <span className="text-[10px] text-cq-teal-200">Verified Knowledge Assistant</span>
+                <h3 className="font-bold text-sm leading-tight">Ask CareQ</h3>
+                <span className="text-xs text-cq-teal-200">Verified Knowledge Assistant</span>
               </div>
             </div>
             <button
@@ -198,7 +195,7 @@ export const AskCareQAssistant: React.FC = () => {
           </div>
 
           {/* Mandatory Header Note */}
-          <div className="bg-cq-secondary-50 border-b border-cq-secondary/30 px-3.5 py-2 text-[11px] text-cq-brand leading-tight flex items-start gap-1.5">
+          <div className="bg-cq-secondary-50 border-b border-cq-secondary/30 px-3.5 py-2 text-xs text-cq-brand leading-tight flex items-start gap-1.5">
             <Info className="w-3.5 h-3.5 text-cq-secondary shrink-0 mt-0.5" />
             <span className="font-medium">
               AI assistant. Answers come only from CareQ's help pages and centres' published information.
@@ -206,7 +203,7 @@ export const AskCareQAssistant: React.FC = () => {
           </div>
 
           {centre && (
-            <div className="border-b border-cq-stone-200 bg-white px-3.5 py-2 text-[11px] text-cq-ink flex items-center gap-1.5">
+            <div className="border-b border-cq-stone-200 bg-white px-3.5 py-2 text-xs text-cq-ink flex items-center gap-1.5">
               <Building2 className="w-3.5 h-3.5 text-cq-brand shrink-0" />
               <span className="flex-1 min-w-0 truncate">
                 Asking about <span className="font-semibold">{centre.centreName}</span>
@@ -245,9 +242,9 @@ export const AskCareQAssistant: React.FC = () => {
                       ))}
                     </div>
                   )}
-                  {!isUser && msg.notice && <p className="text-[11px] text-cq-soft mt-1 px-1">{msg.notice}</p>}
+                  {!isUser && msg.notice && <p className="text-xs text-cq-soft mt-1 px-1">{msg.notice}</p>}
                   {!isUser && <AiFallbackNote aiMode={msg.aiMode} className="mt-1 px-1" />}
-                  <span className="text-[10px] text-cq-stone-400 mt-1 px-1">{msg.timestamp}</span>
+                  <span className="text-xs text-cq-stone-400 mt-1 px-1">{msg.timestamp}</span>
                 </div>
               );
             })}
@@ -263,7 +260,7 @@ export const AskCareQAssistant: React.FC = () => {
 
           {/* Suggested Quick Prompts */}
           <div className="p-2 border-t border-cq-stone-200 bg-white">
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] no-scrollbar">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
               {suggestions.map((q) => (
                 <button
                   key={q}
