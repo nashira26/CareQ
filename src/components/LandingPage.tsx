@@ -3,7 +3,7 @@ import { CentreCounts } from './CentreCounts';
 import { ArrowRight, ShieldCheck, FileText, CheckCheck, Lock, Check } from 'lucide-react';
 import { SpotNeighbourhood, SpotChecklist, SpotJourney, SpotCentre } from './ui/Illustrations';
 import { LogoFull } from './Logo';
-import { HouseIllustration } from './ui/CareUI';
+import { HeroPhoto, preloadHeroPhoto } from './ui/HeroPhoto';
 
 export interface LandingPageProps {
   onGetStarted: () => void;
@@ -18,6 +18,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onOpenTrust,
   onRegisterCentre,
 }) => {
+  preloadHeroPhoto(); // the hero photo is the largest thing above the fold
   const scrollToHowItWorks = () => {
     const el = document.getElementById('how-it-works');
     if (el) {
@@ -116,11 +117,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <CentreCounts className="mt-8" compact />
           </div>
 
-          <div className="w-full max-w-[540px] mx-auto lg:max-w-none">
-            <div className="rounded-3xl overflow-hidden border border-mint-line">
-              <HouseIllustration className="w-full h-auto" />
-            </div>
-          </div>
+          {/* Hero photo: above the text on phones */}
+          <HeroPhoto priority className="w-full max-w-[540px] mx-auto lg:max-w-none order-first sm:order-none" />
         </section>
 
         {/* 2. PROBLEM & STATS SECTION */}

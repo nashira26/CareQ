@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { LogoFull } from './Logo';
 import { ResetDemo } from './ResetDemo';
-import { HouseIllustration } from './ui/CareUI';
+import { HeroPhoto } from './ui/HeroPhoto';
 import { CentreCounts } from './CentreCounts';
 import { isValidEmail, MIN_PASSWORD_LENGTH, Child } from '../lib/family';
 
@@ -168,7 +168,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       {/* Main Grid: Left hero column, Right login card */}
       <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 lg:py-14 grid lg:grid-cols-2 gap-10 lg:gap-16 items-start flex-1">
         {/* LEFT COLUMN (hero) */}
-        <div className="lg:pt-6">
+        <div className="lg:pt-6 flex flex-col">
           {/* 1. Pill */}
           <p className="text-sm font-bold text-coral-ink">For families &amp; the people who care</p>
 
@@ -184,14 +184,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             One shared place to find child care, follow applications, and keep the conversation going.
           </p>
 
-          {/* 4. Illustration */}
-          <div className="mt-8 w-full lg:max-w-[520px] rounded-3xl overflow-hidden border border-mint-line relative hidden sm:block">
-            <HouseIllustration />
-            <div className="absolute left-4 bottom-4 bg-white rounded-xl shadow-md px-4 py-2.5 text-sm text-ink flex items-center gap-2 -rotate-2">
+          {/* 4. Hero photo (lazy here; preloaded on the landing page). Above the text on phones. */}
+          <HeroPhoto className="mb-6 sm:mb-0 sm:mt-8 w-full lg:max-w-[520px] order-first sm:order-none">
+            <div className="absolute left-4 bottom-4 bg-white rounded-xl shadow-md px-4 py-2.5 text-sm text-ink items-center gap-2 -rotate-2 hidden sm:flex">
               <Check className="w-4 h-4 text-leaf-ink shrink-0" aria-hidden="true" />
               <span className="font-semibold">Parents &amp; centres, on the same page.</span>
             </div>
-          </div>
+          </HeroPhoto>
 
           {/* 5. Stat Row: Ontario and the Toronto centres in CareQ */}
           <CentreCounts className="mt-8" compact />
