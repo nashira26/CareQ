@@ -54,12 +54,12 @@ export const CentreMessages: React.FC<CentreMessagesProps> = ({
         {centreApps.length === 0 ? (
           <div className="py-10 flex flex-col items-center gap-3 text-center">
             <IconTile icon={Heart} tone="sage" />
-            <p className="text-sm font-semibold text-[#173F42]">
+            <p className="text-sm font-semibold text-cq-ink">
               No families to message yet.
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-[#E7E4DA]">
+          <div className="divide-y divide-cq-line">
             {centreApps.map((app) => {
               const convKey = conversationKey(singleCentre.id, app.childId);
               const thread = conversations[convKey] || [];
@@ -67,31 +67,31 @@ export const CentreMessages: React.FC<CentreMessagesProps> = ({
 
               return (
                 <div key={app.id} className="py-6 flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-[#E4ECE1] border border-[#D9E4D3] text-[11px] font-bold text-[#4E7A5A] flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-cq-sage border border-cq-sage-line-2 text-[11px] font-bold text-cq-sage-ink flex items-center justify-center shrink-0">
                     {getInitials(app.parentName)}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="truncate">
-                      <span className="text-sm font-bold text-[#173F42]">
+                      <span className="text-sm font-bold text-cq-ink">
                         {app.parentName}
                       </span>
-                      <span className="text-[11px] text-[#7A8A84]">
+                      <span className="text-[11px] text-cq-soft">
                         {' · '}
                         {app.childName}
                       </span>
                     </div>
-                    <p className="text-sm text-[#4E7A5A] truncate mt-0.5">
+                    <p className="text-sm text-cq-sage-ink truncate mt-0.5">
                       {lastMessage
                         ? lastMessage.text
                         : 'No messages yet. Start a conversation.'}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-[#7A8A84]">
+                      <span className="text-[10px] text-cq-soft">
                         {app.id} · {app.status}
                       </span>
                       {lastMessage?.aiAssisted && (
-                        <span className="rounded-full bg-[#ECE8F5] text-[#6B5B95] text-[10px] font-semibold px-2 py-0.5">
+                        <span className="rounded-full bg-cq-lilac text-cq-lilac-ink text-[10px] font-semibold px-2 py-0.5">
                           AI-assisted draft
                         </span>
                       )}

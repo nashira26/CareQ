@@ -16,13 +16,13 @@ export const AskAboutCentre: React.FC<{ centreId: string; centreName: string; hi
 }) => {
   const hasDocuments = useHasDocuments(centreId);
   if (!coverageFor(centreId) && !hasDocuments) {
-    return hideWhenUncovered ? null : <p className={`text-[11px] text-[#7A8A84] ${className}`}>No published documents for this centre yet.</p>;
+    return hideWhenUncovered ? null : <p className={`text-[11px] text-cq-soft ${className}`}>No published documents for this centre yet.</p>;
   }
   return (
     <button
       type="button"
       onClick={() => openAskCareQ({ centreId, centreName })}
-      className={`inline-flex items-center gap-1 text-[11px] font-semibold text-[#0B4A52] hover:underline cursor-pointer ${className}`}
+      className={`inline-flex items-center gap-1 text-[11px] font-semibold text-cq-brand hover:underline cursor-pointer ${className}`}
     >
       <MessageCircleQuestion className="w-3.5 h-3.5" />
       Ask about this centre

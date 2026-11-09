@@ -1,72 +1,148 @@
 @import "tailwindcss";
 
-@layer base {
-  :root {
-    --primary: #0B4A52;
-    --secondary: #45B5A5;
-    --accent: #F9BE2F;
-    --surface-bg: #F7F8F7;
-    --cq-bg: #FAF9F4;
-    --cq-surface: #FFFFFF;
-    --cq-line: #E7E4DA;
-    --cq-ink: #173F42;
-    --cq-muted: #5B6B66;
-    --cq-soft: #7A8A84;
-    --cq-primary: #0B4A52;
-    --cq-sage: #E4ECE1;
-    --cq-sage-ink: #4E7A5A;
-    --cq-sand: #F3EEE3;
-    --cq-band: #F3EBDD;
-    --cq-input: #FBFAF3;
-    --cq-input-line: #E8E4D6;
-  }
+@theme static {
+  /* Phase 0: every colour the app used, as named tokens with their exact previous values.
+     Phase 1 re-points these at the new CareQ palette. */
+  /* Brand face: body, headings, landing and auth. The app shell uses Tailwind's default font-sans (system stack). */
+  --font-brand: 'Manrope', system-ui, sans-serif;
+  /* Landing and auth pages (previously an inline style with this exact fallback) */
+  --font-brand-page: Manrope, sans-serif;
+  --color-cq-brand: #0B4A52;
+  --color-cq-brand-hover: #08383E;
+  --color-cq-brand-ink: #1E4A4E;
+  --color-cq-ink: #173F42;
+  --color-cq-ink-body: #1E3F42;
+  --color-cq-ink-2: #3F5250;
+  --color-cq-muted: #5B6B66;
+  --color-cq-muted-2: #6E7C77;
+  --color-cq-soft: #7A8A84;
+  --color-cq-faint: #9AA59F;
+  --color-cq-faint-2: #B9C4C0;
+  --color-cq-grey-sage: #6E8C7E;
+  --color-cq-line: #E7E4DA;
+  --color-cq-line-input: #E8E4D6;
+  --color-cq-line-warm: #E7DFCF;
+  --color-cq-line-sand: #E3DAC7;
+  --color-cq-line-sand-2: #D8CFBC;
+  --color-cq-page: #FAF9F4;
+  --color-cq-input: #FBFAF3;
+  --color-cq-surface-grey: #F7F8F7;
+  --color-cq-surface-sage: #F4F6F1;
+  --color-cq-surface-stone: #F3F2EE;
+  --color-cq-surface-stone-2: #F3F1EA;
+  --color-cq-surface-cream: #FFFCF4;
+  --color-cq-sage: #E4ECE1;
+  --color-cq-sage-line: #CBD9C6;
+  --color-cq-sage-line-2: #D9E4D3;
+  --color-cq-sage-200: #C9DCC2;
+  --color-cq-sage-250: #CFE0C9;
+  --color-cq-sage-150: #DCE7DA;
+  --color-cq-sage-100: #E6EEE3;
+  --color-cq-sage-75: #EEF3EA;
+  --color-cq-sage-50: #F1F6EE;
+  --color-cq-sage-accent: #9DBB86;
+  --color-cq-sage-ink: #4E7A5A;
+  --color-cq-sage-ink-4: #2F5E45;
+  --color-cq-sage-ink-5: #4F7A5E;
+  --color-cq-secondary: #45B5A5;
+  --color-cq-secondary-50: #F0FDFA;
+  --color-cq-sand: #F3EEE3;
+  --color-cq-band: #F3EBDD;
+  --color-cq-sand-50: #FBF6EA;
+  --color-cq-sand-25: #FBF3E6;
+  --color-cq-sand-line: #E7D6A8;
+  --color-cq-sand-line-2: #EADBB8;
+  --color-cq-sand-200: #EFE3CC;
+  --color-cq-sand-400: #C9B98A;
+  --color-cq-sand-500: #B9933E;
+  --color-cq-sand-500b: #B38F3F;
+  --color-cq-sand-600: #A06C2D;
+  --color-cq-sand-ink-2: #8A6A3B;
+  --color-cq-sand-ink: #5B4A2E;
+  --color-cq-accent: #F9BE2F;
+  --color-cq-sun-deep: #E0A31A;
+  --color-cq-cream-amber-2: #FFF4D6;
+  --color-cq-cream-amber: #FDF3DD;
+  --color-cq-amber-line: #F2D9A0;
+  --color-cq-amber-ink: #8A6411;
+  --color-cq-amber-ink-2: #7A5A00;
+  --color-cq-amber-ink-4: #451A03;
+  --color-cq-peach-25: #FDF6F2;
+  --color-cq-peach: #FBE9E1;
+  --color-cq-peach-line: #F2D3C4;
+  --color-cq-peach-ink: #C46E4E;
+  --color-cq-rust: #A4543A;
+  --color-cq-rust-deep: #8C4530;
+  --color-cq-lilac-50: #EFEAF7;
+  --color-cq-lilac: #ECE8F5;
+  --color-cq-lilac-line: #D9D0EC;
+  --color-cq-lilac-line-2: #D6CFE8;
+  --color-cq-lilac-line-3: #D8D2E7;
+  --color-cq-lilac-ink: #6B5B95;
+  --color-cq-lilac-ink-2: #5A4A85;
+  --color-cq-sky: #E8F1F4;
+  --color-cq-sky-line: #CFE0E6;
+  --color-cq-sky-ink: #3F6E7E;
 
+  /* Former Tailwind palette classes (stone-*, teal-*, ...), same values as Tailwind's defaults */
+  --color-cq-amber-100: oklch(96.2% 0.059 95.617);
+  --color-cq-amber-200: oklch(92.4% 0.12 95.746);
+  --color-cq-amber-300: oklch(87.9% 0.169 91.605);
+  --color-cq-amber-400: oklch(82.8% 0.189 84.429);
+  --color-cq-amber-50: oklch(98.7% 0.022 95.277);
+  --color-cq-amber-500: oklch(76.9% 0.188 70.08);
+  --color-cq-amber-600: oklch(66.6% 0.179 58.318);
+  --color-cq-amber-700: oklch(55.5% 0.163 48.998);
+  --color-cq-amber-800: oklch(47.3% 0.137 46.201);
+  --color-cq-amber-900: oklch(41.4% 0.112 45.904);
+  --color-cq-amber-950: oklch(27.9% 0.077 45.635);
+  --color-cq-emerald-100: oklch(95% 0.052 163.051);
+  --color-cq-emerald-200: oklch(90.5% 0.093 164.15);
+  --color-cq-emerald-300: oklch(84.5% 0.143 164.978);
+  --color-cq-emerald-50: oklch(97.9% 0.021 166.113);
+  --color-cq-emerald-500: oklch(69.6% 0.17 162.48);
+  --color-cq-emerald-600: oklch(59.6% 0.145 163.225);
+  --color-cq-emerald-700: oklch(50.8% 0.118 165.612);
+  --color-cq-emerald-800: oklch(43.2% 0.095 166.913);
+  --color-cq-emerald-900: oklch(37.8% 0.077 168.94);
+  --color-cq-orange-50: oklch(98% 0.016 73.684);
+  --color-cq-rose-200: oklch(89.2% 0.058 10.001);
+  --color-cq-rose-50: oklch(96.9% 0.015 12.422);
+  --color-cq-rose-500: oklch(64.5% 0.246 16.439);
+  --color-cq-rose-600: oklch(58.6% 0.253 17.585);
+  --color-cq-rose-700: oklch(51.4% 0.222 16.935);
+  --color-cq-rose-900: oklch(41% 0.159 10.272);
+  --color-cq-stone-100: oklch(97% 0.001 106.424);
+  --color-cq-stone-200: oklch(92.3% 0.003 48.717);
+  --color-cq-stone-300: oklch(86.9% 0.005 56.366);
+  --color-cq-stone-400: oklch(70.9% 0.01 56.259);
+  --color-cq-stone-50: oklch(98.5% 0.001 106.423);
+  --color-cq-stone-500: oklch(55.3% 0.013 58.071);
+  --color-cq-stone-600: oklch(44.4% 0.011 73.639);
+  --color-cq-stone-700: oklch(37.4% 0.01 67.558);
+  --color-cq-stone-800: oklch(26.8% 0.007 34.298);
+  --color-cq-stone-900: oklch(21.6% 0.006 56.043);
+  --color-cq-stone-950: oklch(14.7% 0.004 49.25);
+  --color-cq-teal-100: oklch(95.3% 0.051 180.801);
+  --color-cq-teal-200: oklch(91% 0.096 180.426);
+  --color-cq-teal-300: oklch(85.5% 0.138 181.071);
+  --color-cq-teal-400: oklch(77.7% 0.152 181.912);
+  --color-cq-teal-50: oklch(98.4% 0.014 180.72);
+  --color-cq-teal-600: oklch(60% 0.118 184.704);
+  --color-cq-teal-700: oklch(51.1% 0.096 186.391);
+  --color-cq-teal-800: oklch(43.7% 0.078 188.216);
+  --color-cq-teal-900: oklch(38.6% 0.063 188.416);
+}
+
+@layer base {
   body {
-    background-color: #FAF9F4;
-    color: #1E3F42;
-    font-family: 'Manrope', system-ui, sans-serif;
+    background-color: var(--color-cq-page);
+    color: var(--color-cq-ink-body);
+    font-family: var(--font-brand);
   }
 
   h1, h2, h3, h4, h5, h6 {
-    color: #173F42;
-    font-family: 'Manrope', system-ui, sans-serif;
+    color: var(--color-cq-ink);
+    font-family: var(--font-brand);
   }
-}
-
-/* CareQ Brand Button and Color Utility classes */
-.btn-primary {
-  background-color: #0B4A52;
-  color: #ffffff;
-  transition: all 0.15s ease-in-out;
-}
-.btn-primary:hover {
-  background-color: #08383e;
-}
-
-.text-primary-brand {
-  color: #0B4A52;
-}
-
-.bg-primary-brand {
-  background-color: #0B4A52;
-}
-
-.text-secondary-brand {
-  color: #45B5A5;
-}
-
-.bg-secondary-brand {
-  background-color: #45B5A5;
-}
-
-.border-secondary-brand {
-  border-color: #45B5A5;
-}
-
-.bg-accent-brand {
-  background-color: #F9BE2F;
-}
-
-.text-accent-brand {
-  color: #5B3A00;
 }

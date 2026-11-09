@@ -162,35 +162,35 @@ export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, onRegis
     return (
       <OnboardingShell onLogout={onLogout}>
         <Card className="space-y-4 text-center py-10">
-          <CheckCircle2 className="w-10 h-10 mx-auto text-[#4E7A5A]" />
-          <h1 className="text-2xl font-bold text-[#173F42]">{registered.name} is registered</h1>
-          <p className="text-sm text-[#5B6B66] max-w-md mx-auto">
+          <CheckCircle2 className="w-10 h-10 mx-auto text-cq-sage-ink" />
+          <h1 className="text-2xl font-bold text-cq-ink">{registered.name} is registered</h1>
+          <p className="text-sm text-cq-muted max-w-md mx-auto">
             Families can now find your centre and apply. It is shown as “{licenceLabel(registered)}”, with an approximate
             location from your {registered.registration!.locationSource}.
           </p>
           {verified && (
-            <p className="inline-flex items-center gap-1.5 rounded-lg border border-[#CBD9C6] bg-[#EEF3EA] px-3 py-1.5 text-xs text-[#173F42]">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#4E7A5A]" />
+            <p className="inline-flex items-center gap-1.5 rounded-lg border border-cq-sage-line bg-cq-sage-75 px-3 py-1.5 text-xs text-cq-ink">
+              <ShieldCheck className="w-3.5 h-3.5 text-cq-sage-ink" />
               Licence matched to “{registered.registration!.licenceVerified!.matchedName}” ({registered.registration!.licenceVerified!.matchedBy})
             </p>
           )}
 
           {uploadsAvailable && (
-            <div className="max-w-md mx-auto text-left rounded-xl border border-[#E7E4DA] bg-[#FAF9F4] p-4 space-y-2">
-              <p className="text-sm font-semibold text-[#173F42]">Upload your documents</p>
-              <p className="text-[11px] text-[#5B6B66]">
+            <div className="max-w-md mx-auto text-left rounded-xl border border-cq-line bg-cq-page p-4 space-y-2">
+              <p className="text-sm font-semibold text-cq-ink">Upload your documents</p>
+              <p className="text-[11px] text-cq-muted">
                 Your parent handbook or admission policy (PDF, HTML or Word, up to 6 MB). CareQ reads it so parents get answers and a checklist
                 with quotes from it. The file itself is not kept.
               </p>
-              <label className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-[#0B4A52] text-[#0B4A52] bg-white hover:bg-[#0B4A52]/5 text-sm font-semibold cursor-pointer">
+              <label className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-cq-brand text-cq-brand bg-white hover:bg-cq-brand/5 text-sm font-semibold cursor-pointer">
                 {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileUp className="w-4 h-4" />}
                 {uploading ? 'Reading your document…' : 'Choose a file'}
                 <input type="file" accept=".pdf,.html,.htm,.docx" className="sr-only" disabled={uploading} onChange={handleUpload} />
               </label>
-              {uploadError && <p role="alert" className="text-[11px] font-medium text-[#A4543A]">{uploadError}</p>}
+              {uploadError && <p role="alert" className="text-[11px] font-medium text-cq-rust">{uploadError}</p>}
               {uploaded.map((d) => (
-                <p key={d.docKey} className="text-[11px] text-[#173F42] flex items-start gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#4E7A5A] shrink-0 mt-0.5" />
+                <p key={d.docKey} className="text-[11px] text-cq-ink flex items-start gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-cq-sage-ink shrink-0 mt-0.5" />
                   <span>
                     <span className="font-semibold">{d.docTitle}</span>: {d.pages ? `${d.pages} pages, ` : ''}
                     {d.chunks} passages{d.keywordOnly ? ` (${d.keywordOnly} by keyword search for now)` : ''}
@@ -215,7 +215,7 @@ export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, onRegis
             </GhostButton>
           </div>
           {registered.registration!.policyText && (
-            <p className="text-[11px] text-[#7A8A84]">The AI suggests a checklist from your policy; you confirm it before families see it.</p>
+            <p className="text-[11px] text-cq-soft">The AI suggests a checklist from your policy; you confirm it before families see it.</p>
           )}
         </Card>
       </OnboardingShell>
@@ -226,10 +226,10 @@ export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, onRegis
     <OnboardingShell onLogout={onLogout}>
       <Card className="space-y-5">
         <div className="flex items-start gap-3">
-          <Building2 className="w-6 h-6 text-[#4E7A5A] mt-1 shrink-0" />
+          <Building2 className="w-6 h-6 text-cq-sage-ink mt-1 shrink-0" />
           <div>
-            <h1 className="text-2xl font-bold text-[#173F42]">Register your centre</h1>
-            <p className="text-sm text-[#5B6B66] mt-1">
+            <h1 className="text-2xl font-bold text-cq-ink">Register your centre</h1>
+            <p className="text-sm text-cq-muted mt-1">
               Your centre will appear in CareQ search as “Self-registered · not verified”, or “Licensed · verified against Ontario open data” if your licence number and postal code (or name) match the Ontario open data. Demo only: saved in this browser.
             </p>
           </div>
@@ -319,30 +319,30 @@ export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, onRegis
           </div>
 
           <div>
-            <p className="block text-sm font-medium text-[#3F5250] mb-1.5">
-              Centre photo <span className="text-xs font-normal text-[#7A8A84]">(optional)</span>
+            <p className="block text-sm font-medium text-cq-ink-2 mb-1.5">
+              Centre photo <span className="text-xs font-normal text-cq-soft">(optional)</span>
             </p>
             <div className="flex flex-wrap items-center gap-3">
               {photo ? (
                 <div className="relative">
-                  <img src={photo} alt="Centre photo preview" className="h-24 w-36 object-cover rounded-xl border border-[#E7E4DA]" />
+                  <img src={photo} alt="Centre photo preview" className="h-24 w-36 object-cover rounded-xl border border-cq-line" />
                   <button
                     type="button"
                     onClick={() => setPhoto(undefined)}
                     aria-label="Remove photo"
-                    className="absolute -top-2 -right-2 rounded-full bg-white border border-[#E7E4DA] p-1 cursor-pointer"
+                    className="absolute -top-2 -right-2 rounded-full bg-white border border-cq-line p-1 cursor-pointer"
                   >
                     <X className="w-3 h-3" />
                   </button>
                 </div>
               ) : null}
-              <label className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-[#E7E4DA] bg-white text-sm font-semibold text-[#173F42] hover:bg-[#FAF9F4] cursor-pointer focus-within:ring-2 focus-within:ring-[#45B5A5]/40">
+              <label className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-cq-line bg-white text-sm font-semibold text-cq-ink hover:bg-cq-page cursor-pointer focus-within:ring-2 focus-within:ring-cq-secondary/40">
                 <ImagePlus className="w-4 h-4" /> {photo ? 'Change photo' : 'Add a photo'}
                 <input type="file" accept="image/*" onChange={handlePhoto} className="sr-only" />
               </label>
             </div>
-            <p className="mt-1 text-[11px] text-[#7A8A84]">Image only. Resized and kept in this browser; shown as “Photo provided by the centre”.</p>
-            {photoError && <p className="mt-1 text-xs font-medium text-[#A4543A]">{photoError}</p>}
+            <p className="mt-1 text-[11px] text-cq-soft">Image only. Resized and kept in this browser; shown as “Photo provided by the centre”.</p>
+            {photoError && <p className="mt-1 text-xs font-medium text-cq-rust">{photoError}</p>}
           </div>
 
           <Field
@@ -356,7 +356,7 @@ export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, onRegis
           </Field>
 
           {submitError && (
-            <p role="alert" className="text-sm font-medium text-[#A4543A]">
+            <p role="alert" className="text-sm font-medium text-cq-rust">
               {submitError}
             </p>
           )}

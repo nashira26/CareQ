@@ -350,15 +350,15 @@ A signed Photography & Media Consent Form is required for classroom developmenta
     <div className="space-y-6 animate-fadeIn">
       {/* If activeTab is given, render lastActionMessage banner at the top if set */}
       {lastActionMessage && (
-        <div className="rounded-2xl bg-[#EEF3EA] border border-[#CBD9C6] px-5 py-4 text-sm text-[#173F42] flex items-center justify-between gap-3 animate-fade-in shadow-2xs">
+        <div className="rounded-2xl bg-cq-sage-75 border border-cq-sage-line px-5 py-4 text-sm text-cq-ink flex items-center justify-between gap-3 animate-fade-in shadow-2xs">
           <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-4 h-4 text-[#4E7A5A] shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-cq-sage-ink shrink-0" />
             <span className="font-semibold">{lastActionMessage}</span>
           </div>
           <button
             type="button"
             onClick={() => setLastActionMessage(null)}
-            className="text-[#7A8A84] hover:text-[#173F42] text-xs p-1 cursor-pointer"
+            className="text-cq-soft hover:text-cq-ink text-xs p-1 cursor-pointer"
             aria-label="Dismiss message"
           >
             ✕
@@ -383,19 +383,19 @@ A signed Photography & Media Consent Form is required for classroom developmenta
 
           {/* 3. Toolbar Row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-2">
-            <div className="text-sm text-[#3F5250]">
+            <div className="text-sm text-cq-ink-2">
               <span className="font-bold">{centreApplications.length} applications</span>
               {' · '}
-              <span className="text-[#4E7A5A] font-semibold">{singleCentre.name}</span>
+              <span className="text-cq-sage-ink font-semibold">{singleCentre.name}</span>
             </div>
 
             <div className="flex items-center gap-2 self-start sm:self-auto">
-              <span className="text-xs text-[#5B6B66] font-medium">Status</span>
+              <span className="text-xs text-cq-muted font-medium">Status</span>
               <select
                 value={appSubFilter}
                 onChange={(e) => setAppSubFilter(e.target.value as any)}
                 aria-label="Filter applications by status"
-                className="h-10 rounded-xl border border-[#E7E4DA] bg-white px-3 text-xs text-[#173F42] focus:outline-hidden cursor-pointer"
+                className="h-10 rounded-xl border border-cq-line bg-white px-3 text-xs text-cq-ink focus:outline-hidden cursor-pointer"
               >
                 <option value="all">All statuses</option>
                 <option value="review">Needs review</option>
@@ -408,13 +408,13 @@ A signed Photography & Media Consent Form is required for classroom developmenta
           {/* 4. Table in Card p-0 overflow-hidden */}
           {centreApplications.length === 0 ? (
             <Card className="py-12 text-center space-y-1.5">
-              <p className="text-sm font-semibold text-[#173F42]">No applications yet</p>
-              <p className="text-xs text-[#7A8A84] max-w-sm mx-auto">
+              <p className="text-sm font-semibold text-cq-ink">No applications yet</p>
+              <p className="text-xs text-cq-soft max-w-sm mx-auto">
                 When families apply to {singleCentre.name} through CareQ, their applications will appear here.
               </p>
             </Card>
           ) : filteredApps.length === 0 ? (
-            <Card className="py-12 text-center text-xs text-[#7A8A84]">
+            <Card className="py-12 text-center text-xs text-cq-soft">
               No applications match this status filter.
             </Card>
           ) : (
@@ -423,7 +423,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
               <div className="hidden md:block">
                 <Card className="p-0 overflow-hidden shadow-2xs">
                   {/* Table Header Row */}
-                  <div className="grid grid-cols-[2fr_1.4fr_1fr_1fr_1fr] gap-4 items-center bg-[#FAF9F4] border-b border-[#E7E4DA] px-6 py-4">
+                  <div className="grid grid-cols-[2fr_1.4fr_1fr_1fr_1fr] gap-4 items-center bg-cq-page border-b border-cq-line px-6 py-4">
                     <Eyebrow className="text-[10px]">CHILD / FAMILY</Eyebrow>
                     <Eyebrow className="text-[10px]">PROGRAM / START</Eyebrow>
                     <Eyebrow className="text-[10px]">STATUS</Eyebrow>
@@ -432,7 +432,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                   </div>
 
                   {/* Rows */}
-                  <div className="divide-y divide-[#E7E4DA]">
+                  <div className="divide-y divide-cq-line">
                     {filteredApps.map((app) => {
                       const isExpanded = expandedAppId === app.id;
                       const hasPosition =
@@ -449,20 +449,20 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                           <div
                             className={`grid grid-cols-[2fr_1.4fr_1fr_1fr_1fr] gap-4 items-center px-6 py-6 transition-colors ${
                               isExpanded
-                                ? 'bg-[#FAF9F4]'
-                                : 'hover:bg-[#FAF9F4]/60'
+                                ? 'bg-cq-page'
+                                : 'hover:bg-cq-page/60'
                             }`}
                           >
                             {/* Child / Family */}
                             <div className="min-w-0 pr-2">
-                              <div className="text-sm font-bold text-[#173F42] truncate">
+                              <div className="text-sm font-bold text-cq-ink truncate">
                                 {app.childName}
                               </div>
-                              <div className="text-[11px] text-[#4E7A5A] font-medium mt-0.5 truncate">
+                              <div className="text-[11px] text-cq-sage-ink font-medium mt-0.5 truncate">
                                 {app.parentName} · {app.id}
                               </div>
                               {app.submittedAt && (
-                                <div className="text-[11px] text-[#7A8A84] mt-0.5">
+                                <div className="text-[11px] text-cq-soft mt-0.5">
                                   Submitted {app.submittedAt}
                                 </div>
                               )}
@@ -470,10 +470,10 @@ A signed Photography & Media Consent Form is required for classroom developmenta
 
                             {/* Program / Start */}
                             <div>
-                              <div className="text-xs font-semibold text-[#3F5250]">
+                              <div className="text-xs font-semibold text-cq-ink-2">
                                 {getAgeGroup(app.childAgeMonths)}
                               </div>
-                              <div className="text-[11px] text-[#7A8A84] mt-0.5">
+                              <div className="text-[11px] text-cq-soft mt-0.5">
                                 {app.careType} · {app.preferredStartDate}
                               </div>
                             </div>
@@ -487,17 +487,17 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                             <div>
                               {hasPosition ? (
                                 <div>
-                                  <div className="text-2xl font-bold text-[#4E7A5A] leading-tight">
+                                  <div className="text-2xl font-bold text-cq-sage-ink leading-tight">
                                     #{app.waitlistPosition}
                                   </div>
                                   {app.waitlistEstimate && (
-                                    <div className="text-[10px] text-[#7A8A84] mt-0.5 leading-tight">
+                                    <div className="text-[10px] text-cq-soft mt-0.5 leading-tight">
                                       Estimate: {app.waitlistEstimate}
                                     </div>
                                   )}
                                 </div>
                               ) : (
-                                <div className="text-xs text-[#7A8A84]">Not reported</div>
+                                <div className="text-xs text-cq-soft">Not reported</div>
                               )}
                             </div>
 
@@ -516,10 +516,10 @@ A signed Photography & Media Consent Form is required for classroom developmenta
 
                           {/* Expanded Review Panel */}
                           {isExpanded && (
-                            <div className="bg-[#FAF9F4] border-t border-[#E7E4DA] px-6 py-5 space-y-4 animate-in fade-in-50 duration-150">
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E7E4DA]">
-                                <div className="text-xs text-[#5B6B66]">
-                                  <span className="font-bold text-[#173F42]">
+                            <div className="bg-cq-page border-t border-cq-line px-6 py-5 space-y-4 animate-in fade-in-50 duration-150">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-cq-line">
+                                <div className="text-xs text-cq-muted">
+                                  <span className="font-bold text-cq-ink">
                                     {app.childName} ({app.childAgeMonths} mos)
                                   </span>
                                   {' · '}
@@ -532,7 +532,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                                 </div>
 
                                 {app.parentNotes && (
-                                  <p className="text-xs italic text-[#5B6B66] bg-white px-3 py-1.5 rounded-lg border border-[#E7E4DA]">
+                                  <p className="text-xs italic text-cq-muted bg-white px-3 py-1.5 rounded-lg border border-cq-line">
                                     "{app.parentNotes}"
                                   </p>
                                 )}
@@ -541,7 +541,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                               {/* Uploaded Documents Chips */}
                               {Object.keys(app.uploadedDocuments || {}).length > 0 && (
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <span className="text-[11px] font-semibold text-[#5B6B66]">
+                                  <span className="text-[11px] font-semibold text-cq-muted">
                                     Submitted documents:
                                   </span>
                                   {Object.entries(app.uploadedDocuments || {}).map(
@@ -550,14 +550,14 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                                         key={reqName}
                                         type="button"
                                         onClick={() => setSelectedAppForDetails(app)}
-                                        className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white hover:bg-[#E4ECE1] text-[#173F42] border border-[#CBD9C6] px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                                        className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white hover:bg-cq-sage text-cq-ink border border-cq-sage-line px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
                                         title={`Inspect ${doc.fileName}`}
                                       >
-                                        <FileCheck2 className="w-3.5 h-3.5 text-[#4E7A5A]" />
+                                        <FileCheck2 className="w-3.5 h-3.5 text-cq-sage-ink" />
                                         <span className="truncate max-w-[140px]">
                                           {reqName}
                                         </span>
-                                        <Eye className="w-3 h-3 text-[#7A8A84]" />
+                                        <Eye className="w-3 h-3 text-cq-soft" />
                                       </button>
                                     )
                                   )}
@@ -570,7 +570,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                                   onClick={() => setSelectedAppForDetails(app)}
                                   className="h-9 text-xs"
                                 >
-                                  <Eye className="w-3.5 h-3.5 mr-1 text-[#0B4A52]" />
+                                  <Eye className="w-3.5 h-3.5 mr-1 text-cq-brand" />
                                   <span>View application &amp; docs</span>
                                 </GhostButton>
 
@@ -578,7 +578,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                                   onClick={() => onOpenConversation(app)}
                                   className="h-9 text-xs"
                                 >
-                                  <MessageSquare className="w-3.5 h-3.5 mr-1 text-[#0B4A52]" />
+                                  <MessageSquare className="w-3.5 h-3.5 mr-1 text-cq-brand" />
                                   <span>Message family</span>
                                 </GhostButton>
 
@@ -648,14 +648,14 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                     <Card key={app.id} className="p-4 space-y-3">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <div className="text-sm font-bold text-[#173F42]">
+                          <div className="text-sm font-bold text-cq-ink">
                             {app.childName}
                           </div>
-                          <div className="text-[11px] text-[#4E7A5A] font-medium mt-0.5">
+                          <div className="text-[11px] text-cq-sage-ink font-medium mt-0.5">
                             {app.parentName} · {app.id}
                           </div>
                           {app.submittedAt && (
-                            <div className="text-[10px] text-[#7A8A84] mt-0.5">
+                            <div className="text-[10px] text-cq-soft mt-0.5">
                               Submitted {app.submittedAt}
                             </div>
                           )}
@@ -663,41 +663,41 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                         <StatusBadge status={app.status} size="sm" />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-[#E7E4DA]">
+                      <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-cq-line">
                         <div>
-                          <span className="text-[10px] uppercase font-semibold text-[#5B6B66] block">
+                          <span className="text-[10px] uppercase font-semibold text-cq-muted block">
                             Program
                           </span>
-                          <span className="font-semibold text-[#173F42]">
+                          <span className="font-semibold text-cq-ink">
                             {getAgeGroup(app.childAgeMonths)}
                           </span>
-                          <span className="block text-[11px] text-[#7A8A84]">
+                          <span className="block text-[11px] text-cq-soft">
                             {app.careType}
                           </span>
                         </div>
 
                         <div>
-                          <span className="text-[10px] uppercase font-semibold text-[#5B6B66] block">
+                          <span className="text-[10px] uppercase font-semibold text-cq-muted block">
                             Queue
                           </span>
                           {hasPosition ? (
                             <div>
-                              <span className="text-lg font-bold text-[#4E7A5A]">
+                              <span className="text-lg font-bold text-cq-sage-ink">
                                 #{app.waitlistPosition}
                               </span>
                               {app.waitlistEstimate && (
-                                <span className="block text-[10px] text-[#7A8A84]">
+                                <span className="block text-[10px] text-cq-soft">
                                   {app.waitlistEstimate}
                                 </span>
                               )}
                             </div>
                           ) : (
-                            <span className="text-xs text-[#7A8A84]">Not reported</span>
+                            <span className="text-xs text-cq-soft">Not reported</span>
                           )}
                         </div>
                       </div>
 
-                      <div className="pt-2 border-t border-[#E7E4DA] flex justify-end">
+                      <div className="pt-2 border-t border-cq-line flex justify-end">
                         <GhostButton
                           onClick={() => setExpandedAppId(isExpanded ? null : app.id)}
                           className="h-8 px-3 text-xs"
@@ -707,7 +707,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                       </div>
 
                       {isExpanded && (
-                        <div className="pt-3 border-t border-[#E7E4DA] space-y-3">
+                        <div className="pt-3 border-t border-cq-line space-y-3">
                           <div className="flex flex-wrap items-center gap-2">
                             <GhostButton
                               onClick={() => setSelectedAppForDetails(app)}
@@ -771,14 +771,14 @@ A signed Photography & Media Consent Form is required for classroom developmenta
           )}
 
           {/* 5. Footer Under Table */}
-          <div className="rounded-2xl border border-[#E7E4DA] bg-white p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6">
+          <div className="rounded-2xl border border-cq-line bg-white p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6">
             <div className="flex items-center gap-3">
               <IconTile icon={Heart} tone="sand" />
               <div>
-                <div className="text-sm font-semibold text-[#173F42]">
+                <div className="text-sm font-semibold text-cq-ink">
                   Positions are only shown to families after you save them.
                 </div>
-                <div className="text-[11px] text-[#7A8A84] mt-0.5">
+                <div className="text-[11px] text-cq-soft mt-0.5">
                   Centres hold authority over admissions ordering and reporting dates.
                 </div>
               </div>
@@ -804,34 +804,34 @@ A signed Photography & Media Consent Form is required for classroom developmenta
           {centreDocs && (
             <Card className="p-6 sm:p-7 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-lg font-bold text-[#173F42]">Load a published document</h3>
-                <span className="text-[11px] text-[#7A8A84]">Each requirement keeps its exact quote, page and document</span>
+                <h3 className="text-lg font-bold text-cq-ink">Load a published document</h3>
+                <span className="text-[11px] text-cq-soft">Each requirement keeps its exact quote, page and document</span>
               </div>
               {centreDocs.length === 0 ? (
-                <p className="text-xs text-[#7A8A84]">
+                <p className="text-xs text-cq-soft">
                   No published documents for this centre yet.
                   {singleCentre.registration ? ' Upload your handbook when you register, or paste your policy below.' : ' Paste your policy below.'}
                 </p>
               ) : (
                 <div className="space-y-2">
                   {centreDocs.map((d) => (
-                    <label key={d.docKey} className="flex items-start gap-2.5 rounded-xl border border-[#E7E4DA] p-3 cursor-pointer hover:bg-[#FAF9F4]">
+                    <label key={d.docKey} className="flex items-start gap-2.5 rounded-xl border border-cq-line p-3 cursor-pointer hover:bg-cq-page">
                       <input
                         type="radio"
                         name="centre-doc"
-                        className="mt-1 accent-[#0B4A52]"
+                        className="mt-1 accent-cq-brand"
                         checked={selectedDocKey === d.docKey}
                         onChange={() => setSelectedDocKey(d.docKey)}
                       />
                       <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-[#173F42]">{d.docTitle}</span>
-                        <span className="block text-[11px] text-[#7A8A84]">
+                        <span className="block text-sm font-semibold text-cq-ink">{d.docTitle}</span>
+                        <span className="block text-[11px] text-cq-soft">
                           {d.operatorName} · {d.pages ? `${d.pages} pages` : 'web page'} · {d.chunks} passages
                           {d.uploaded ? ' · uploaded by your centre, not verified' : ''}
                           {d.sourceNote && !d.uploaded && d.sourceNote !== 'Exact file' ? ` · ${d.sourceNote}` : ''}
                         </span>
                         {d.sourceUrl && (
-                          <a href={d.sourceUrl} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-[#0B4A52] hover:underline">
+                          <a href={d.sourceUrl} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-cq-brand hover:underline">
                             Source
                           </a>
                         )}
@@ -852,7 +852,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
             {/* LEFT Card: Your policy text */}
             <Card className="p-6 sm:p-7 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-[#173F42]">
+                <h3 className="text-lg font-bold text-cq-ink">
                   Your policy text
                 </h3>
                 <button
@@ -867,7 +867,7 @@ A Developmental History Questionnaire must be submitted for toddler program plac
 Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                     )
                   }
-                  className="text-[11px] font-semibold text-[#0B4A52] hover:underline cursor-pointer"
+                  className="text-[11px] font-semibold text-cq-brand hover:underline cursor-pointer"
                 >
                   Preset: Sample policy
                 </button>
@@ -878,7 +878,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                 value={policyInputText}
                 onChange={(e) => setPolicyInputText(e.target.value)}
                 placeholder="Paste centre policy text, handbook, or intake guidelines..."
-                className="h-72 rounded-xl border border-[#E8E4D6] bg-[#FBFAF3] p-4 text-sm leading-relaxed w-full focus:outline-hidden focus:border-[#45B5A5] focus:ring-2 focus:ring-[#45B5A5]/25 resize-none text-[#173F42]"
+                className="h-72 rounded-xl border border-cq-line-input bg-cq-input p-4 text-sm leading-relaxed w-full focus:outline-hidden focus:border-cq-secondary focus:ring-2 focus:ring-cq-secondary/25 resize-none text-cq-ink"
               />
 
               <div className="pt-2">
@@ -900,12 +900,12 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
 
             {/* RIGHT Card: Requirements found */}
             <Card className="p-6 sm:p-7 space-y-5">
-              <div className="flex items-center justify-between pb-3 border-b border-[#E7E4DA]">
+              <div className="flex items-center justify-between pb-3 border-b border-cq-line">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-bold text-[#173F42]">
+                  <h3 className="text-lg font-bold text-cq-ink">
                     Requirements found
                   </h3>
-                  <span className="rounded-md bg-[#E4ECE1] text-[#4E7A5A] text-xs px-2 py-0.5 font-semibold">
+                  <span className="rounded-md bg-cq-sage text-cq-sage-ink text-xs px-2 py-0.5 font-semibold">
                     {extractedRequirements ? extractedRequirements.length : 0}
                   </span>
                 </div>
@@ -929,7 +929,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                       return (
                         <div
                           key={index}
-                          className="rounded-xl border border-[#E7E4DA] p-4 space-y-2"
+                          className="rounded-xl border border-cq-line p-4 space-y-2"
                         >
                           <div className="flex items-start justify-between gap-3">
                             {/* Requirement title */}
@@ -940,7 +940,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                                     type="text"
                                     value={editingText}
                                     onChange={(e) => setEditingText(e.target.value)}
-                                    className="w-full text-sm font-semibold px-2.5 py-1 bg-white border border-[#0B4A52] rounded-lg focus:outline-hidden text-[#173F42]"
+                                    className="w-full text-sm font-semibold px-2.5 py-1 bg-white border border-cq-brand rounded-lg focus:outline-hidden text-cq-ink"
                                     autoFocus
                                   />
                                   <GhostButton
@@ -951,7 +951,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                                   </GhostButton>
                                 </div>
                               ) : (
-                                <span className="text-sm font-semibold text-[#173F42]">
+                                <span className="text-sm font-semibold text-cq-ink">
                                   {item.requirement}
                                 </span>
                               )}
@@ -973,7 +973,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                               )}
                               <GhostButton
                                 onClick={() => handleDeleteExtracted(index)}
-                                className="h-8 px-2.5 text-xs hover:text-rose-600"
+                                className="h-8 px-2.5 text-xs hover:text-cq-rose-600"
                                 title="Remove requirement"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -983,15 +983,15 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                           </div>
 
                           {/* Source sentence quote block */}
-                          <div className="border-l-2 border-[#C9DCC2] pl-3 text-xs italic text-[#5B6B66] mt-2">
+                          <div className="border-l-2 border-cq-sage-200 pl-3 text-xs italic text-cq-muted mt-2">
                             <Eyebrow className="text-[10px] not-italic mb-0.5">
                               {item.docTitle ? `From ${item.docTitle}, ${item.page}` : 'From your policy'}
                             </Eyebrow>
                             <span>"{item.sourceSentence}"</span>
                             {item.docTitle && (item.sourceUrl || item.sourceNote) && (
-                              <span className="block not-italic text-[10px] text-[#7A8A84] mt-0.5">
+                              <span className="block not-italic text-[10px] text-cq-soft mt-0.5">
                                 {item.sourceUrl && (
-                                  <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="font-semibold text-[#0B4A52] hover:underline">
+                                  <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="font-semibold text-cq-brand hover:underline">
                                     Source
                                   </a>
                                 )}
@@ -1005,10 +1005,10 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                   </div>
 
                   {/* Confirmation and publish */}
-                  <div className="pt-3 border-t border-[#E7E4DA] space-y-3">
+                  <div className="pt-3 border-t border-cq-line space-y-3">
                     {policyUpdateSuccess && (
-                      <div className="rounded-xl bg-[#E4ECE1] border border-[#CBD9C6] p-3 text-xs text-[#173F42] flex items-center gap-2 font-semibold">
-                        <CheckCircle2 className="w-4 h-4 text-[#4E7A5A] shrink-0" />
+                      <div className="rounded-xl bg-cq-sage border border-cq-sage-line p-3 text-xs text-cq-ink flex items-center gap-2 font-semibold">
+                        <CheckCircle2 className="w-4 h-4 text-cq-sage-ink shrink-0" />
                         <span>Active requirements updated for {singleCentre.name}!</span>
                       </div>
                     )}
@@ -1022,7 +1022,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-[#7A8A84] py-8 text-center">
+                <p className="text-xs text-cq-soft py-8 text-center">
                   Paste your admission policy on the left and click "Find requirements with AI". CareQ will analyze each sentence.
                 </p>
               )}
@@ -1030,15 +1030,15 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
           </div>
 
           {/* 3. Below, full-width Card: Live for parents now */}
-          <Card className="bg-[#E4ECE1] border border-[#D9E4D3] p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#CBD9C6]">
+          <Card className="bg-cq-sage p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-cq-sage-line">
               <div>
                 <Eyebrow className="text-[10px]">Live for parents now</Eyebrow>
-                <h4 className="text-lg font-bold text-[#173F42] mt-1">
+                <h4 className="text-lg font-bold text-cq-ink mt-1">
                   Active checklist for {singleCentre.name}
                 </h4>
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white text-[#4E7A5A] border border-[#CBD9C6]">
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white text-cq-sage-ink border border-cq-sage-line">
                 {singleCentre.requirements.length} active requirements
               </span>
             </div>
@@ -1047,9 +1047,9 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
               {singleCentre.requirements.map((req, idx) => (
                 <div
                   key={idx}
-                  className="flex items-start gap-2.5 text-xs font-semibold text-[#173F42] bg-white/70 p-3 rounded-xl border border-[#CBD9C6]"
+                  className="flex items-start gap-2.5 text-xs font-semibold text-cq-ink bg-white/70 p-3 rounded-xl border border-cq-sage-line"
                 >
-                  <Check className="w-4 h-4 text-[#4E7A5A] shrink-0 mt-0.5" />
+                  <Check className="w-4 h-4 text-cq-sage-ink shrink-0 mt-0.5" />
                   <span className="leading-snug">{req}</span>
                 </div>
               ))}
@@ -1071,13 +1071,13 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
 
       {/* Modal for setting Waitlist position */}
       {activeWaitlistApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#173F42]/40 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-cq-ink/40 backdrop-blur-xs">
           <Card className="max-w-sm w-full p-6 shadow-xl space-y-4">
             <div>
-              <h3 className="text-base font-bold text-[#173F42]">
+              <h3 className="text-base font-bold text-cq-ink">
                 Set waitlist position
               </h3>
-              <p className="text-xs text-[#5B6B66] mt-0.5">
+              <p className="text-xs text-cq-muted mt-0.5">
                 {singleCentre.name} · Applicant: {activeWaitlistApp.childName} (
                 {activeWaitlistApp.childAgeMonths} mos)
               </p>
@@ -1087,12 +1087,12 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
               <div>
                 <label
                   htmlFor="waitlist-pos-input"
-                  className="text-xs font-semibold text-[#173F42] uppercase tracking-wider block mb-1"
+                  className="text-xs font-semibold text-cq-ink uppercase tracking-wider block mb-1"
                 >
                   Queue position number:
                 </label>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-[#5B6B66]">#</span>
+                  <span className="text-sm font-semibold text-cq-muted">#</span>
                   <input
                     id="waitlist-pos-input"
                     type="number"
@@ -1102,7 +1102,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                     onChange={(e) =>
                       setPositionInput(Math.max(1, parseInt(e.target.value) || 1))
                     }
-                    className="w-full text-base font-semibold px-3 py-1.5 border border-[#E7E4DA] bg-[#FBFAF3] rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#45B5A5]/25 focus:border-[#45B5A5] text-[#173F42]"
+                    className="w-full text-base font-semibold px-3 py-1.5 border border-cq-line bg-cq-input rounded-xl focus:outline-hidden focus:ring-2 focus:ring-cq-secondary/25 focus:border-cq-secondary text-cq-ink"
                   />
                 </div>
               </div>
@@ -1110,7 +1110,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
               <div>
                 <label
                   htmlFor="waitlist-est-input"
-                  className="text-xs font-semibold text-[#173F42] uppercase tracking-wider block mb-1"
+                  className="text-xs font-semibold text-cq-ink uppercase tracking-wider block mb-1"
                 >
                   Centre's typical wait estimate:
                 </label>
@@ -1120,7 +1120,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                   placeholder="e.g. 8–12 months (or leave blank if no estimate)"
                   value={waitEstimateInput}
                   onChange={(e) => setWaitEstimateInput(e.target.value)}
-                  className="w-full text-xs font-medium px-3 py-1.5 border border-[#E7E4DA] bg-[#FBFAF3] rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#45B5A5]/25 focus:border-[#45B5A5] text-[#173F42]"
+                  className="w-full text-xs font-medium px-3 py-1.5 border border-cq-line bg-cq-input rounded-xl focus:outline-hidden focus:ring-2 focus:ring-cq-secondary/25 focus:border-cq-secondary text-cq-ink"
                 />
                 <div className="flex flex-wrap gap-1 mt-1.5">
                   {['8–12 months', '6–9 months', '3–6 months', '12+ months'].map((preset) => (
@@ -1130,8 +1130,8 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                       onClick={() => setWaitEstimateInput(preset)}
                       className={`text-[10px] px-2 py-0.5 rounded-lg border transition-colors cursor-pointer ${
                         waitEstimateInput === preset
-                          ? 'bg-[#0B4A52] text-white border-[#0B4A52] font-semibold'
-                          : 'bg-white text-[#5B6B66] hover:bg-[#FAF9F4] border-[#E7E4DA]'
+                          ? 'bg-cq-brand text-white border-cq-brand font-semibold'
+                          : 'bg-white text-cq-muted hover:bg-cq-page border-cq-line'
                       }`}
                     >
                       {preset}
@@ -1140,19 +1140,19 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                   <button
                     type="button"
                     onClick={() => setWaitEstimateInput('')}
-                    className="text-[10px] px-2 py-0.5 rounded-lg border text-[#7A8A84] hover:text-[#173F42] hover:bg-[#FAF9F4] border-[#E7E4DA] cursor-pointer"
+                    className="text-[10px] px-2 py-0.5 rounded-lg border text-cq-soft hover:text-cq-ink hover:bg-cq-page border-cq-line cursor-pointer"
                   >
                     Clear (no estimate)
                   </button>
                 </div>
               </div>
 
-              <p className="text-[11px] text-[#7A8A84] pt-1">
+              <p className="text-[11px] text-cq-soft pt-1">
                 Parent {activeWaitlistApp.parentName} will see "Position {positionInput} · reported by {singleCentre.name} on today's date".
               </p>
             </div>
 
-            <div className="pt-2 flex justify-end gap-2 border-t border-[#E7E4DA]">
+            <div className="pt-2 flex justify-end gap-2 border-t border-cq-line">
               <GhostButton
                 onClick={() => setWaitlistModalAppId(null)}
                 className="h-9 px-3.5 text-xs"

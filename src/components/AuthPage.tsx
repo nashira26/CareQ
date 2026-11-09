@@ -132,8 +132,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
   return (
     <div
-      className="min-h-screen bg-[#FAF9F4] text-[#1E3F42] flex flex-col justify-between antialiased"
-      style={{ fontFamily: 'Manrope, sans-serif' }}
+      className="min-h-screen bg-cq-page text-cq-ink-body font-brand-page flex flex-col justify-between antialiased"
     >
       {/* Top Row: Logo on left, Trust & Support link on right */}
       <header className="w-full">
@@ -143,7 +142,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               <button
                 type="button"
                 onClick={onBackToLanding}
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1E4A4E] hover:underline cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-cq-brand-ink hover:underline cursor-pointer"
               >
                 <span>← Back</span>
               </button>
@@ -153,7 +152,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
           <button
             type="button"
             onClick={onOpenTrustPage}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1E4A4E] hover:underline cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-cq-brand-ink hover:underline cursor-pointer"
           >
             <span>Need a hand? Trust &amp; support</span>
             <ArrowRight className="w-4 h-4" />
@@ -166,26 +165,26 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         {/* LEFT COLUMN (hero) */}
         <div className="lg:pt-6">
           {/* 1. Pill */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#CFE0C9] bg-[#F1F6EE] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#4E7A5A]">
-            <Heart className="w-3.5 h-3.5 fill-[#4E7A5A]/20" />
+          <div className="inline-flex items-center gap-2 rounded-full border border-cq-sage-250 bg-cq-sage-50 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-cq-sage-ink">
+            <Heart className="w-3.5 h-3.5 fill-cq-sage-ink/20" />
             <span>For families &amp; the people who care</span>
           </div>
 
           {/* 2. Headline h1 on two lines */}
-          <h1 className="text-4xl lg:text-[64px] font-bold leading-[1.08] tracking-[-0.03em] text-[#173F42] mt-7">
+          <h1 className="text-4xl lg:text-[64px] font-bold leading-[1.08] tracking-[-0.03em] text-cq-ink mt-7">
             A little less admin.
             <br />
             A lot more connection.
           </h1>
 
           {/* 3. Paragraph */}
-          <p className="mt-7 max-w-md text-lg leading-8 text-[#5B6B66]">
+          <p className="mt-7 max-w-md text-lg leading-8 text-cq-muted">
             One shared place to find child care, follow applications, and keep the conversation going.
           </p>
 
           {/* 4. Illustration Card */}
-          <div className="mt-10 w-full max-w-full lg:max-w-[520px] rounded-[28px] bg-[#E6EEE3] p-3 shadow-xs">
-            <div className="rounded-[22px] bg-[#DCE7DA] overflow-hidden relative h-[280px]">
+          <div className="mt-10 w-full max-w-full lg:max-w-[520px] rounded-[28px] bg-cq-sage-100 p-3 shadow-xs">
+            <div className="rounded-[22px] bg-cq-sage-150 overflow-hidden relative h-[280px]">
               <svg
                 viewBox="0 0 520 280"
                 className="w-full h-full select-none"
@@ -279,8 +278,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               </svg>
 
               {/* Floating label over the bottom-left of the illustration */}
-              <div className="absolute left-6 bottom-6 bg-white rounded-xl shadow-md px-5 py-3 text-sm text-[#1E3F42] -rotate-2 flex items-center gap-2.5 border border-stone-100">
-                <Check className="w-4 h-4 text-[#4E7A5A] shrink-0 stroke-[2.5]" />
+              <div className="absolute left-6 bottom-6 bg-white rounded-xl shadow-md px-5 py-3 text-sm text-cq-ink-body -rotate-2 flex items-center gap-2.5 border border-cq-stone-100">
+                <Check className="w-4 h-4 text-cq-sage-ink shrink-0 stroke-[2.5]" />
                 <span className="font-medium">Parents &amp; centres, on the same page.</span>
               </div>
             </div>
@@ -288,13 +287,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
           {/* 5. Stat Row */}
           <div className="mt-8 flex items-center gap-5">
-            <span className="text-4xl font-semibold text-[#4F7A5E]">5,989</span>
-            <div className="h-12 w-px bg-stone-300 shrink-0" />
+            <span className="text-4xl font-semibold text-cq-sage-ink-5">5,989</span>
+            <div className="h-12 w-px bg-cq-stone-300 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-[#3F5250]">
+              <p className="text-sm font-medium text-cq-ink-2">
                 Licensed child care centres in Ontario
               </p>
-              <p className="text-xs text-[#6E8C7E] mt-0.5">
+              <p className="text-xs text-cq-grey-sage mt-0.5">
                 Ontario Early Years and Child Care Annual Report 2025 · as of Mar 31, 2025
               </p>
             </div>
@@ -303,7 +302,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
         {/* RIGHT COLUMN (the existing login card, restyled) */}
         <div className="w-full">
-          <div className="bg-white rounded-[28px] border border-[#E7E4DA] shadow-[0_20px_60px_-30px_rgba(23,63,66,0.25)] p-8 sm:p-10 w-full space-y-6">
+          <div className="bg-white rounded-[28px] border border-cq-line shadow-[0_20px_60px_-30px_rgba(23,63,66,0.25)] p-8 sm:p-10 w-full space-y-6">
             {/* Parent / Centre role switch: two side-by-side selectable cards */}
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -311,17 +310,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 onClick={() => handleRoleSwitch('parent')}
                 className={`rounded-2xl border p-4 text-left relative transition-all cursor-pointer ${
                   targetRole === 'parent'
-                    ? 'border-[#0B4A52]/60 bg-[#F1F6EE]'
-                    : 'border-[#E7E4DA] bg-white hover:bg-stone-50'
+                    ? 'border-cq-brand/60 bg-cq-sage-50'
+                    : 'border-cq-line bg-white hover:bg-cq-stone-50'
                 }`}
               >
                 {targetRole === 'parent' && (
-                  <div className="absolute top-3.5 right-3.5 w-5 h-5 rounded-full bg-[#0B4A52] flex items-center justify-center text-white">
+                  <div className="absolute top-3.5 right-3.5 w-5 h-5 rounded-full bg-cq-brand flex items-center justify-center text-white">
                     <Check className="w-3 h-3 stroke-[2.5]" />
                   </div>
                 )}
-                <User className="w-5 h-5 text-[#4E7A5A] mb-3" />
-                <span className="block text-sm font-semibold text-[#173F42]">Parent Portal</span>
+                <User className="w-5 h-5 text-cq-sage-ink mb-3" />
+                <span className="block text-sm font-semibold text-cq-ink">Parent Portal</span>
               </button>
 
               <button
@@ -329,24 +328,24 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 onClick={() => handleRoleSwitch('centre')}
                 className={`rounded-2xl border p-4 text-left relative transition-all cursor-pointer ${
                   targetRole === 'centre'
-                    ? 'border-[#0B4A52]/60 bg-[#F1F6EE]'
-                    : 'border-[#E7E4DA] bg-white hover:bg-stone-50'
+                    ? 'border-cq-brand/60 bg-cq-sage-50'
+                    : 'border-cq-line bg-white hover:bg-cq-stone-50'
                 }`}
               >
                 {targetRole === 'centre' && (
-                  <div className="absolute top-3.5 right-3.5 w-5 h-5 rounded-full bg-[#0B4A52] flex items-center justify-center text-white">
+                  <div className="absolute top-3.5 right-3.5 w-5 h-5 rounded-full bg-cq-brand flex items-center justify-center text-white">
                     <Check className="w-3 h-3 stroke-[2.5]" />
                   </div>
                 )}
-                <Building2 className="w-5 h-5 text-[#4E7A5A] mb-3" />
-                <span className="block text-sm font-semibold text-[#173F42]">Centre Portal</span>
+                <Building2 className="w-5 h-5 text-cq-sage-ink mb-3" />
+                <span className="block text-sm font-semibold text-cq-ink">Centre Portal</span>
               </button>
             </div>
 
             {/* Title & Mode Switcher */}
             <div>
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <h1 className="text-3xl font-bold tracking-[-0.02em] text-[#173F42]">
+                <h1 className="text-3xl font-bold tracking-[-0.02em] text-cq-ink">
                   {targetRole === 'parent'
                     ? authMode === 'login'
                       ? 'Parent login'
@@ -357,7 +356,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 </h1>
 
                 {/* Sub-toggle: Log In vs Sign Up as a small pill segmented control */}
-                <div className="flex items-center rounded-full bg-[#F3F1EA] p-1 text-xs">
+                <div className="flex items-center rounded-full bg-cq-surface-stone-2 p-1 text-xs">
                   <button
                     type="button"
                     onClick={() => {
@@ -366,8 +365,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     }}
                     className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
                       authMode === 'login'
-                        ? 'bg-white shadow-sm text-[#0B4A52] font-bold'
-                        : 'text-[#5B6B66] hover:text-[#173F42] font-medium'
+                        ? 'bg-white shadow-sm text-cq-brand font-bold'
+                        : 'text-cq-muted hover:text-cq-ink font-medium'
                     }`}
                   >
                     Log in
@@ -380,8 +379,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     }}
                     className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
                       authMode === 'signup'
-                        ? 'bg-white shadow-sm text-[#0B4A52] font-bold'
-                        : 'text-[#5B6B66] hover:text-[#173F42] font-medium'
+                        ? 'bg-white shadow-sm text-cq-brand font-bold'
+                        : 'text-cq-muted hover:text-cq-ink font-medium'
                     }`}
                   >
                     Create an account
@@ -389,7 +388,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 </div>
               </div>
 
-              <p className="text-sm text-[#5B6B66] mt-2">
+              <p className="text-sm text-cq-muted mt-2">
                 {targetRole === 'parent'
                   ? authMode === 'login'
                     ? 'Access your child care applications, checklists, and waitlist tracking.'
@@ -402,12 +401,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
             {/* Error alerts */}
             {loginError && (
-              <div role="alert" className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+              <div role="alert" className="p-3.5 rounded-xl bg-cq-rose-50 border border-cq-rose-200 text-cq-rose-700 text-xs">
                 {loginError}
               </div>
             )}
             {signupError && (
-              <div role="alert" className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+              <div role="alert" className="p-3.5 rounded-xl bg-cq-rose-50 border border-cq-rose-200 text-cq-rose-700 text-xs">
                 {signupError}
               </div>
             )}
@@ -416,34 +415,34 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             {authMode === 'login' ? (
               <form onSubmit={handleLoginSubmit} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-[#3F5250] mb-2">
+                  <label className="block text-sm font-medium text-cq-ink-2 mb-2">
                     {targetRole === 'parent' ? 'Parent Email' : 'Centre Administrator Email'}
                   </label>
                   <div className="relative">
-                    <Mail className="w-4 h-4 text-[#9AA59F] absolute left-4 top-4" />
+                    <Mail className="w-4 h-4 text-cq-faint absolute left-4 top-4" />
                     <input
                       type="email"
                       required
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
-                      className="h-12 w-full rounded-xl border border-[#E8E4D6] bg-[#FBFAF3] pl-11 pr-4 text-sm text-[#1E3F42] placeholder:text-[#9AA59F] focus:border-[#45B5A5] focus:ring-2 focus:ring-[#45B5A5]/25 outline-none transition-all"
+                      className="h-12 w-full rounded-xl border border-cq-line-input bg-cq-input pl-11 pr-4 text-sm text-cq-ink-body placeholder:text-cq-faint focus:border-cq-secondary focus:ring-2 focus:ring-cq-secondary/25 outline-none transition-all"
                       placeholder={targetRole === 'parent' ? PARENT_DEMO_EMAIL : CENTRE_DEMOS[0].email}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#3F5250] mb-2">
+                  <label className="block text-sm font-medium text-cq-ink-2 mb-2">
                     Password
                   </label>
                   <div className="relative">
-                    <Lock className="w-4 h-4 text-[#9AA59F] absolute left-4 top-4" />
+                    <Lock className="w-4 h-4 text-cq-faint absolute left-4 top-4" />
                     <input
                       type="password"
                       required
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      className="h-12 w-full rounded-xl border border-[#E8E4D6] bg-[#FBFAF3] pl-11 pr-4 text-sm text-[#1E3F42] placeholder:text-[#9AA59F] focus:border-[#45B5A5] focus:ring-2 focus:ring-[#45B5A5]/25 outline-none transition-all"
+                      className="h-12 w-full rounded-xl border border-cq-line-input bg-cq-input pl-11 pr-4 text-sm text-cq-ink-body placeholder:text-cq-faint focus:border-cq-secondary focus:ring-2 focus:ring-cq-secondary/25 outline-none transition-all"
                       placeholder="••••••••"
                     />
                   </div>
@@ -452,7 +451,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 <button
                   type="submit"
                   disabled={busy}
-                  className="h-14 w-full rounded-xl bg-[#0B4A52] hover:bg-[#08383E] text-white text-base font-semibold shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                  className="h-14 w-full rounded-xl bg-cq-brand hover:bg-cq-brand-hover text-white text-base font-semibold shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                 >
                   <span>Log In as {targetRole === 'parent' ? 'Parent' : 'Child-Care Centre'}</span>
                   <ArrowRight className="w-4 h-4" />
@@ -462,7 +461,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               /* SIGN-UP FORM */
               <form onSubmit={handleSignupSubmit} className="space-y-5" noValidate>
                 <div>
-                  <label htmlFor="signup-name" className="block text-sm font-medium text-[#3F5250] mb-2">
+                  <label htmlFor="signup-name" className="block text-sm font-medium text-cq-ink-2 mb-2">
                     {targetRole === 'parent' ? 'Your name' : 'Your name (centre staff)'}
                   </label>
                   <input
@@ -472,12 +471,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     value={signupName}
                     onChange={(e) => setSignupName(e.target.value)}
                     placeholder={targetRole === 'parent' ? 'e.g. Alex Morgan' : 'e.g. Jordan Lee'}
-                    className="h-12 w-full rounded-xl border border-[#E8E4D6] bg-[#FBFAF3] px-4 text-sm text-[#1E3F42] placeholder:text-[#9AA59F] focus:border-[#45B5A5] focus:ring-2 focus:ring-[#45B5A5]/25 outline-none transition-all"
+                    className="h-12 w-full rounded-xl border border-cq-line-input bg-cq-input px-4 text-sm text-cq-ink-body placeholder:text-cq-faint focus:border-cq-secondary focus:ring-2 focus:ring-cq-secondary/25 outline-none transition-all"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="signup-email" className="block text-sm font-medium text-[#3F5250] mb-2">
+                  <label htmlFor="signup-email" className="block text-sm font-medium text-cq-ink-2 mb-2">
                     Email address
                   </label>
                   <input
@@ -487,12 +486,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     value={signupEmail}
                     onChange={(e) => setSignupEmail(e.target.value)}
                     placeholder={targetRole === 'parent' ? 'you@example.ca' : 'you@yourcentre.ca'}
-                    className="h-12 w-full rounded-xl border border-[#E8E4D6] bg-[#FBFAF3] px-4 text-sm text-[#1E3F42] placeholder:text-[#9AA59F] focus:border-[#45B5A5] focus:ring-2 focus:ring-[#45B5A5]/25 outline-none transition-all"
+                    className="h-12 w-full rounded-xl border border-cq-line-input bg-cq-input px-4 text-sm text-cq-ink-body placeholder:text-cq-faint focus:border-cq-secondary focus:ring-2 focus:ring-cq-secondary/25 outline-none transition-all"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="signup-password" className="block text-sm font-medium text-[#3F5250] mb-2">
+                  <label htmlFor="signup-password" className="block text-sm font-medium text-cq-ink-2 mb-2">
                     Create a password
                   </label>
                   <input
@@ -503,32 +502,32 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     value={signupPassword}
                     onChange={(e) => setSignupPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="h-12 w-full rounded-xl border border-[#E8E4D6] bg-[#FBFAF3] px-4 text-sm text-[#1E3F42] placeholder:text-[#9AA59F] focus:border-[#45B5A5] focus:ring-2 focus:ring-[#45B5A5]/25 outline-none transition-all"
+                    className="h-12 w-full rounded-xl border border-cq-line-input bg-cq-input px-4 text-sm text-cq-ink-body placeholder:text-cq-faint focus:border-cq-secondary focus:ring-2 focus:ring-cq-secondary/25 outline-none transition-all"
                   />
-                  <p id="signup-password-hint" className="mt-1.5 text-[11px] text-[#7A8A84]">
+                  <p id="signup-password-hint" className="mt-1.5 text-[11px] text-cq-soft">
                     At least {MIN_PASSWORD_LENGTH} characters. Demo only: stored as a hash in this browser and never shown again.
                   </p>
                 </div>
 
                 {/* Mandatory one-time terms and AI checkbox */}
-                <div className="rounded-xl bg-[#FBFAF3] border border-[#E8E4D6] p-4 space-y-1.5 mt-2">
+                <div className="rounded-xl bg-cq-input border border-cq-line-input p-4 space-y-1.5 mt-2">
                   <label className="flex items-start gap-2.5 cursor-pointer">
                     <input
                       type="checkbox"
                       required
                       checked={termsAccepted}
                       onChange={(e) => setTermsAccepted(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 rounded text-[#0B4A52] focus:ring-[#45B5A5] border-stone-300 shrink-0 cursor-pointer"
+                      className="mt-0.5 w-4 h-4 rounded text-cq-brand focus:ring-cq-secondary border-cq-stone-300 shrink-0 cursor-pointer"
                     />
-                    <span className="text-xs text-stone-800 leading-snug font-medium select-none">
+                    <span className="text-xs text-cq-stone-800 leading-snug font-medium select-none">
                       I have read the terms and how CareQ uses AI.
                     </span>
                   </label>
-                  <div className="pl-6.5 text-[11px] text-stone-500">
+                  <div className="pl-6.5 text-[11px] text-cq-stone-500">
                     <button
                       type="button"
                       onClick={onOpenTrustPage}
-                      className="text-[#0B4A52] hover:text-[#45B5A5] font-semibold underline inline-flex items-center gap-0.5 cursor-pointer"
+                      className="text-cq-brand hover:text-cq-secondary font-semibold underline inline-flex items-center gap-0.5 cursor-pointer"
                     >
                       <span>Read Trust and transparency terms</span>
                       <ExternalLink className="w-3 h-3" />
@@ -541,8 +540,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   disabled={!termsAccepted || busy}
                   className={`h-14 w-full rounded-xl text-base font-semibold shadow-xs transition-colors flex items-center justify-center gap-2 ${
                     termsAccepted
-                      ? 'bg-[#0B4A52] hover:bg-[#08383E] text-white cursor-pointer'
-                      : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                      ? 'bg-cq-brand hover:bg-cq-brand-hover text-white cursor-pointer'
+                      : 'bg-cq-stone-200 text-cq-stone-400 cursor-not-allowed'
                   }`}
                 >
                   <Check className="w-4 h-4" />
@@ -552,34 +551,34 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             )}
 
             {/* DEMO ACCOUNTS NOTE ON LOGIN PAGE */}
-            <div className="pt-2 border-t border-[#E8E4D6]">
-              <div className="rounded-2xl bg-[#FBF3E6] border border-[#EFE3CC] p-5 space-y-3">
+            <div className="pt-2 border-t border-cq-line-input">
+              <div className="rounded-2xl bg-cq-sand-25 border border-cq-sand-200 p-5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 uppercase text-[11px] font-bold tracking-[0.14em] text-[#5B4A2E]">
-                    <Sparkles className="w-3.5 h-3.5 text-[#A06C2D]" />
+                  <div className="flex items-center gap-1.5 uppercase text-[11px] font-bold tracking-[0.14em] text-cq-sand-ink">
+                    <Sparkles className="w-3.5 h-3.5 text-cq-sand-600" />
                     <span>Demo accounts</span>
                   </div>
-                  <span className="text-[10px] uppercase font-semibold tracking-wider text-[#5B4A2E]/80 bg-white px-2 py-0.5 rounded-full border border-[#EFE3CC]">
+                  <span className="text-[10px] uppercase font-semibold tracking-wider text-cq-sand-ink/80 bg-white px-2 py-0.5 rounded-full border border-cq-sand-200">
                     Prototype Data
                   </span>
                 </div>
 
                 <div className="space-y-2 text-xs">
                   {/* Test Parent */}
-                  <div className="bg-white p-3 rounded-xl border border-[#EFE3CC] flex items-center justify-between gap-2 shadow-2xs">
+                  <div className="bg-white p-3 rounded-xl border border-cq-sand-200 flex items-center justify-between gap-2 shadow-2xs">
                     <div>
-                      <div className="font-semibold text-stone-900 flex items-center gap-1.5">
-                        <User className="w-3.5 h-3.5 text-[#0B4A52]" />
+                      <div className="font-semibold text-cq-stone-900 flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-cq-brand" />
                         <span>Test Parent: Priya Patel</span>
                       </div>
-                      <div className="text-[11px] text-stone-500 mt-0.5">
-                        Email: <code className="text-[#0B4A52] font-semibold">priya@example.ca</code> • Password: <code className="text-[#0B4A52] font-semibold">password</code> • Child: Anya
+                      <div className="text-[11px] text-cq-stone-500 mt-0.5">
+                        Email: <code className="text-cq-brand font-semibold">priya@example.ca</code> • Password: <code className="text-cq-brand font-semibold">password</code> • Child: Anya
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleQuickDemoLogin('parent')}
-                      className="shrink-0 px-3 py-1.5 text-[11px] font-bold text-[#0B4A52] bg-[#45B5A5]/15 hover:bg-[#45B5A5]/25 rounded-lg transition-colors cursor-pointer"
+                      className="shrink-0 px-3 py-1.5 text-[11px] font-bold text-cq-brand bg-cq-secondary/15 hover:bg-cq-secondary/25 rounded-lg transition-colors cursor-pointer"
                       title="Log in directly as test parent"
                     >
                       Log in
@@ -588,21 +587,21 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
                   {/* Test centres: the fictional demo centre, and one real centre's simulated demo account */}
                   {CENTRE_DEMOS.map((d) => (
-                    <div key={d.email} className="bg-white p-3 rounded-xl border border-[#EFE3CC] flex items-center justify-between gap-2 shadow-2xs">
+                    <div key={d.email} className="bg-white p-3 rounded-xl border border-cq-sand-200 flex items-center justify-between gap-2 shadow-2xs">
                       <div>
-                        <div className="font-semibold text-stone-900 flex items-center gap-1.5">
-                          <Building2 className="w-3.5 h-3.5 text-[#0B4A52] shrink-0" />
+                        <div className="font-semibold text-cq-stone-900 flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5 text-cq-brand shrink-0" />
                           <span>Test Centre: {d.label}</span>
                         </div>
-                        <div className="text-[11px] text-stone-500 mt-0.5">
-                          Email: <code className="text-[#0B4A52] font-semibold">{d.email}</code> • Password: <code className="text-[#0B4A52] font-semibold">password</code>
+                        <div className="text-[11px] text-cq-stone-500 mt-0.5">
+                          Email: <code className="text-cq-brand font-semibold">{d.email}</code> • Password: <code className="text-cq-brand font-semibold">password</code>
                         </div>
-                        <div className="text-[11px] text-stone-500 mt-0.5">{d.note}</div>
+                        <div className="text-[11px] text-cq-stone-500 mt-0.5">{d.note}</div>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleQuickDemoLogin('centre', d.email)}
-                        className="shrink-0 px-3 py-1.5 text-[11px] font-bold text-[#0B4A52] bg-[#45B5A5]/15 hover:bg-[#45B5A5]/25 rounded-lg transition-colors cursor-pointer"
+                        className="shrink-0 px-3 py-1.5 text-[11px] font-bold text-cq-brand bg-cq-secondary/15 hover:bg-cq-secondary/25 rounded-lg transition-colors cursor-pointer"
                         title={`Log in directly as ${d.label}`}
                       >
                         Log in
@@ -618,14 +617,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
       {/* Footer */}
       <footer className="w-full">
-        <div className="max-w-6xl mx-auto px-6 border-t border-[#E7E4DA] py-6 text-xs text-[#6E7C77] bg-transparent flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div className="max-w-6xl mx-auto px-6 border-t border-cq-line py-6 text-xs text-cq-muted-2 bg-transparent flex flex-col sm:flex-row items-center justify-between gap-2">
           <p>CareQ • Simplified Ontario Child Care Intake &amp; Central Waitlist Management</p>
           <div className="flex items-start gap-5">
             <ResetDemo variant="link" />
             <button
               type="button"
               onClick={onOpenTrustPage}
-              className="text-[#0B4A52] hover:text-[#45B5A5] font-semibold underline transition-colors cursor-pointer"
+              className="text-cq-brand hover:text-cq-secondary font-semibold underline transition-colors cursor-pointer"
             >
               Trust and transparency
             </button>

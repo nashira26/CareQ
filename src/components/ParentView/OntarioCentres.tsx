@@ -57,9 +57,9 @@ export const HeartButton: React.FC<{ name: string; active: boolean; onToggle: ()
     aria-pressed={active}
     aria-label={active ? `Remove ${name} from shortlist` : `Add ${name} to shortlist`}
     title={active ? 'Remove from shortlist' : 'Add to shortlist (saved in this browser)'}
-    className="p-1.5 rounded-lg hover:bg-[#FAF9F4] cursor-pointer shrink-0"
+    className="p-1.5 rounded-lg hover:bg-cq-page cursor-pointer shrink-0"
   >
-    <Heart className={`w-4 h-4 ${active ? 'fill-[#C46E4E] text-[#C46E4E]' : 'text-[#7A8A84]'}`} />
+    <Heart className={`w-4 h-4 ${active ? 'fill-cq-peach-ink text-cq-peach-ink' : 'text-cq-soft'}`} />
   </button>
 );
 
@@ -68,10 +68,10 @@ export const Chip: React.FC<{ children: React.ReactNode; tone?: 'sage' | 'sand' 
   tone = 'sage',
 }) => {
   const tones = {
-    sage: 'border-[#D9E4D3] bg-[#F4F6F1] text-[#4E7A5A]',
-    sand: 'border-[#E7D6A8] bg-[#FBF6EA] text-[#8A6A3B]',
-    grey: 'border-[#E7E4DA] bg-[#FAF9F4] text-[#7A8A84]',
-    peach: 'border-[#F2D3C4] bg-[#FBE9E1] text-[#A4543A]',
+    sage: 'border-cq-sage-line-2 bg-cq-surface-sage text-cq-sage-ink',
+    sand: 'border-cq-sand-line bg-cq-sand-50 text-cq-sand-ink-2',
+    grey: 'border-cq-line bg-cq-page text-cq-soft',
+    peach: 'border-cq-peach-line bg-cq-peach text-cq-rust',
   };
   return <span className={`rounded-md border px-2 py-0.5 text-[10px] font-medium ${tones[tone]}`}>{children}</span>;
 };
@@ -94,24 +94,24 @@ export const OntarioCentreCard: React.FC<{
   const geocoded = centre.dataSources.includes('osm');
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E7E4DA] p-5 flex flex-col justify-between gap-4">
+    <div className="bg-white rounded-2xl border border-cq-line p-5 flex flex-col justify-between gap-4">
       <div>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <span className="inline-block rounded px-1.5 py-0.5 bg-[#ECE8F5] text-[#5A4A85] text-[10px] font-semibold">
+            <span className="inline-block rounded px-1.5 py-0.5 bg-cq-lilac text-cq-lilac-ink-2 text-[10px] font-semibold">
               Not on CareQ yet · Ontario open data
             </span>
-            <div className="flex items-center gap-1.5 text-[11px] text-[#7A8A84] mt-2">
+            <div className="flex items-center gap-1.5 text-[11px] text-cq-soft mt-2">
               <MapPin className="w-3 h-3 shrink-0" />
               <span>{centre.area}</span>
               {result?.distanceKm != null && (
-                <span className="font-semibold text-[#173F42] flex items-center gap-1 ml-1">
+                <span className="font-semibold text-cq-ink flex items-center gap-1 ml-1">
                   <Navigation className="w-3 h-3" />
                   {result.distanceKm.toFixed(1)} km
                 </span>
               )}
             </div>
-            <h3 className="text-[15px] font-bold text-[#173F42] mt-1 leading-snug">{centre.name}</h3>
+            <h3 className="text-[15px] font-bold text-cq-ink mt-1 leading-snug">{centre.name}</h3>
           </div>
           <HeartButton name={centre.name} active={isShortlisted} onToggle={onToggleShortlist} />
         </div>
@@ -121,13 +121,13 @@ export const OntarioCentreCard: React.FC<{
           </span>
         )}
 
-        <p className="text-xs text-[#5B6B66] mt-2">{centre.address}</p>
-        <p className="text-[11px] text-[#7A8A84] mt-1">
+        <p className="text-xs text-cq-muted mt-2">{centre.address}</p>
+        <p className="text-[11px] text-cq-soft mt-1">
           Licence {centre.licenceStatus.toLowerCase()} · #{centre.licenceNumber}
         </p>
 
         {result?.reason && (
-          <p className="mt-3 text-xs text-[#5B6B66] bg-[#F3EEE3]/60 border border-[#E7E4DA] rounded-lg p-2.5">
+          <p className="mt-3 text-xs text-cq-muted bg-cq-sand/60 border border-cq-line rounded-lg p-2.5">
             {result.reason}
           </p>
         )}
@@ -146,17 +146,17 @@ export const OntarioCentreCard: React.FC<{
         </div>
 
         {centre.programOptions.length > 0 && (
-          <p className="text-[11px] text-[#5B6B66] mt-2">
+          <p className="text-[11px] text-cq-muted mt-2">
             <span className="font-semibold">Programs:</span> {centre.programOptions.join(', ')}
           </p>
         )}
         {centre.languages.length > 0 && (
-          <p className="text-[11px] text-[#5B6B66] mt-0.5">
+          <p className="text-[11px] text-cq-muted mt-0.5">
             <span className="font-semibold">Language:</span> {centre.languages.join(', ')}
           </p>
         )}
         {centre.capacity !== null && (
-          <p className="text-[11px] text-[#5B6B66] mt-0.5 flex items-center gap-1">
+          <p className="text-[11px] text-cq-muted mt-0.5 flex items-center gap-1">
             <Users className="w-3 h-3" />
             <span>{centre.capacity} licensed spaces in total (capacity, not availability)</span>
           </p>
@@ -166,10 +166,10 @@ export const OntarioCentreCard: React.FC<{
         </div>
       </div>
 
-      <div className="border-t border-[#E7E4DA] pt-3 space-y-1">
-        <p className="text-xs font-semibold text-[#5B6B66]">Availability not reported</p>
-        <p className="text-[11px] text-[#7A8A84]">Not part of the CareQ demo; contact the centre directly.</p>
-        <div className="pt-1 space-y-0.5 text-[10px] text-[#7A8A84]">
+      <div className="border-t border-cq-line pt-3 space-y-1">
+        <p className="text-xs font-semibold text-cq-muted">Availability not reported</p>
+        <p className="text-[11px] text-cq-soft">Not part of the CareQ demo; contact the centre directly.</p>
+        <div className="pt-1 space-y-0.5 text-[10px] text-cq-soft">
           <p className="flex items-center gap-1">
             <Database className="w-3 h-3 shrink-0" />
             Ontario open data · {formatSourceDate(sources.ontario.dataDate)}

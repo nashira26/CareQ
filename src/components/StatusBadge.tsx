@@ -29,50 +29,50 @@ const Badge: React.FC<Omit<StatusBadgeProps, 'simulated'>> = ({ status, waitlist
   switch (status) {
     case 'Draft':
       return (
-        <span className={`${base} bg-[#F3F1EA] text-[#6E7C77] border-[#E7E4DA]`}>
-          <FileText className="w-3 h-3 text-[#6E7C77]" />
+        <span className={`${base} bg-cq-surface-stone-2 text-cq-muted-2 border-cq-line`}>
+          <FileText className="w-3 h-3 text-cq-muted-2" />
           Draft
         </span>
       );
     case 'Submitted':
       return (
-        <span className={`${base} bg-[#E8F1F4] text-[#3F6E7E] border-[#CFE0E6]`}>
-          <Clock className="w-3 h-3 text-[#3F6E7E]" />
+        <span className={`${base} bg-cq-sky text-cq-sky-ink border-cq-sky-line`}>
+          <Clock className="w-3 h-3 text-cq-sky-ink" />
           Submitted
         </span>
       );
     case 'Under review':
       return (
-        <span className={`${base} bg-[#FDF3DD] text-[#8A6411] border-[#F2D9A0]`}>
-          <AlertCircle className="w-3 h-3 text-[#8A6411]" />
+        <span className={`${base} bg-cq-cream-amber text-cq-amber-ink border-cq-amber-line`}>
+          <AlertCircle className="w-3 h-3 text-cq-amber-ink" />
           Under review
         </span>
       );
     case 'Waitlisted':
       return (
-        <span className={`${base} bg-[#EFEAF7] text-[#6B5B95] border-[#D9D0EC]`}>
-          <Clock className="w-3 h-3 text-[#6B5B95]" />
+        <span className={`${base} bg-cq-lilac-50 text-cq-lilac-ink border-cq-lilac-line`}>
+          <Clock className="w-3 h-3 text-cq-lilac-ink" />
           Waitlisted {waitlistPosition ? `(#${waitlistPosition})` : ''}
         </span>
       );
     case 'Offer':
       return (
-        <span className={`${base} bg-[#FFF4D6] text-[#7A5A00] border-[#F9BE2F]`}>
-          <Sparkles className="w-3 h-3 text-[#7A5A00]" />
+        <span className={`${base} bg-cq-cream-amber-2 text-cq-amber-ink-2 border-cq-accent`}>
+          <Sparkles className="w-3 h-3 text-cq-amber-ink-2" />
           Offer Available
         </span>
       );
     case 'Accepted':
       return (
-        <span className={`${base} bg-[#E4ECE1] text-[#2F5E45] border-[#C9DCC2]`}>
-          <Check className="w-3 h-3 text-[#2F5E45]" />
+        <span className={`${base} bg-cq-sage text-cq-sage-ink-4 border-cq-sage-200`}>
+          <Check className="w-3 h-3 text-cq-sage-ink-4" />
           Accepted
         </span>
       );
     case 'Withdrawn':
       return (
-        <span className={`${base} bg-[#F3F1EA] text-[#9AA59F] border-[#E7E4DA] line-through`}>
-          <Ban className="w-3 h-3 text-[#9AA59F]" />
+        <span className={`${base} bg-cq-surface-stone-2 text-cq-faint border-cq-line line-through`}>
+          <Ban className="w-3 h-3 text-cq-faint" />
           Withdrawn
         </span>
       );

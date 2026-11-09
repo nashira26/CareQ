@@ -57,7 +57,7 @@ const InlineSelect: React.FC<{
       onClose();
     }}
     onBlur={onClose}
-    className="rounded-full border border-[#0B4A52] bg-white px-3 py-1 text-xs text-[#173F42] focus:outline-hidden max-w-[240px]"
+    className="rounded-full border border-cq-brand bg-white px-3 py-1 text-xs text-cq-ink focus:outline-hidden max-w-[240px]"
   >
     <option value="">{label}…</option>
     {options.map((o) => (
@@ -139,7 +139,7 @@ export const SearchChips: React.FC<SearchChipsProps> = ({
         onClick={() => setEditing(key)}
         onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setEditing(key)}
         title="Click to change"
-        className={`${chipBase} border-[#0B4A52]/30 bg-[#0B4A52]/5 text-[#0B4A52] cursor-pointer hover:bg-[#0B4A52]/10`}
+        className={`${chipBase} border-cq-brand/30 bg-cq-brand/5 text-cq-brand cursor-pointer hover:bg-cq-brand/10`}
       >
         {label}
         <RemoveButton label={FILTER_LABELS[key]} onClick={onRemove} />
@@ -162,13 +162,13 @@ export const SearchChips: React.FC<SearchChipsProps> = ({
       );
     } else {
       chips.push(
-        <span key="area-unplaced" className={`${chipBase} border-[#E7D6A8] bg-[#FBF6EA] text-[#8A6A3B]`}>
+        <span key="area-unplaced" className={`${chipBase} border-cq-sand-line bg-cq-sand-50 text-cq-sand-ink-2`}>
           Couldn&apos;t place &lsquo;{criteria.areaText}&rsquo; — pick an area
           <select
             aria-label="Pick an area"
             value=""
             onChange={(e) => e.target.value && set({ areaText: e.target.value })}
-            className="rounded-md border border-[#E7D6A8] bg-white px-1.5 py-0.5 text-xs text-[#173F42] max-w-[180px]"
+            className="rounded-md border border-cq-sand-line bg-white px-1.5 py-0.5 text-xs text-cq-ink max-w-[180px]"
           >
             <option value="">Choose…</option>
             {areaOptions.map((o) => (
@@ -201,7 +201,7 @@ export const SearchChips: React.FC<SearchChipsProps> = ({
     const removeLang = () => set({ languages: criteria.languages.filter((l) => l !== lang) });
     chips.push(
       knownLanguages.has(lang.toLowerCase()) ? (
-        <span key={`lang-${lang}`} className={`${chipBase} border-[#0B4A52]/30 bg-[#0B4A52]/5 text-[#0B4A52]`}>
+        <span key={`lang-${lang}`} className={`${chipBase} border-cq-brand/30 bg-cq-brand/5 text-cq-brand`}>
           Language: {lang}
           <RemoveButton label={`language ${lang}`} onClick={removeLang} />
         </span>
@@ -209,7 +209,7 @@ export const SearchChips: React.FC<SearchChipsProps> = ({
         <span
           key={`lang-${lang}`}
           title="No centre's data lists this language, so it doesn't affect the order."
-          className={`${chipBase} border-[#E7E4DA] bg-[#F3F2EE] text-[#7A8A84]`}
+          className={`${chipBase} border-cq-line bg-cq-surface-stone text-cq-soft`}
         >
           <HelpCircle className="w-3 h-3" /> Can&apos;t check: {lang}-speaking staff
           <RemoveButton label={`language ${lang}`} onClick={removeLang} />
@@ -226,7 +226,7 @@ export const SearchChips: React.FC<SearchChipsProps> = ({
       const fact = checkableFact(w, knownLanguages);
       chips.push(
         fact ? (
-          <span key={`wish-${w}`} className={`${chipBase} border-[#0B4A52]/30 bg-[#0B4A52]/5 text-[#0B4A52]`}>
+          <span key={`wish-${w}`} className={`${chipBase} border-cq-brand/30 bg-cq-brand/5 text-cq-brand`}>
             {fact.label}
             {nice ? ' (nice to have)' : ''}
             <RemoveButton label={fact.label} onClick={() => removeWish(w)} />
@@ -235,7 +235,7 @@ export const SearchChips: React.FC<SearchChipsProps> = ({
           <span
             key={`wish-${w}`}
             title="CareQ has no data to check this, so it doesn't affect the order."
-            className={`${chipBase} border-[#E7E4DA] bg-[#F3F2EE] text-[#7A8A84]`}
+            className={`${chipBase} border-cq-line bg-cq-surface-stone text-cq-soft`}
           >
             <HelpCircle className="w-3 h-3" /> Can&apos;t check: {w}
             <RemoveButton label={w} onClick={() => removeWish(w)} />
@@ -249,7 +249,7 @@ export const SearchChips: React.FC<SearchChipsProps> = ({
       <span
         key="start"
         title="CareQ never knows availability unless a centre reports it."
-        className={`${chipBase} border-[#E7E4DA] bg-[#F3F2EE] text-[#7A8A84]`}
+        className={`${chipBase} border-cq-line bg-cq-surface-stone text-cq-soft`}
       >
         <HelpCircle className="w-3 h-3" /> Can&apos;t check: start {criteria.startDate}
         <RemoveButton label="start date" onClick={() => set({ startDate: null })} />
@@ -272,7 +272,7 @@ export const SearchChips: React.FC<SearchChipsProps> = ({
           aria-label="Add filter"
           value=""
           onChange={(e) => e.target.value && setEditing(e.target.value as FilterKey)}
-          className={`${chipBase} border-dashed border-[#B9C4C0] bg-white text-[#5B6B66] cursor-pointer hover:border-[#0B4A52]`}
+          className={`${chipBase} border-dashed border-cq-faint-2 bg-white text-cq-muted cursor-pointer hover:border-cq-brand`}
         >
           <option value="">+ Add filter</option>
           {addable.map((k) => (

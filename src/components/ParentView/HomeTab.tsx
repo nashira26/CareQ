@@ -146,13 +146,13 @@ export const HomeTab: React.FC<HomeTabProps> = ({
       {/* Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
         <div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#45B5A5]">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-cq-secondary">
             YOUR FAMILY SPACE
           </span>
-          <h1 className="text-2xl sm:text-3xl font-bold text-stone-900 tracking-tight mt-0.5">
+          <h1 className="text-2xl sm:text-3xl font-bold text-cq-stone-900 tracking-tight mt-0.5">
             Hi {parentProfile.name}, here's where things stand.
           </h1>
-          <p className="text-xs sm:text-sm text-stone-600 mt-1">
+          <p className="text-xs sm:text-sm text-cq-stone-600 mt-1">
             Updates from your centres, your next steps, and your own reminders.
           </p>
         </div>
@@ -160,7 +160,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
         <button
           type="button"
           onClick={onMarkAllAsRead}
-          className="self-start sm:self-center px-3.5 py-1.5 rounded-xl border border-stone-300 hover:border-[#45B5A5] text-xs font-semibold text-[#0B4A52] hover:bg-white bg-white/60 transition-colors flex items-center gap-1.5 shadow-2xs shrink-0 cursor-pointer"
+          className="self-start sm:self-center px-3.5 py-1.5 rounded-xl border border-cq-stone-300 hover:border-cq-secondary text-xs font-semibold text-cq-brand hover:bg-white bg-white/60 transition-colors flex items-center gap-1.5 shadow-2xs shrink-0 cursor-pointer"
         >
           <span>✓ Mark all as read</span>
         </button>
@@ -169,14 +169,14 @@ export const HomeTab: React.FC<HomeTabProps> = ({
       {/* Two columns on desktop (~2/3 left, ~1/3 right), stacked on mobile */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* LEFT COLUMN – Latest updates card (~2/3) */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-stone-200 p-5 sm:p-6 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-3">
-            <h2 className="text-base font-bold text-stone-900 tracking-tight">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-cq-stone-200 p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cq-stone-100 pb-3">
+            <h2 className="text-base font-bold text-cq-stone-900 tracking-tight">
               Latest updates
             </h2>
 
             {/* Filter pills: All · Waitlist · Offers · Applications */}
-            <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-lg text-xs font-medium overflow-x-auto">
+            <div className="flex items-center gap-1 bg-cq-stone-100 p-1 rounded-lg text-xs font-medium overflow-x-auto">
               {(['All', 'Waitlist', 'Offers', 'Applications'] as const).map((pill) => (
                 <button
                   key={pill}
@@ -184,8 +184,8 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                   onClick={() => setFilterType(pill)}
                   className={`px-3 py-1 rounded-md transition-colors text-xs cursor-pointer ${
                     filterType === pill
-                      ? 'bg-white text-[#0B4A52] font-bold shadow-2xs'
-                      : 'text-stone-600 hover:text-stone-900'
+                      ? 'bg-white text-cq-brand font-bold shadow-2xs'
+                      : 'text-cq-stone-600 hover:text-cq-stone-900'
                   }`}
                 >
                   {pill}
@@ -197,27 +197,27 @@ export const HomeTab: React.FC<HomeTabProps> = ({
           {/* Updates List */}
           {filteredNotifications.length === 0 ? (
             <div className="py-10 text-center space-y-2">
-              <Bell className="w-8 h-8 text-stone-300 mx-auto" />
-              <p className="text-xs sm:text-sm text-stone-500 max-w-sm mx-auto">
+              <Bell className="w-8 h-8 text-cq-stone-300 mx-auto" />
+              <p className="text-xs sm:text-sm text-cq-stone-500 max-w-sm mx-auto">
                 No updates yet. When a centre changes your status, it will appear here.
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-stone-100">
+            <div className="divide-y divide-cq-stone-100">
               {filteredNotifications.map((notif) => {
                 // Determine icon
                 let IconComponent = Bell;
-                let iconColor = 'text-stone-600 bg-stone-100';
+                let iconColor = 'text-cq-stone-600 bg-cq-stone-100';
 
                 if (notif.type === 'position') {
                   IconComponent = TrendingUp;
-                  iconColor = 'text-[#0B4A52] bg-[#45B5A5]/20';
+                  iconColor = 'text-cq-brand bg-cq-secondary/20';
                 } else if (notif.type === 'offer') {
                   IconComponent = Gift;
-                  iconColor = 'text-[#451A03] bg-[#F9BE2F]/30';
+                  iconColor = 'text-cq-amber-ink-4 bg-cq-accent/30';
                 } else if (notif.type === 'application') {
                   IconComponent = FileText;
-                  iconColor = 'text-teal-800 bg-teal-100';
+                  iconColor = 'text-cq-teal-800 bg-cq-teal-100';
                 }
 
                 const isUnread = !notif.read;
@@ -227,8 +227,8 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                     key={notif.id}
                     className={`py-3.5 px-3 transition-colors rounded-lg flex items-start gap-3 my-1 ${
                       isUnread
-                        ? 'border-l-[3px] border-l-[#45B5A5] bg-[#F0FDFA]/50 hover:bg-[#F0FDFA]'
-                        : 'border-l-[3px] border-l-transparent hover:bg-stone-50/80'
+                        ? 'border-l-[3px] border-l-cq-secondary bg-cq-secondary-50/50 hover:bg-cq-secondary-50'
+                        : 'border-l-[3px] border-l-transparent hover:bg-cq-stone-50/80'
                     }`}
                   >
                     {/* Icon in soft circle */}
@@ -240,19 +240,19 @@ export const HomeTab: React.FC<HomeTabProps> = ({
 
                     <div className="flex-1 min-w-0">
                       {/* Tiny grey label: {type} · {timestamp} */}
-                      <div className="flex items-center gap-1.5 text-[11px] text-stone-400 capitalize">
+                      <div className="flex items-center gap-1.5 text-[11px] text-cq-stone-400 capitalize">
                         <span>{notif.type || 'Update'}</span>
                         <span>·</span>
                         <span>Simulated</span>
                         <span>·</span>
                         <span>{notif.timestamp}</span>
                         {isUnread && (
-                          <span className="w-2 h-2 rounded-full bg-[#45B5A5] inline-block ml-1" />
+                          <span className="w-2 h-2 rounded-full bg-cq-secondary inline-block ml-1" />
                         )}
                       </div>
 
                       {/* Main message text */}
-                      <p className={`text-xs sm:text-sm mt-0.5 leading-relaxed ${isUnread ? 'text-stone-900 font-semibold' : 'text-stone-700'}`}>
+                      <p className={`text-xs sm:text-sm mt-0.5 leading-relaxed ${isUnread ? 'text-cq-stone-900 font-semibold' : 'text-cq-stone-700'}`}>
                         {notif.message}
                       </p>
                     </div>
@@ -262,7 +262,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                       <button
                         type="button"
                         onClick={() => onMarkAsRead(notif.id)}
-                        className="text-[11px] font-semibold text-[#0B4A52] hover:text-[#45B5A5] shrink-0 pt-1 cursor-pointer transition-colors"
+                        className="text-[11px] font-semibold text-cq-brand hover:text-cq-secondary shrink-0 pt-1 cursor-pointer transition-colors"
                       >
                         Mark as read ✓
                       </button>
@@ -277,20 +277,20 @@ export const HomeTab: React.FC<HomeTabProps> = ({
         {/* RIGHT COLUMN – 3 Cards (~1/3) */}
         <div className="space-y-5">
           {/* CARD 1: Your next steps */}
-          <div className="bg-white rounded-xl border border-stone-200 p-5 shadow-xs space-y-4">
+          <div className="bg-white rounded-xl border border-cq-stone-200 p-5 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-stone-900 tracking-tight">
+              <h2 className="text-sm font-bold text-cq-stone-900 tracking-tight">
                 Your next steps
               </h2>
-              <span className="text-xs font-bold text-[#0B4A52] bg-[#45B5A5]/15 px-2 py-0.5 rounded-full">
+              <span className="text-xs font-bold text-cq-brand bg-cq-secondary/15 px-2 py-0.5 rounded-full">
                 {stepsCompletedCount}/4
               </span>
             </div>
 
             {/* Thin #45B5A5 progress bar */}
-            <div className="h-1.5 w-full bg-stone-100 rounded-full overflow-hidden">
+            <div className="h-1.5 w-full bg-cq-stone-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#45B5A5] transition-all duration-300 rounded-full"
+                className="h-full bg-cq-secondary transition-all duration-300 rounded-full"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -298,11 +298,11 @@ export const HomeTab: React.FC<HomeTabProps> = ({
             {/* 4 Automatic Steps */}
             <div className="space-y-2.5 text-xs">
               {/* Step A */}
-              <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-stone-50/60 border border-stone-100">
+              <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-cq-stone-50/60 border border-cq-stone-100">
                 <div className="flex items-center gap-2">
                   <div
                     className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-white ${
-                      step1Done ? 'bg-[#45B5A5]' : 'border border-stone-300 text-transparent'
+                      step1Done ? 'bg-cq-secondary' : 'border border-cq-stone-300 text-transparent'
                     }`}
                   >
                     <Check className="w-3 h-3 stroke-[2.5]" />
@@ -310,8 +310,8 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                   <span
                     className={
                       step1Done
-                        ? 'line-through text-stone-400'
-                        : 'text-stone-800 font-medium'
+                        ? 'line-through text-cq-stone-400'
+                        : 'text-cq-stone-800 font-medium'
                     }
                   >
                     Find centres that fit
@@ -321,7 +321,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                   <button
                     type="button"
                     onClick={() => onNavigate('find')}
-                    className="px-2 py-0.5 text-[11px] font-bold bg-[#0B4A52] hover:bg-[#08383e] text-white rounded-md transition-colors cursor-pointer"
+                    className="px-2 py-0.5 text-[11px] font-bold bg-cq-brand hover:bg-cq-brand-hover text-white rounded-md transition-colors cursor-pointer"
                   >
                     Find
                   </button>
@@ -329,11 +329,11 @@ export const HomeTab: React.FC<HomeTabProps> = ({
               </div>
 
               {/* Step B */}
-              <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-stone-50/60 border border-stone-100">
+              <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-cq-stone-50/60 border border-cq-stone-100">
                 <div className="flex items-center gap-2">
                   <div
                     className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-white ${
-                      step2Done ? 'bg-[#45B5A5]' : 'border border-stone-300 text-transparent'
+                      step2Done ? 'bg-cq-secondary' : 'border border-cq-stone-300 text-transparent'
                     }`}
                   >
                     <Check className="w-3 h-3 stroke-[2.5]" />
@@ -341,8 +341,8 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                   <span
                     className={
                       step2Done
-                        ? 'line-through text-stone-400'
-                        : 'text-stone-800 font-medium'
+                        ? 'line-through text-cq-stone-400'
+                        : 'text-cq-stone-800 font-medium'
                     }
                   >
                     Finish your drafts
@@ -352,7 +352,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                   <button
                     type="button"
                     onClick={() => onNavigate('apply')}
-                    className="px-2 py-0.5 text-[11px] font-bold bg-[#0B4A52] hover:bg-[#08383e] text-white rounded-md transition-colors cursor-pointer"
+                    className="px-2 py-0.5 text-[11px] font-bold bg-cq-brand hover:bg-cq-brand-hover text-white rounded-md transition-colors cursor-pointer"
                   >
                     Review
                   </button>
@@ -360,11 +360,11 @@ export const HomeTab: React.FC<HomeTabProps> = ({
               </div>
 
               {/* Step C */}
-              <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-stone-50/60 border border-stone-100">
+              <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-cq-stone-50/60 border border-cq-stone-100">
                 <div className="flex items-center gap-2">
                   <div
                     className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-white ${
-                      step3Done ? 'bg-[#45B5A5]' : 'border border-stone-300 text-transparent'
+                      step3Done ? 'bg-cq-secondary' : 'border border-cq-stone-300 text-transparent'
                     }`}
                   >
                     <Check className="w-3 h-3 stroke-[2.5]" />
@@ -372,8 +372,8 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                   <span
                     className={
                       step3Done
-                        ? 'line-through text-stone-400'
-                        : 'text-stone-800 font-medium'
+                        ? 'line-through text-cq-stone-400'
+                        : 'text-cq-stone-800 font-medium'
                     }
                   >
                     Send your first application
@@ -383,7 +383,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                   <button
                     type="button"
                     onClick={() => onNavigate('apply')}
-                    className="px-2 py-0.5 text-[11px] font-bold bg-[#0B4A52] hover:bg-[#08383e] text-white rounded-md transition-colors cursor-pointer"
+                    className="px-2 py-0.5 text-[11px] font-bold bg-cq-brand hover:bg-cq-brand-hover text-white rounded-md transition-colors cursor-pointer"
                   >
                     Apply
                   </button>
@@ -391,11 +391,11 @@ export const HomeTab: React.FC<HomeTabProps> = ({
               </div>
 
               {/* Step D */}
-              <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-stone-50/60 border border-stone-100">
+              <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-cq-stone-50/60 border border-cq-stone-100">
                 <div className="flex items-center gap-2">
                   <div
                     className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-white ${
-                      step4Done ? 'bg-[#45B5A5]' : 'border border-stone-300 text-transparent'
+                      step4Done ? 'bg-cq-secondary' : 'border border-cq-stone-300 text-transparent'
                     }`}
                   >
                     <Check className="w-3 h-3 stroke-[2.5]" />
@@ -403,8 +403,8 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                   <span
                     className={
                       step4Done
-                        ? 'line-through text-stone-400'
-                        : 'text-stone-800 font-medium'
+                        ? 'line-through text-cq-stone-400'
+                        : 'text-cq-stone-800 font-medium'
                     }
                   >
                     Respond to offers
@@ -414,7 +414,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                   <button
                     type="button"
                     onClick={() => onNavigate('track')}
-                    className="px-2 py-0.5 text-[11px] font-bold bg-[#F9BE2F] hover:bg-[#e0a31a] text-[#451A03] rounded-md transition-colors cursor-pointer"
+                    className="px-2 py-0.5 text-[11px] font-bold bg-cq-accent hover:bg-cq-sun-deep text-cq-amber-ink-4 rounded-md transition-colors cursor-pointer"
                   >
                     Offers
                   </button>
@@ -423,59 +423,59 @@ export const HomeTab: React.FC<HomeTabProps> = ({
             </div>
 
             {/* Footer line */}
-            <p className="text-[11px] text-stone-400 text-center pt-1 border-t border-stone-100">
+            <p className="text-[11px] text-cq-stone-400 text-center pt-1 border-t border-cq-stone-100">
               At your pace. One step at a time.
             </p>
           </div>
 
           {/* CARD 2: At a glance */}
-          <div className="bg-white rounded-xl border border-stone-200 p-5 shadow-xs space-y-4">
-            <h2 className="text-sm font-bold text-stone-900 tracking-tight">
+          <div className="bg-white rounded-xl border border-cq-stone-200 p-5 shadow-xs space-y-4">
+            <h2 className="text-sm font-bold text-cq-stone-900 tracking-tight">
               At a glance
             </h2>
 
             {/* Three small numbers */}
             <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="bg-stone-50 p-2.5 rounded-lg border border-stone-100">
-                <div className="text-lg font-bold text-[#0B4A52]">
+              <div className="bg-cq-stone-50 p-2.5 rounded-lg border border-cq-stone-100">
+                <div className="text-lg font-bold text-cq-brand">
                   {applicationsSentCount}
                 </div>
-                <div className="text-[10px] text-stone-500 font-medium leading-tight mt-0.5">
+                <div className="text-[10px] text-cq-stone-500 font-medium leading-tight mt-0.5">
                   Applications sent
                 </div>
               </div>
 
-              <div className="bg-stone-50 p-2.5 rounded-lg border border-stone-100">
-                <div className="text-lg font-bold text-[#0B4A52]">
+              <div className="bg-cq-stone-50 p-2.5 rounded-lg border border-cq-stone-100">
+                <div className="text-lg font-bold text-cq-brand">
                   {onWaitlistCount}
                 </div>
-                <div className="text-[10px] text-stone-500 font-medium leading-tight mt-0.5">
+                <div className="text-[10px] text-cq-stone-500 font-medium leading-tight mt-0.5">
                   On a waitlist
                 </div>
               </div>
 
-              <div className="bg-stone-50 p-2.5 rounded-lg border border-stone-100">
-                <div className="text-lg font-bold text-[#451A03]">
+              <div className="bg-cq-stone-50 p-2.5 rounded-lg border border-cq-stone-100">
+                <div className="text-lg font-bold text-cq-amber-ink-4">
                   {offersCount}
                 </div>
-                <div className="text-[10px] text-stone-500 font-medium leading-tight mt-0.5">
+                <div className="text-[10px] text-cq-stone-500 font-medium leading-tight mt-0.5">
                   Offers
                 </div>
               </div>
             </div>
 
             {/* Best position info */}
-            <div className="p-2.5 rounded-lg bg-teal-50/60 border border-[#45B5A5]/30 text-xs">
-              <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider block mb-0.5">
+            <div className="p-2.5 rounded-lg bg-cq-teal-50/60 border border-cq-secondary/30 text-xs">
+              <span className="text-[10px] font-bold text-cq-teal-800 uppercase tracking-wider block mb-0.5">
                 Current Best Position
               </span>
               {bestWaitlistApp && bestWaitlistApp.waitlistPosition ? (
-                <p className="text-stone-800 font-medium leading-tight">
+                <p className="text-cq-stone-800 font-medium leading-tight">
                   #{bestWaitlistApp.waitlistPosition} at {bestCentreName} ·{' '}
                   {reportedLine(bestWaitlistApp.waitlistReportedBy || bestCentreName, bestWaitlistApp.waitlistReportedDate || 'recently')}
                 </p>
               ) : (
-                <p className="text-stone-500 italic">
+                <p className="text-cq-stone-500 italic">
                   Position not provided by the centre
                 </p>
               )}
@@ -486,7 +486,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigate('track')}
-                className="text-xs font-semibold text-[#0B4A52] hover:text-[#45B5A5] inline-flex items-center gap-1 transition-colors cursor-pointer"
+                className="text-xs font-semibold text-cq-brand hover:text-cq-secondary inline-flex items-center gap-1 transition-colors cursor-pointer"
               >
                 <span>See all in Track</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -495,42 +495,42 @@ export const HomeTab: React.FC<HomeTabProps> = ({
           </div>
 
           {/* CARD 3: My reminders */}
-          <div className="bg-white rounded-xl border border-stone-200 p-5 shadow-xs space-y-3.5">
-            <h2 className="text-sm font-bold text-stone-900 tracking-tight">
+          <div className="bg-white rounded-xl border border-cq-stone-200 p-5 shadow-xs space-y-3.5">
+            <h2 className="text-sm font-bold text-cq-stone-900 tracking-tight">
               My reminders
             </h2>
 
             {/* Reminders List */}
             <div className="space-y-2 max-h-48 overflow-y-auto pr-0.5">
               {reminders.length === 0 ? (
-                <p className="text-xs text-stone-400 italic py-2 text-center">
+                <p className="text-xs text-cq-stone-400 italic py-2 text-center">
                   No reminders added yet.
                 </p>
               ) : (
                 reminders.map((r) => (
                   <div
                     key={r.id}
-                    className="flex items-start justify-between gap-2 p-2 rounded-lg bg-stone-50 border border-stone-100 text-xs group"
+                    className="flex items-start justify-between gap-2 p-2 rounded-lg bg-cq-stone-50 border border-cq-stone-100 text-xs group"
                   >
                     <label className="flex items-start gap-2 cursor-pointer flex-1 min-w-0">
                       <input
                         type="checkbox"
                         checked={r.completed}
                         onChange={() => handleToggleReminder(r.id)}
-                        className="mt-0.5 w-3.5 h-3.5 rounded text-[#0B4A52] focus:ring-[#45B5A5] border-stone-300 shrink-0 cursor-pointer"
+                        className="mt-0.5 w-3.5 h-3.5 rounded text-cq-brand focus:ring-cq-secondary border-cq-stone-300 shrink-0 cursor-pointer"
                       />
                       <div className="flex-1 min-w-0">
                         <span
                           className={`block leading-snug break-words ${
                             r.completed
-                              ? 'line-through text-stone-400'
-                              : 'text-stone-800 font-medium'
+                              ? 'line-through text-cq-stone-400'
+                              : 'text-cq-stone-800 font-medium'
                           }`}
                         >
                           {r.text}
                         </span>
                         {r.date && (
-                          <span className="text-[10px] text-stone-400 flex items-center gap-1 mt-0.5">
+                          <span className="text-[10px] text-cq-stone-400 flex items-center gap-1 mt-0.5">
                             <Calendar className="w-2.5 h-2.5" />
                             {r.date}
                           </span>
@@ -541,7 +541,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                     <button
                       type="button"
                       onClick={() => handleRemoveReminder(r.id)}
-                      className="text-stone-300 hover:text-rose-600 transition-colors p-0.5 shrink-0"
+                      className="text-cq-stone-300 hover:text-cq-rose-600 transition-colors p-0.5 shrink-0"
                       title="Remove reminder"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -552,13 +552,13 @@ export const HomeTab: React.FC<HomeTabProps> = ({
             </div>
 
             {/* Add Reminder Form */}
-            <form onSubmit={handleAddReminder} className="space-y-2 pt-1 border-t border-stone-100">
+            <form onSubmit={handleAddReminder} className="space-y-2 pt-1 border-t border-cq-stone-100">
               <input
                 type="text"
                 value={newReminderText}
                 onChange={(e) => setNewReminderText(e.target.value)}
                 placeholder="Add a quick reminder..."
-                className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-stone-200 focus:outline-hidden focus:ring-1 focus:ring-[#45B5A5] focus:border-[#45B5A5]"
+                className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-cq-stone-200 focus:outline-hidden focus:ring-1 focus:ring-cq-secondary focus:border-cq-secondary"
               />
 
               <div className="flex items-center gap-2">
@@ -567,7 +567,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                   value={newReminderDate}
                   onChange={(e) => setNewReminderDate(e.target.value)}
                   placeholder="Date (e.g. Nov 15)"
-                  className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-stone-200 focus:outline-hidden focus:ring-1 focus:ring-[#45B5A5] focus:border-[#45B5A5]"
+                  className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-cq-stone-200 focus:outline-hidden focus:ring-1 focus:ring-cq-secondary focus:border-cq-secondary"
                 />
 
                 <button
@@ -575,8 +575,8 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                   disabled={!newReminderText.trim()}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors ${
                     newReminderText.trim()
-                      ? 'bg-[#0B4A52] hover:bg-[#08383e] text-white cursor-pointer'
-                      : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                      ? 'bg-cq-brand hover:bg-cq-brand-hover text-white cursor-pointer'
+                      : 'bg-cq-stone-200 text-cq-stone-400 cursor-not-allowed'
                   }`}
                 >
                   <Plus className="w-3 h-3" />
@@ -586,7 +586,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
             </form>
 
             {/* Note */}
-            <p className="text-[10px] text-stone-400 italic text-center">
+            <p className="text-[10px] text-cq-stone-400 italic text-center">
               Only on this page · no notifications sent
             </p>
           </div>

@@ -8,7 +8,7 @@ export interface EyebrowProps {
 }
 
 export const Eyebrow: React.FC<EyebrowProps> = ({ children, className = '' }) => (
-  <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5B6B66] ${className}`}>
+  <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] text-cq-muted ${className}`}>
     {children}
   </p>
 );
@@ -29,10 +29,10 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-6 mb-8">
     <div>
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-      <h1 className="mt-2 text-[34px] sm:text-[40px] font-bold leading-tight tracking-[-0.03em] text-[#173F42]">
+      <h1 className="mt-2 text-[34px] sm:text-[40px] font-bold leading-tight tracking-[-0.03em] text-cq-ink">
         {title}
       </h1>
-      {subtitle && <p className="mt-2 text-sm text-[#5B6B66]">{subtitle}</p>}
+      {subtitle && <p className="mt-2 text-sm text-cq-muted">{subtitle}</p>}
     </div>
     {action && <div className="shrink-0">{action}</div>}
   </div>
@@ -44,7 +44,7 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export const Card: React.FC<CardProps> = ({ className = '', children, ...props }) => (
-  <div className={`bg-white rounded-2xl border border-[#E7E4DA] p-6 ${className}`} {...props}>
+  <div className={`bg-white rounded-2xl border border-cq-line p-6 ${className}`} {...props}>
     {children}
   </div>
 );
@@ -63,7 +63,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
 }) => (
   <button
     type="button"
-    className={`inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-[#0B4A52] hover:bg-[#08383E] text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${className}`}
+    className={`inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-cq-brand hover:bg-cq-brand-hover text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${className}`}
     {...props}
   >
     <span>{children}</span>
@@ -83,7 +83,7 @@ export const GhostButton: React.FC<GhostButtonProps> = ({
 }) => (
   <button
     type="button"
-    className={`h-10 px-4 rounded-xl border border-[#E7E4DA] bg-white text-sm font-semibold text-[#173F42] hover:bg-[#FAF9F4] transition-colors inline-flex items-center justify-center gap-2 cursor-pointer ${className}`}
+    className={`h-10 px-4 rounded-xl border border-cq-line bg-white text-sm font-semibold text-cq-ink hover:bg-cq-page transition-colors inline-flex items-center justify-center gap-2 cursor-pointer ${className}`}
     {...props}
   >
     {children}
@@ -104,10 +104,10 @@ export const IconTile: React.FC<IconTileProps> = ({
   className = '',
 }) => {
   const tones: Record<IconTileTone, { bg: string; text: string }> = {
-    sage: { bg: 'bg-[#E4ECE1]', text: 'text-[#4E7A5A]' },
-    peach: { bg: 'bg-[#FBE9E1]', text: 'text-[#C46E4E]' },
-    lilac: { bg: 'bg-[#ECE8F5]', text: 'text-[#6B5B95]' },
-    sand: { bg: 'bg-[#F3EEE3]', text: 'text-[#8A6A3B]' },
+    sage: { bg: 'bg-cq-sage', text: 'text-cq-sage-ink' },
+    peach: { bg: 'bg-cq-peach', text: 'text-cq-peach-ink' },
+    lilac: { bg: 'bg-cq-lilac', text: 'text-cq-lilac-ink' },
+    sand: { bg: 'bg-cq-sand', text: 'text-cq-sand-ink-2' },
   };
 
   const current = tones[tone] || tones.sage;
@@ -127,8 +127,8 @@ export interface SimNoteProps {
 }
 
 export const SimNote: React.FC<SimNoteProps> = ({ children, className = '' }) => (
-  <div className={`text-[11px] text-[#7A8A84] flex items-center gap-1.5 ${className}`}>
-    <Sparkles className="w-3 h-3 text-[#7A8A84] shrink-0" />
+  <div className={`text-[11px] text-cq-soft flex items-center gap-1.5 ${className}`}>
+    <Sparkles className="w-3 h-3 text-cq-soft shrink-0" />
     <span>{children}</span>
   </div>
 );
@@ -139,7 +139,7 @@ export const SimNote: React.FC<SimNoteProps> = ({ children, className = '' }) =>
  */
 export const SimTag: React.FC<{ className?: string }> = ({ className = '' }) => (
   <span
-    className={`inline-flex items-center rounded px-1.5 py-0.5 bg-[#F3EBDD] text-[#5B4A2E] text-[10px] font-semibold leading-none align-middle ${className}`}
+    className={`inline-flex items-center rounded px-1.5 py-0.5 bg-cq-band text-cq-sand-ink text-[10px] font-semibold leading-none align-middle ${className}`}
   >
     Simulated
   </span>
@@ -153,9 +153,9 @@ export const CentreDemoBanner: React.FC<{ centreName: string; realCentre: boolea
 }) => (
   <div
     role="note"
-    className={`rounded-xl border border-[#E7D6A8] bg-[#FBF6EA] px-4 py-2.5 text-xs text-[#5B4A2E] flex items-start gap-2 ${className}`}
+    className={`rounded-xl border border-cq-sand-line bg-cq-sand-50 px-4 py-2.5 text-xs text-cq-sand-ink flex items-start gap-2 ${className}`}
   >
-    <Sparkles className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#8A6A3B]" />
+    <Sparkles className="w-3.5 h-3.5 shrink-0 mt-0.5 text-cq-sand-ink-2" />
     <span>
       {realCentre ? (
         <>
@@ -178,14 +178,14 @@ export const AiFallbackNote: React.FC<{ aiMode?: AiMode | null; className?: stri
   className = '',
 }) =>
   aiMode === 'fallback' ? (
-    <p className={`text-[11px] text-[#7A8A84] ${className}`}>{isAiOffline() ? 'Offline demo: AI unavailable, basic mode used' : 'AI unavailable: basic mode used'}</p>
+    <p className={`text-[11px] text-cq-soft ${className}`}>{isAiOffline() ? 'Offline demo: AI unavailable, basic mode used' : 'AI unavailable: basic mode used'}</p>
   ) : null;
 
 /** Plain-language notice when an AI feature can't run (rate limit, signed out, server unreachable). */
 export const AiNotice: React.FC<{ message?: string | null; className?: string }> = ({ message, className = '' }) =>
   message ? (
     // Offline demo: the only notices are basic-mode notes, so they're grey like AiFallbackNote, not error-red
-    <p role="status" className={`text-[11px] ${isAiOffline() ? 'text-[#7A8A84]' : 'font-medium text-[#A4543A]'} ${className}`}>
+    <p role="status" className={`text-[11px] ${isAiOffline() ? 'text-cq-soft' : 'font-medium text-cq-rust'} ${className}`}>
       {message}
     </p>
   ) : null;
@@ -202,9 +202,9 @@ export const DemoBanner: React.FC<DemoBannerProps> = ({
   className = '',
 }) => (
   <div
-    className={`rounded-2xl bg-[#EEF3EA] border border-[#D9E4D3] px-5 py-4 text-sm text-[#3F5250] flex items-start gap-3 ${className}`}
+    className={`rounded-2xl bg-cq-sage-75 border border-cq-sage-line-2 px-5 py-4 text-sm text-cq-ink-2 flex items-start gap-3 ${className}`}
   >
-    <Sparkles className="w-4 h-4 text-[#4E7A5A] shrink-0 mt-0.5" />
+    <Sparkles className="w-4 h-4 text-cq-sage-ink shrink-0 mt-0.5" />
     <div>
       <span className="font-bold">{title} </span>
       <span>{children}</span>

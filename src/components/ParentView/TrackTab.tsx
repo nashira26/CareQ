@@ -86,16 +86,16 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 
       {/* Offer Received Spotlight Card (if any active offer) */}
       {applications.some((a) => a.status === 'Offer') && (
-        <div className="rounded-2xl bg-[#E4ECE1] border border-[#CBD9C6] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+        <div className="rounded-2xl bg-cq-sage border border-cq-sage-line p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
           <div className="flex items-start gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-white text-[#4E7A5A] flex items-center justify-center shrink-0 shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-white text-cq-sage-ink flex items-center justify-center shrink-0 shadow-2xs">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[#173F42] flex items-center gap-2">
+              <h3 className="text-base font-bold text-cq-ink flex items-center gap-2">
                 Placement offer received! <SimTag />
               </h3>
-              <p className="text-xs text-[#5B6B66] mt-0.5">
+              <p className="text-xs text-cq-muted mt-0.5">
                 A spot is available for {parentProfile.childName}. Review and accept below to secure enrolment.
               </p>
             </div>
@@ -116,12 +116,12 @@ export const TrackTab: React.FC<TrackTabProps> = ({
       {/* Section Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2">
         <div className="flex items-center gap-2.5">
-          <h2 className="text-lg font-bold text-[#173F42]">Your applications</h2>
-          <span className="rounded-md bg-[#E4ECE1] text-[#4E7A5A] text-xs px-2 py-0.5 font-semibold">
+          <h2 className="text-lg font-bold text-cq-ink">Your applications</h2>
+          <span className="rounded-md bg-cq-sage text-cq-sage-ink text-xs px-2 py-0.5 font-semibold">
             {applications.length}
           </span>
         </div>
-        <div className="text-xs text-[#5B6B66]">
+        <div className="text-xs text-cq-muted">
           {parentProfile.name} &amp; {parentProfile.childName} · Demo family
         </div>
       </div>
@@ -133,7 +133,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
           <div className="hidden md:block">
             <Card className="p-0 overflow-hidden shadow-2xs">
               {/* Table Header Row */}
-              <div className="grid grid-cols-12 gap-4 px-6 py-3.5 bg-[#FAF9F4] text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5B6B66] border-b border-[#E7E4DA]">
+              <div className="grid grid-cols-12 gap-4 px-6 py-3.5 bg-cq-page text-[11px] font-semibold uppercase tracking-[0.18em] text-cq-muted border-b border-cq-line">
                 <div className="col-span-4">CHILD CARE CENTRE</div>
                 <div className="col-span-2">PROGRAM / START</div>
                 <div className="col-span-2">STATUS</div>
@@ -142,7 +142,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
               </div>
 
               {/* Rows */}
-              <div className="divide-y divide-[#E7E4DA]">
+              <div className="divide-y divide-cq-line">
                 {applications.map((app) => {
                   const centre = centres.find((c) => c.id === app.centreId);
                   const hasPosition =
@@ -157,22 +157,22 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                       key={app.id}
                       className={`grid grid-cols-12 gap-4 items-center py-6 px-6 transition-colors ${
                         isOffer
-                          ? 'bg-[#E4ECE1]/25 hover:bg-[#E4ECE1]/40'
+                          ? 'bg-cq-sage/25 hover:bg-cq-sage/40'
                           : isWithdrawn
-                          ? 'opacity-60 bg-[#FAF9F4]/40'
-                          : 'hover:bg-[#FAF9F4]/70'
+                          ? 'opacity-60 bg-cq-page/40'
+                          : 'hover:bg-cq-page/70'
                       }`}
                     >
                       {/* 1. Centre name & details */}
                       <div className="col-span-4 min-w-0 pr-3">
-                        <div className="text-sm font-bold text-[#173F42] truncate">
+                        <div className="text-sm font-bold text-cq-ink truncate">
                           {centre?.name || 'Child Care Centre'}
                         </div>
-                        <div className="text-[11px] text-[#7A8A84] mt-0.5 truncate">
+                        <div className="text-[11px] text-cq-soft mt-0.5 truncate">
                           {centre?.neighbourhood || 'Toronto'} · {app.id}
                         </div>
                         {app.submittedAt && (
-                          <div className="text-[11px] text-[#7A8A84] mt-0.5">
+                          <div className="text-[11px] text-cq-soft mt-0.5">
                             Submitted {app.submittedAt}
                           </div>
                         )}
@@ -180,10 +180,10 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 
                       {/* 2. Program / Start */}
                       <div className="col-span-2">
-                        <div className="text-xs font-semibold text-[#173F42]">
+                        <div className="text-xs font-semibold text-cq-ink">
                           {app.careType || parentProfile.careType}
                         </div>
-                        <div className="text-[11px] text-[#5B6B66] mt-0.5">
+                        <div className="text-[11px] text-cq-muted mt-0.5">
                           Start {app.preferredStartDate || parentProfile.preferredStartDate}
                         </div>
                       </div>
@@ -197,25 +197,25 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                       <div className="col-span-2">
                         {hasPosition ? (
                           <div>
-                            <div className="text-2xl font-bold text-[#4E7A5A] leading-tight flex items-center gap-1.5">
+                            <div className="text-2xl font-bold text-cq-sage-ink leading-tight flex items-center gap-1.5">
                               #{app.waitlistPosition}
                               <SimTag />
                             </div>
-                            <div className="text-[10px] text-[#7A8A84] mt-0.5 leading-tight">
+                            <div className="text-[10px] text-cq-soft mt-0.5 leading-tight">
                               {reportedLine(app.waitlistReportedBy || centre?.name || 'centre', app.waitlistReportedDate || 'recently')}
                             </div>
                             {app.waitlistEstimate && (
-                              <div className="text-[10px] text-[#7A8A84] mt-1 leading-tight">
+                              <div className="text-[10px] text-cq-soft mt-1 leading-tight">
                                 {estimateLine(app.waitlistEstimate)}
                               </div>
                             )}
                           </div>
                         ) : app.waitlistEstimate ? (
-                          <div className="text-[10px] text-[#7A8A84] leading-tight">
+                          <div className="text-[10px] text-cq-soft leading-tight">
                             {estimateLine(app.waitlistEstimate)}
                           </div>
                         ) : (
-                          <div className="text-xs text-[#7A8A84]">Not reported</div>
+                          <div className="text-xs text-cq-soft">Not reported</div>
                         )}
                       </div>
 
@@ -235,7 +235,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                             <button
                               type="button"
                               onClick={() => setHistoryModalAppId(app.id)}
-                              className="text-[11px] font-semibold text-[#0B4A52] hover:underline cursor-pointer"
+                              className="text-[11px] font-semibold text-cq-brand hover:underline cursor-pointer"
                             >
                               History
                             </button>
@@ -255,7 +255,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                             <button
                               type="button"
                               onClick={onNavigateToApply}
-                              className="text-[11px] font-semibold text-[#0B4A52] hover:underline cursor-pointer"
+                              className="text-[11px] font-semibold text-cq-brand hover:underline cursor-pointer"
                             >
                               Complete apply →
                             </button>
@@ -265,20 +265,20 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                             <button
                               type="button"
                               onClick={() => onWithdrawApplication(app.id)}
-                              className="text-[11px] font-medium text-[#7A8A84] hover:text-rose-600 cursor-pointer transition-colors"
+                              className="text-[11px] font-medium text-cq-soft hover:text-cq-rose-600 cursor-pointer transition-colors"
                             >
                               Withdraw
                             </button>
                           )}
 
                           {isAccepted && (
-                            <span className="text-[11px] font-bold text-[#4E7A5A]">
+                            <span className="text-[11px] font-bold text-cq-sage-ink">
                               ✓ Confirmed
                             </span>
                           )}
 
                           {isWithdrawn && (
-                            <span className="text-[11px] text-[#7A8A84] italic">
+                            <span className="text-[11px] text-cq-soft italic">
                               Withdrawn
                             </span>
                           )}
@@ -306,19 +306,19 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                 <Card
                   key={app.id}
                   className={`p-5 space-y-4 ${
-                    isOffer ? 'bg-[#E4ECE1]/20 border-[#CBD9C6]' : ''
+                    isOffer ? 'bg-cq-sage/20' : ''
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="text-sm font-bold text-[#173F42]">
+                      <div className="text-sm font-bold text-cq-ink">
                         {centre?.name || 'Child Care Centre'}
                       </div>
-                      <div className="text-[11px] text-[#7A8A84] mt-0.5">
+                      <div className="text-[11px] text-cq-soft mt-0.5">
                         {centre?.neighbourhood || 'Toronto'} · {app.id}
                       </div>
                       {app.submittedAt && (
-                        <div className="text-[10px] text-[#7A8A84] mt-0.5">
+                        <div className="text-[10px] text-cq-soft mt-0.5">
                           Submitted {app.submittedAt}
                         </div>
                       )}
@@ -326,47 +326,47 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                     <StatusBadge status={app.status} size="sm" />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[#E7E4DA] text-xs">
+                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-cq-line text-xs">
                     <div>
-                      <span className="text-[10px] uppercase font-semibold text-[#5B6B66] block">
+                      <span className="text-[10px] uppercase font-semibold text-cq-muted block">
                         Program
                       </span>
-                      <span className="text-[#173F42] font-semibold">
+                      <span className="text-cq-ink font-semibold">
                         {app.careType || parentProfile.careType}
                       </span>
-                      <span className="block text-[11px] text-[#5B6B66]">
+                      <span className="block text-[11px] text-cq-muted">
                         Start {app.preferredStartDate || parentProfile.preferredStartDate}
                       </span>
                     </div>
 
                     <div>
-                      <span className="text-[10px] uppercase font-semibold text-[#5B6B66] block">
+                      <span className="text-[10px] uppercase font-semibold text-cq-muted block">
                         Queue
                       </span>
                       {hasPosition ? (
                         <div>
-                          <span className="text-xl font-bold text-[#4E7A5A] inline-flex items-center gap-1.5">
+                          <span className="text-xl font-bold text-cq-sage-ink inline-flex items-center gap-1.5">
                             #{app.waitlistPosition}
                             <SimTag />
                           </span>
-                          <span className="block text-[10px] text-[#7A8A84] mt-0.5">
+                          <span className="block text-[10px] text-cq-soft mt-0.5">
                             {reportedLine(app.waitlistReportedBy || centre?.name || 'centre', app.waitlistReportedDate || 'recently')}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-xs text-[#7A8A84]">Not reported</span>
+                        <span className="text-xs text-cq-soft">Not reported</span>
                       )}
                     </div>
                   </div>
 
                   {app.waitlistEstimate && (
-                    <div className="text-[11px] text-[#7A8A84] bg-[#FAF9F4] p-2.5 rounded-lg border border-[#E7E4DA]">
+                    <div className="text-[11px] text-cq-soft bg-cq-page p-2.5 rounded-lg border border-cq-line">
                       {estimateLine(app.waitlistEstimate)}
                     </div>
                   )}
 
                   <AskAboutCentre centreId={app.centreId} centreName={centre?.name || 'this centre'} hideWhenUncovered className="mb-2" />
-                  <div className="pt-3 border-t border-[#E7E4DA] flex items-center justify-between gap-2">
+                  <div className="pt-3 border-t border-cq-line flex items-center justify-between gap-2">
                     <GhostButton
                       onClick={() => onOpenConversation(app.centreId)}
                       className="h-9 text-xs"
@@ -379,7 +379,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                         <button
                           type="button"
                           onClick={() => setHistoryModalAppId(app.id)}
-                          className="text-xs font-semibold text-[#0B4A52] hover:underline"
+                          className="text-xs font-semibold text-cq-brand hover:underline"
                         >
                           History
                         </button>
@@ -399,7 +399,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                         <button
                           type="button"
                           onClick={() => onWithdrawApplication(app.id)}
-                          className="text-xs font-medium text-[#7A8A84] hover:text-rose-600"
+                          className="text-xs font-medium text-cq-soft hover:text-cq-rose-600"
                         >
                           Withdraw
                         </button>
@@ -413,7 +413,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
         </>
       ) : (
         <Card className="p-8 text-center space-y-3">
-          <p className="text-sm text-[#5B6B66]">No applications recorded yet.</p>
+          <p className="text-sm text-cq-muted">No applications recorded yet.</p>
           <PrimaryButton onClick={onNavigateToFind}>
             Find centres
           </PrimaryButton>
@@ -421,14 +421,14 @@ export const TrackTab: React.FC<TrackTabProps> = ({
       )}
 
       {/* Footer Row */}
-      <div className="rounded-2xl border border-[#E7E4DA] bg-white p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6">
+      <div className="rounded-2xl border border-cq-line bg-white p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6">
         <div className="flex items-center gap-3">
           <IconTile icon={Heart} tone="sand" />
           <div>
-            <div className="text-sm font-semibold text-[#173F42]">
+            <div className="text-sm font-semibold text-cq-ink">
               Queues are shown only when the centre records one.
             </div>
-            <div className="text-[11px] text-[#7A8A84] mt-0.5">
+            <div className="text-[11px] text-cq-soft mt-0.5">
               Centres manage their own admissions policies and waitlist updates.
             </div>
           </div>
@@ -440,50 +440,50 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 
       {/* Offer Acceptance & Withdraw Other Applications Confirmation Dialog */}
       {selectedOfferApp && selectedOfferCentre && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#173F42]/40 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-cq-ink/40 backdrop-blur-xs">
           <Card className="max-w-lg w-full p-6 shadow-xl space-y-4">
             <div className="flex items-start gap-3">
               <IconTile icon={Sparkles} tone="sage" />
               <div>
-                <h3 className="text-lg font-bold text-[#173F42]">
+                <h3 className="text-lg font-bold text-cq-ink">
                   Accept child care offer
                 </h3>
-                <p className="text-xs text-[#5B6B66]">
+                <p className="text-xs text-cq-muted">
                   {selectedOfferCentre.name} ({selectedOfferCentre.neighbourhood})
                 </p>
               </div>
             </div>
 
-            <div className="bg-[#E4ECE1]/60 border border-[#CBD9C6] rounded-xl p-3.5 text-xs text-[#173F42] space-y-1">
+            <div className="bg-cq-sage/60 border border-cq-sage-line rounded-xl p-3.5 text-xs text-cq-ink space-y-1">
               <p className="font-semibold flex flex-wrap items-center gap-2">
                 Simulated offer: a licensed spot has been offered for {parentProfile.childName}. <SimTag />
               </p>
-              <p className="text-[#5B6B66]">
+              <p className="text-cq-muted">
                 Target Start Date: {selectedOfferApp.preferredStartDate || parentProfile.preferredStartDate}
                 {selectedOfferCentre.hours ? ` · ${selectedOfferCentre.hours}` : ''}
               </p>
             </div>
 
             {otherActiveApps.length > 0 ? (
-              <div className="bg-[#FBFAF3] border border-[#E7E4DA] rounded-xl p-4 space-y-3">
+              <div className="bg-cq-input border border-cq-line rounded-xl p-4 space-y-3">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-[#C46E4E] shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-4 h-4 text-cq-peach-ink shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="text-xs font-semibold text-[#173F42]">
+                    <h4 className="text-xs font-semibold text-cq-ink">
                       Withdraw other applications?
                     </h4>
-                    <p className="text-xs text-[#5B6B66] mt-0.5">
+                    <p className="text-xs text-cq-muted mt-0.5">
                       You hold {otherActiveApps.length} other pending or waitlisted application(s):
                     </p>
                   </div>
                 </div>
 
-                <div className="max-h-28 overflow-y-auto space-y-1 text-xs text-[#5B6B66] pl-6 list-disc">
+                <div className="max-h-28 overflow-y-auto space-y-1 text-xs text-cq-muted pl-6 list-disc">
                   {otherActiveApps.map((oa) => {
                     const c = centres.find((centre) => centre.id === oa.centreId);
                     return (
                       <div key={oa.id} className="flex justify-between items-center pr-2 py-0.5">
-                        <span className="font-medium text-[#173F42] truncate">
+                        <span className="font-medium text-cq-ink truncate">
                           • {c?.name}
                         </span>
                         <StatusBadge status={oa.status} size="sm" />
@@ -492,12 +492,12 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                   })}
                 </div>
 
-                <p className="text-[11px] text-[#7A8A84] pt-1 border-t border-[#E7E4DA]">
+                <p className="text-[11px] text-cq-soft pt-1 border-t border-cq-line">
                   Withdrawing other applications frees up waitlist spots for other Ontario families.
                 </p>
               </div>
             ) : (
-              <p className="text-xs text-[#5B6B66]">
+              <p className="text-xs text-cq-muted">
                 You have no other active applications in the queue.
               </p>
             )}
@@ -543,28 +543,28 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 
       {/* Waitlist Position History Modal */}
       {historyModalApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#173F42]/40 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-cq-ink/40 backdrop-blur-xs">
           <Card className="max-w-md w-full p-6 shadow-xl space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h3 className="text-base font-bold text-[#173F42]">
+                <h3 className="text-base font-bold text-cq-ink">
                   Waitlist position history
                 </h3>
-                <p className="text-xs text-[#5B6B66] mt-0.5">
+                <p className="text-xs text-cq-muted mt-0.5">
                   {historyModalCentre?.name || historyModalApp.waitlistReportedBy || 'Child Care Centre'} · {historyModalApp.childName}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setHistoryModalAppId(null)}
-                className="text-[#7A8A84] hover:text-[#173F42] p-1 rounded-lg transition-colors cursor-pointer"
+                className="text-cq-soft hover:text-cq-ink p-1 rounded-lg transition-colors cursor-pointer"
                 aria-label="Close"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="bg-[#FAF9F4] border border-[#E7E4DA] rounded-xl p-4">
+            <div className="bg-cq-page border border-cq-line rounded-xl p-4">
               {(() => {
                 const historyReporter = historyModalCentre?.name || historyModalApp.waitlistReportedBy || 'the centre';
                 const history =
@@ -583,12 +583,12 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                   return (
                     <div className="space-y-2 py-1">
                       {history.length === 1 && (
-                        <div className="text-sm text-[#173F42]">
+                        <div className="text-sm text-cq-ink">
                           - Position {history[0].position} (joined the waitlist)
-                          <span className="block pl-3 text-[11px] text-[#7A8A84]">{reportedLine(historyReporter, history[0].date)}</span>
+                          <span className="block pl-3 text-[11px] text-cq-soft">{reportedLine(historyReporter, history[0].date)}</span>
                         </div>
                       )}
-                      <p className="text-xs text-[#7A8A84] italic">No changes recorded yet.</p>
+                      <p className="text-xs text-cq-soft italic">No changes recorded yet.</p>
                     </div>
                   );
                 }
@@ -596,16 +596,16 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                 const newestFirst = [...history].reverse();
 
                 return (
-                  <ul className="space-y-2.5 text-xs text-[#173F42]">
+                  <ul className="space-y-2.5 text-xs text-cq-ink">
                     {newestFirst.map((item, idx) => {
                       const isOldest = idx === newestFirst.length - 1;
                       return (
                         <li key={idx} className="flex items-start gap-2">
-                          <span className="text-[#7A8A84] select-none">-</span>
+                          <span className="text-cq-soft select-none">-</span>
                           <span>
                             Position {item.position}
                             {isOldest ? ' (joined the waitlist)' : ''}
-                            <span className="block text-[11px] text-[#7A8A84]">{reportedLine(historyReporter, item.date)}</span>
+                            <span className="block text-[11px] text-cq-soft">{reportedLine(historyReporter, item.date)}</span>
                           </span>
                         </li>
                       );

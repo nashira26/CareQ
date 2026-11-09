@@ -29,8 +29,8 @@ const now = () => new Date().toLocaleTimeString('en-US', { hour: 'numeric', minu
 
 /** One source under an answer: a handbook quote card, or "From your application · Simulated". */
 const QuoteCard: React.FC<{ c: AskCitation }> = ({ c }) => (
-  <div className="rounded-xl border border-[#E7E4DA] bg-[#FAF9F4] px-2.5 py-2 space-y-1">
-    <p className="text-[10px] font-semibold text-[#5B6B66] flex items-center gap-1 flex-wrap">
+  <div className="rounded-xl border border-cq-line bg-cq-page px-2.5 py-2 space-y-1">
+    <p className="text-[10px] font-semibold text-cq-muted flex items-center gap-1 flex-wrap">
       <span>{citationHeading(c)}</span>
       {c.kind === 'application' && c.simulated && (
         <>
@@ -39,16 +39,16 @@ const QuoteCard: React.FC<{ c: AskCitation }> = ({ c }) => (
         </>
       )}
     </p>
-    {c.kind === 'document' && <p className="text-[11px] text-[#173F42] italic leading-snug">“{c.quote}”</p>}
-    {c.label && <p className="text-[10px] font-medium text-[#8A6A3B]">{c.label}</p>}
+    {c.kind === 'document' && <p className="text-[11px] text-cq-ink italic leading-snug">“{c.quote}”</p>}
+    {c.label && <p className="text-[10px] font-medium text-cq-sand-ink-2">{c.label}</p>}
     {(c.sourceUrl || showSourceNote(c)) && (
-      <p className="text-[10px] text-[#7A8A84] flex items-center gap-1 flex-wrap">
+      <p className="text-[10px] text-cq-soft flex items-center gap-1 flex-wrap">
         {c.sourceUrl && (
           <a
             href={c.sourceUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-0.5 font-semibold text-[#0B4A52] hover:underline"
+            className="inline-flex items-center gap-0.5 font-semibold text-cq-brand hover:underline"
           >
             Source <ExternalLink className="w-2.5 h-2.5" />
           </a>
@@ -157,14 +157,14 @@ export const AskCareQAssistant: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsOpen(true)}
-            className="flex items-center gap-2 px-4 py-3 bg-[#0B4A52] hover:bg-[#08383e] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-white cursor-pointer group"
+            className="flex items-center gap-2 px-4 py-3 bg-cq-brand hover:bg-cq-brand-hover text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 border-2 border-white cursor-pointer group"
             title="Ask CareQ verified help assistant"
           >
-            <div className="w-6 h-6 rounded-full bg-[#45B5A5]/30 flex items-center justify-center text-white">
+            <div className="w-6 h-6 rounded-full bg-cq-secondary/30 flex items-center justify-center text-white">
               <Bot className="w-4 h-4" />
             </div>
             <span className="text-xs sm:text-sm font-bold tracking-tight">Ask CareQ</span>
-            <span className="w-2 h-2 rounded-full bg-[#F9BE2F] animate-pulse"></span>
+            <span className="w-2 h-2 rounded-full bg-cq-accent animate-pulse"></span>
           </button>
         )}
       </div>
@@ -174,17 +174,17 @@ export const AskCareQAssistant: React.FC = () => {
         <div
           role="dialog"
           aria-label="Ask CareQ"
-          className="fixed bottom-5 right-5 z-50 w-96 max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-4rem)] bg-white rounded-2xl shadow-2xl border border-stone-200 flex flex-col overflow-hidden animate-in fade-in-50 slide-in-from-bottom-4 duration-200"
+          className="fixed bottom-5 right-5 z-50 w-96 max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-4rem)] bg-white rounded-2xl shadow-2xl border border-cq-stone-200 flex flex-col overflow-hidden animate-in fade-in-50 slide-in-from-bottom-4 duration-200"
         >
           {/* Top Panel Header */}
-          <div className="bg-[#0B4A52] text-white p-3.5 flex items-center justify-between shadow-xs">
+          <div className="bg-cq-brand text-white p-3.5 flex items-center justify-between shadow-xs">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-[#45B5A5]">
+              <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-cq-secondary">
                 <Bot className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="font-bold text-sm tracking-tight leading-tight">Ask CareQ</h3>
-                <span className="text-[10px] text-teal-200">Verified Knowledge Assistant</span>
+                <span className="text-[10px] text-cq-teal-200">Verified Knowledge Assistant</span>
               </div>
             </div>
             <button
@@ -198,23 +198,23 @@ export const AskCareQAssistant: React.FC = () => {
           </div>
 
           {/* Mandatory Header Note */}
-          <div className="bg-[#F0FDFA] border-b border-[#45B5A5]/30 px-3.5 py-2 text-[11px] text-[#0B4A52] leading-tight flex items-start gap-1.5">
-            <Info className="w-3.5 h-3.5 text-[#45B5A5] shrink-0 mt-0.5" />
+          <div className="bg-cq-secondary-50 border-b border-cq-secondary/30 px-3.5 py-2 text-[11px] text-cq-brand leading-tight flex items-start gap-1.5">
+            <Info className="w-3.5 h-3.5 text-cq-secondary shrink-0 mt-0.5" />
             <span className="font-medium">
               AI assistant. Answers come only from CareQ's help pages and centres' published information.
             </span>
           </div>
 
           {centre && (
-            <div className="border-b border-stone-200 bg-white px-3.5 py-2 text-[11px] text-[#173F42] flex items-center gap-1.5">
-              <Building2 className="w-3.5 h-3.5 text-[#0B4A52] shrink-0" />
+            <div className="border-b border-cq-stone-200 bg-white px-3.5 py-2 text-[11px] text-cq-ink flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5 text-cq-brand shrink-0" />
               <span className="flex-1 min-w-0 truncate">
                 Asking about <span className="font-semibold">{centre.centreName}</span>
               </span>
               <button
                 type="button"
                 onClick={() => setCentre(null)}
-                className="shrink-0 p-0.5 rounded text-[#7A8A84] hover:text-[#173F42] hover:bg-stone-100 cursor-pointer"
+                className="shrink-0 p-0.5 rounded text-cq-soft hover:text-cq-ink hover:bg-cq-stone-100 cursor-pointer"
                 aria-label="Stop asking about this centre"
                 title="Ask general questions instead"
               >
@@ -224,7 +224,7 @@ export const AskCareQAssistant: React.FC = () => {
           )}
 
           {/* Messages Feed */}
-          <div className="flex-1 p-3.5 overflow-y-auto space-y-3 bg-[#F7F8F7]/60 text-xs">
+          <div className="flex-1 p-3.5 overflow-y-auto space-y-3 bg-cq-surface-grey/60 text-xs">
             {messages.map((msg) => {
               const isUser = msg.sender === 'user';
               return (
@@ -232,8 +232,8 @@ export const AskCareQAssistant: React.FC = () => {
                   <div
                     className={`max-w-[85%] rounded-2xl p-3 leading-relaxed whitespace-pre-wrap ${
                       isUser
-                        ? 'bg-[#0B4A52] text-white rounded-br-xs'
-                        : 'bg-white text-stone-800 border border-stone-200 shadow-2xs rounded-bl-xs'
+                        ? 'bg-cq-brand text-white rounded-br-xs'
+                        : 'bg-white text-cq-stone-800 border border-cq-stone-200 shadow-2xs rounded-bl-xs'
                     }`}
                   >
                     {msg.text}
@@ -245,16 +245,16 @@ export const AskCareQAssistant: React.FC = () => {
                       ))}
                     </div>
                   )}
-                  {!isUser && msg.notice && <p className="text-[11px] text-[#7A8A84] mt-1 px-1">{msg.notice}</p>}
+                  {!isUser && msg.notice && <p className="text-[11px] text-cq-soft mt-1 px-1">{msg.notice}</p>}
                   {!isUser && <AiFallbackNote aiMode={msg.aiMode} className="mt-1 px-1" />}
-                  <span className="text-[10px] text-stone-400 mt-1 px-1">{msg.timestamp}</span>
+                  <span className="text-[10px] text-cq-stone-400 mt-1 px-1">{msg.timestamp}</span>
                 </div>
               );
             })}
 
             {isLoading && (
-              <div className="flex items-center gap-2 text-stone-500 text-xs py-1 px-2">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0B4A52]" />
+              <div className="flex items-center gap-2 text-cq-stone-500 text-xs py-1 px-2">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-cq-brand" />
                 <span>Searching the published documents...</span>
               </div>
             )}
@@ -262,7 +262,7 @@ export const AskCareQAssistant: React.FC = () => {
           </div>
 
           {/* Suggested Quick Prompts */}
-          <div className="p-2 border-t border-stone-200 bg-white">
+          <div className="p-2 border-t border-cq-stone-200 bg-white">
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] no-scrollbar">
               {suggestions.map((q) => (
                 <button
@@ -270,7 +270,7 @@ export const AskCareQAssistant: React.FC = () => {
                   type="button"
                   onClick={() => handleSend(q)}
                   disabled={isLoading}
-                  className="shrink-0 px-2.5 py-1 rounded-full bg-stone-100 hover:bg-[#0B4A52]/10 text-stone-700 hover:text-[#0B4A52] border border-stone-200/80 transition-colors cursor-pointer text-left font-medium"
+                  className="shrink-0 px-2.5 py-1 rounded-full bg-cq-stone-100 hover:bg-cq-brand/10 text-cq-stone-700 hover:text-cq-brand border border-cq-stone-200/80 transition-colors cursor-pointer text-left font-medium"
                 >
                   {q}
                 </button>
@@ -291,15 +291,15 @@ export const AskCareQAssistant: React.FC = () => {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={centre ? 'Ask about this centre...' : 'Ask about policies, documents, or FAQ...'}
                 disabled={isLoading}
-                className="flex-1 px-3 py-2 text-xs rounded-xl border border-stone-200 focus:outline-hidden focus:ring-2 focus:ring-[#45B5A5]/30 focus:border-[#45B5A5]"
+                className="flex-1 px-3 py-2 text-xs rounded-xl border border-cq-stone-200 focus:outline-hidden focus:ring-2 focus:ring-cq-secondary/30 focus:border-cq-secondary"
               />
               <button
                 type="submit"
                 disabled={!input.trim() || isLoading}
                 className={`p-2 rounded-xl text-white transition-all ${
                   input.trim() && !isLoading
-                    ? 'bg-[#0B4A52] hover:bg-[#08383e] cursor-pointer shadow-2xs'
-                    : 'bg-stone-300 cursor-not-allowed'
+                    ? 'bg-cq-brand hover:bg-cq-brand-hover cursor-pointer shadow-2xs'
+                    : 'bg-cq-stone-300 cursor-not-allowed'
                 }`}
                 aria-label="Send message"
               >

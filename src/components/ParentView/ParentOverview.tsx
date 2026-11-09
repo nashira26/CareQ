@@ -70,7 +70,7 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
         title={
           <span className="inline-flex items-center gap-2.5">
             Hello, {parentProfile.name}
-            <Sun className="w-7 h-7 text-[#E0A31A] inline-block shrink-0" />
+            <Sun className="w-7 h-7 text-cq-sun-deep inline-block shrink-0" />
           </span>
         }
         subtitle="One family profile. A clearer path to care."
@@ -78,29 +78,29 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
 
       {/* Read-only family line (ages derived from dates of birth) */}
       {parentProfile.children.length > 0 && (
-        <p className="-mt-4 text-sm text-[#5B6B66]">
-          <span className="font-semibold text-[#173F42]">Your family:</span>{' '}
+        <p className="-mt-4 text-sm text-cq-muted">
+          <span className="font-semibold text-cq-ink">Your family:</span>{' '}
           {parentProfile.children.map((c) => `${c.firstName}, ${formatAge(ageInMonths(c.dateOfBirth))}`).join(' · ')}
         </p>
       )}
 
       {/* Hero Card */}
-      <div className="rounded-[28px] bg-[#E4ECE1] border border-[#D9E4D3] p-7 sm:p-9 overflow-hidden">
+      <div className="rounded-[28px] bg-cq-sage border border-cq-sage-line-2 p-7 sm:p-9 overflow-hidden">
         <div className="grid lg:grid-cols-12 gap-8 items-center">
           {/* Left Column */}
           <div className="lg:col-span-7 space-y-4">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/70 border border-[#CBD9C6] px-3.5 py-1 text-xs font-semibold text-[#4E7A5A]">
-              <Heart className="w-3.5 h-3.5 fill-[#4E7A5A] shrink-0" />
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/70 border border-cq-sage-line px-3.5 py-1 text-xs font-semibold text-cq-sage-ink">
+              <Heart className="w-3.5 h-3.5 fill-cq-sage-ink shrink-0" />
               Your next chapter, together
             </span>
 
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#173F42] leading-tight">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-cq-ink leading-tight">
               Find their place.
               <br />
               Keep every step close.
             </h2>
 
-            <p className="text-sm text-[#5B6B66] max-w-md leading-relaxed">
+            <p className="text-sm text-cq-muted max-w-md leading-relaxed">
               CareQ keeps all your centre applications, documents and updates in
               one calm place — so you can focus on family.
             </p>
@@ -114,20 +114,20 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
 
           {/* Right Column with Illustration & Floating Note */}
           <div className="lg:col-span-5 relative flex items-center justify-center pt-4 lg:pt-0">
-            <div className="w-full max-w-[320px] rounded-2xl overflow-hidden shadow-xs border border-[#CBD9C6]">
+            <div className="w-full max-w-[320px] rounded-2xl overflow-hidden shadow-xs border border-cq-sage-line">
               <HouseIllustration tone="sage" />
             </div>
 
             {/* Floating Note rotated -3deg */}
-            <div className="absolute -bottom-2 right-2 sm:right-4 transform -rotate-3 rounded-2xl bg-white border border-[#D9E4D3] shadow-md p-3.5 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#E4ECE1] text-[#4E7A5A] flex items-center justify-center shrink-0">
+            <div className="absolute -bottom-2 right-2 sm:right-4 transform -rotate-3 rounded-2xl bg-white border border-cq-sage-line-2 shadow-md p-3.5 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-cq-sage text-cq-sage-ink flex items-center justify-center shrink-0">
                 <CheckCircle2 className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xs font-bold text-[#173F42]">
+                <div className="text-xs font-bold text-cq-ink">
                   A little more clarity
                 </div>
-                <div className="text-[11px] text-[#5B6B66]">
+                <div className="text-[11px] text-cq-muted">
                   for your family's next step
                 </div>
               </div>
@@ -144,16 +144,16 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
           className="cursor-pointer hover:shadow-md transition-shadow group flex flex-col justify-between"
         >
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-[#5B6B66]">
+            <span className="text-xs font-medium text-cq-muted">
               Active applications
             </span>
             <IconTile icon={FileText} tone="sage" />
           </div>
           <div>
-            <div className="text-3xl font-bold text-[#173F42]">
+            <div className="text-3xl font-bold text-cq-ink">
               {activeApps.length}
             </div>
-            <div className="text-xs text-[#7A8A84] mt-1">
+            <div className="text-xs text-cq-soft mt-1">
               In review or on waitlist
             </div>
           </div>
@@ -165,16 +165,16 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
           className="cursor-pointer hover:shadow-md transition-shadow group flex flex-col justify-between"
         >
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-[#5B6B66]">
+            <span className="text-xs font-medium text-cq-muted">
               Drafts in progress
             </span>
             <IconTile icon={Heart} tone="peach" />
           </div>
           <div>
-            <div className="text-3xl font-bold text-[#173F42]">
+            <div className="text-3xl font-bold text-cq-ink">
               {draftApps.length}
             </div>
-            <div className="text-xs text-[#7A8A84] mt-1">
+            <div className="text-xs text-cq-soft mt-1">
               Ready to finish and submit
             </div>
           </div>
@@ -186,16 +186,16 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
           className="cursor-pointer hover:shadow-md transition-shadow group flex flex-col justify-between"
         >
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-[#5B6B66]">
+            <span className="text-xs font-medium text-cq-muted">
               Unread companion updates
             </span>
             <IconTile icon={Bell} tone="lilac" />
           </div>
           <div>
-            <div className="text-3xl font-bold text-[#173F42]">
+            <div className="text-3xl font-bold text-cq-ink">
               {unreadNotifications.length}
             </div>
-            <div className="text-xs text-[#7A8A84] mt-1">
+            <div className="text-xs text-cq-soft mt-1">
               Messages & status changes
             </div>
           </div>
@@ -207,12 +207,12 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
         {/* Left Column: Your care journey */}
         <Card className="lg:col-span-2 flex flex-col justify-between min-w-0">
           <div>
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 pb-5 border-b border-[#E7E4DA] mb-4">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 pb-5 border-b border-cq-line mb-4">
               <div>
-                <h3 className="text-base font-bold text-[#173F42]">
+                <h3 className="text-base font-bold text-cq-ink">
                   Your care journey
                 </h3>
-                <p className="text-xs text-[#5B6B66] mt-0.5">
+                <p className="text-xs text-cq-muted mt-0.5">
                   Current standing across your centres
                 </p>
               </div>
@@ -225,7 +225,7 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
             </div>
 
             {journeyApps.length === 0 ? (
-              <div className="py-8 text-center text-xs text-[#7A8A84]">
+              <div className="py-8 text-center text-xs text-cq-soft">
                 No applications submitted yet. Explore centres to start.
               </div>
             ) : (
@@ -234,15 +234,15 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
                   <div
                     key={app.id}
                     onClick={() => onNavigate('track')}
-                    className="rounded-xl border border-[#E7E4DA] p-4 hover:bg-[#FAF9F4] flex flex-col sm:flex-row sm:items-center justify-between gap-2 cursor-pointer transition-colors"
+                    className="rounded-xl border border-cq-line p-4 hover:bg-cq-page flex flex-col sm:flex-row sm:items-center justify-between gap-2 cursor-pointer transition-colors"
                   >
                     <div className="flex items-center gap-3.5 min-w-0 w-full sm:w-auto">
                       <IconTile icon={Leaf} tone="sage" />
                       <div className="min-w-0">
-                        <div className="font-bold text-sm text-[#173F42] truncate">
+                        <div className="font-bold text-sm text-cq-ink truncate">
                           {getCentreName(app.centreId)}
                         </div>
-                        <div className="text-xs text-[#7A8A84] mt-0.5">
+                        <div className="text-xs text-cq-soft mt-0.5">
                           {app.childName} · {app.careType}
                         </div>
                       </div>
@@ -250,7 +250,7 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
 
                     <div className="flex items-center gap-3 shrink-0 sm:ml-3">
                       <StatusBadge status={app.status} />
-                      <ChevronRight className="w-4 h-4 text-[#7A8A84]" />
+                      <ChevronRight className="w-4 h-4 text-cq-soft" />
                     </div>
                   </div>
                 ))}
@@ -258,7 +258,7 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
             )}
           </div>
 
-          <div className="mt-6 pt-4 border-t border-[#E7E4DA]">
+          <div className="mt-6 pt-4 border-t border-cq-line">
             <SimNote>
               Queue positions are determined by each centre under its own
               published policy.
@@ -267,16 +267,16 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
         </Card>
 
         {/* Right Column: Needs you spotlight */}
-        <Card className="bg-[#F3EEE3] border border-[#E3DAC7] p-6 flex flex-col justify-between">
+        <Card className="bg-cq-sand p-6 flex flex-col justify-between">
           <div>
             <Eyebrow>Needs you</Eyebrow>
 
             {offerApp ? (
               <div className="mt-2">
-                <h3 className="text-lg font-bold text-[#173F42]">
+                <h3 className="text-lg font-bold text-cq-ink">
                   You have an offer!
                 </h3>
-                <p className="text-xs text-[#5B6B66] mt-1 leading-relaxed">
+                <p className="text-xs text-cq-muted mt-1 leading-relaxed">
                   {getCentreName(offerApp.centreId)} has a spot for{' '}
                   {offerApp.childName}.
                 </p>
@@ -288,10 +288,10 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
               </div>
             ) : draftApps.length > 0 ? (
               <div className="mt-2">
-                <h3 className="text-lg font-bold text-[#173F42]">
+                <h3 className="text-lg font-bold text-cq-ink">
                   Finish your application
                 </h3>
-                <p className="text-xs text-[#5B6B66] mt-1 leading-relaxed">
+                <p className="text-xs text-cq-muted mt-1 leading-relaxed">
                   You have {draftApps.length} draft
                   {draftApps.length === 1 ? '' : 's'} waiting for documents or
                   submission.
@@ -304,16 +304,16 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
               </div>
             ) : (
               <div className="mt-2">
-                <h3 className="text-lg font-bold text-[#173F42]">
+                <h3 className="text-lg font-bold text-cq-ink">
                   You're all caught up
                 </h3>
-                <p className="text-xs text-[#5B6B66] mt-1 leading-relaxed">
+                <p className="text-xs text-cq-muted mt-1 leading-relaxed">
                   Nothing needs your attention today.
                 </p>
                 <div className="mt-4">
                   <GhostButton
                     onClick={() => onNavigate('find')}
-                    className="border-[#D8CFBC] bg-white/80"
+                    className="bg-white/80"
                   >
                     Browse more centres
                   </GhostButton>
@@ -323,14 +323,14 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
           </div>
 
           {/* Bottom Sub-card */}
-          <div className="mt-6 pt-5 border-t border-[#E3DAC7]">
+          <div className="mt-6 pt-5 border-t border-cq-line-sand">
             <div className="flex items-start gap-3">
               <IconTile icon={Sparkles} tone="sand" className="shrink-0" />
               <div>
-                <div className="font-bold text-xs text-[#173F42]">
+                <div className="font-bold text-xs text-cq-ink">
                   Two sides. One care journey.
                 </div>
-                <div className="text-[11px] text-[#7A8A84] mt-0.5 leading-relaxed">
+                <div className="text-[11px] text-cq-soft mt-0.5 leading-relaxed">
                   Centres review on their timeline. CareQ keeps communication
                   transparent and calm.
                 </div>

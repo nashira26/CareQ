@@ -41,7 +41,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       .toUpperCase() || 'C';
 
   return (
-    <header className="bg-white border-b border-[#E7E4DA] sticky top-0 z-40 h-[72px] flex items-center">
+    <header className="bg-white border-b border-cq-line sticky top-0 z-40 h-[72px] flex items-center">
       <div className="max-w-[1180px] w-full mx-auto px-4 sm:px-6 lg:px-10 flex items-center justify-between">
         {/* Left: Logo (mobile/tablet only) + Portal Tag & subtitle */}
         <div className="flex items-center gap-3">
@@ -53,11 +53,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <div className="flex flex-col justify-center">
             <div className="flex items-center gap-2">
-              <span className="rounded-md border border-[#CFE0E6] bg-[#E8F1F4] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#3F6E7E]">
+              <span className="rounded-md border border-cq-sky-line bg-cq-sky px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-cq-sky-ink">
                 {currentRole === 'parent' ? 'Parent portal' : 'Centre portal'}
               </span>
             </div>
-            <p className="text-[11px] text-[#7A8A84] mt-0.5 hidden sm:block">
+            <p className="text-[11px] text-cq-soft mt-0.5 hidden sm:block">
               Ontario Licensed Child Care Queue &amp; Communication System
             </p>
           </div>
@@ -72,8 +72,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             6. Log out as GhostButton size h-9 text-xs */}
         <div className="flex items-center gap-3 sm:gap-4">
           {/* 1. Lock icon + Prototype */}
-          <div className="hidden md:flex items-center gap-1.5 text-[11px] text-[#7A8A84] font-medium">
-            <Lock className="w-3.5 h-3.5 text-[#7A8A84]" />
+          <div className="hidden md:flex items-center gap-1.5 text-[11px] text-cq-soft font-medium">
+            <Lock className="w-3.5 h-3.5 text-cq-soft" />
             <span>Prototype</span>
           </div>
 
@@ -86,19 +86,19 @@ export const Navbar: React.FC<NavbarProps> = ({
           />
 
           {/* 3. 1px divider h-8 */}
-          <div className="h-8 w-px bg-[#E7E4DA]" />
+          <div className="h-8 w-px bg-cq-line" />
 
           {/* 4 & 5. Avatar and Name/Sub-line */}
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-full bg-[#E4ECE1] text-[#4E7A5A] text-xs font-bold flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-full bg-cq-sage text-cq-sage-ink text-xs font-bold flex items-center justify-center shrink-0">
               {currentRole === 'parent' ? parentInitials : centreInitials}
             </div>
 
             <div className="text-left text-xs hidden sm:block">
-              <div className="font-bold text-[#173F42] leading-tight">
+              <div className="font-bold text-cq-ink leading-tight">
                 {currentRole === 'parent' ? parentProfile.name : singleCentre.name}
               </div>
-              <div className="text-[11px] text-[#7A8A84]">
+              <div className="text-[11px] text-cq-soft">
                 {currentRole === 'parent'
                   ? `Parent demo · ${parentProfile.childName}`
                   : singleCentre.demoKind === 'open-data'
@@ -112,10 +112,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onLogout}
-            className="h-9 px-3 rounded-xl border border-[#E7E4DA] bg-white text-xs font-semibold text-[#173F42] hover:bg-[#FAF9F4] transition-colors inline-flex items-center gap-1.5 cursor-pointer ml-1"
+            className="h-9 px-3 rounded-xl border border-cq-line bg-white text-xs font-semibold text-cq-ink hover:bg-cq-page transition-colors inline-flex items-center gap-1.5 cursor-pointer ml-1"
             title="Log out of session"
           >
-            <LogOut className="w-3.5 h-3.5 text-[#5B6B66]" />
+            <LogOut className="w-3.5 h-3.5 text-cq-muted" />
             <span className="hidden sm:inline">Log out</span>
           </button>
         </div>

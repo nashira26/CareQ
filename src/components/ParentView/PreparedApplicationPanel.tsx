@@ -15,9 +15,9 @@ import {
 } from '../../lib/prepareApplication';
 
 const STATUS_STYLE: Record<ChecklistStatus, string> = {
-  ready: 'bg-[#E4ECE1] text-[#4E7A5A] border-[#CBD9C6]',
-  missing: 'bg-[#FDF3DD] text-[#8A6411] border-[#EADBB8]',
-  'needs parent check': 'bg-[#ECE8F5] text-[#5A4A85] border-[#D6CFE8]',
+  ready: 'bg-cq-sage text-cq-sage-ink border-cq-sage-line',
+  missing: 'bg-cq-cream-amber text-cq-amber-ink border-cq-sand-line-2',
+  'needs parent check': 'bg-cq-lilac text-cq-lilac-ink-2 border-cq-lilac-line-2',
 };
 const STATUS_LABEL: Record<ChecklistStatus, string> = {
   ready: 'Ready',
@@ -97,16 +97,16 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
           type="button"
           onClick={handlePrepare}
           disabled={loading}
-          className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-[#0B4A52] text-[#0B4A52] bg-white hover:bg-[#0B4A52]/5 text-sm font-semibold disabled:opacity-50 cursor-pointer"
+          className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-cq-brand text-cq-brand bg-white hover:bg-cq-brand/5 text-sm font-semibold disabled:opacity-50 cursor-pointer"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
           {draft ? 'Prepare again with AI' : 'Prepare with AI'}
         </button>
         {loading ? (
-          <span className="text-xs text-[#5B6B66]">Reading {centre.name}&apos;s requirements…</span>
+          <span className="text-xs text-cq-muted">Reading {centre.name}&apos;s requirements…</span>
         ) : (
           !draft && (
-            <span className="text-xs text-[#7A8A84]">
+            <span className="text-xs text-cq-soft">
               Fills in what CareQ already knows and checks your documents against {centre.name}&apos;s requirements.
             </span>
           )
@@ -114,12 +114,12 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
       </div>
 
       {draft && (
-        <section aria-label="AI draft" className="rounded-2xl border border-[#E7D6A8] bg-[#FFFCF4] p-5 space-y-5">
+        <section aria-label="AI draft" className="rounded-2xl border border-cq-sand-line bg-cq-surface-cream p-5 space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h5 className="text-sm font-bold text-[#173F42] flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#8A6A3B]" /> AI draft — review before sending
+            <h5 className="text-sm font-bold text-cq-ink flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-cq-sand-ink-2" /> AI draft — review before sending
             </h5>
-            <span className="rounded px-1.5 py-0.5 bg-[#F3EBDD] text-[#5B4A2E] text-[10px] font-semibold">
+            <span className="rounded px-1.5 py-0.5 bg-cq-band text-cq-sand-ink text-[10px] font-semibold">
               {centre.demoKind === 'open-data' ? 'Simulated application' : 'Simulated centre'}
             </span>
           </div>
@@ -128,11 +128,11 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
 
           {/* Fields */}
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5B6B66] mb-2">Application details</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cq-muted mb-2">Application details</p>
             <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-2.5">
               {draft.fields.map((f, i) => (
                 <div key={f.label} className="flex flex-col gap-0.5">
-                  <dt className="text-[11px] text-[#7A8A84]">
+                  <dt className="text-[11px] text-cq-soft">
                     {f.label}
                     <span className="ml-1 text-[10px]">· {f.source}</span>
                   </dt>
@@ -148,10 +148,10 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
                             fields: draft.fields.map((x, j) => (j === i ? { ...x, value: e.target.value, editedByParent: true } : x)),
                           })
                         }
-                        className="w-full rounded-lg border border-[#EADBB8] bg-[#FDF3DD] px-2.5 py-1.5 text-sm text-[#173F42] placeholder-[#B38F3F] focus:outline-hidden focus:ring-2 focus:ring-[#E7D6A8]"
+                        className="w-full rounded-lg border border-cq-sand-line-2 bg-cq-cream-amber px-2.5 py-1.5 text-sm text-cq-ink placeholder-cq-sand-500b focus:outline-hidden focus:ring-2 focus:ring-cq-sand-line"
                       />
                     ) : (
-                      <span className="text-sm font-semibold text-[#173F42]">{f.value}</span>
+                      <span className="text-sm font-semibold text-cq-ink">{f.value}</span>
                     )}
                   </dd>
                 </div>
@@ -161,14 +161,14 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
 
           {/* Checklist */}
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5B6B66] mb-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cq-muted mb-2">
               Checklist from {centre.name}&apos;s policy
             </p>
             <ul className="space-y-2.5">
               {draft.checklist.map((c, i) => (
-                <li key={c.requirement} className="rounded-xl border border-[#E7E4DA] bg-white p-3 space-y-2">
+                <li key={c.requirement} className="rounded-xl border border-cq-line bg-white p-3 space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-[#173F42]">{c.requirement}</span>
+                    <span className="text-sm font-semibold text-cq-ink">{c.requirement}</span>
                     <div className="flex items-center gap-2">
                       <span className={`text-[10px] font-semibold border px-2 py-0.5 rounded-full ${STATUS_STYLE[c.status]}`}>
                         {STATUS_LABEL[c.status]}
@@ -184,7 +184,7 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
                             ),
                           })
                         }
-                        className="rounded-md border border-[#E7E4DA] bg-white px-1.5 py-0.5 text-[11px] text-[#5B6B66]"
+                        className="rounded-md border border-cq-line bg-white px-1.5 py-0.5 text-[11px] text-cq-muted"
                       >
                         {CHECKLIST_STATUSES.map((s) => (
                           <option key={s} value={s}>
@@ -195,12 +195,12 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
                     </div>
                   </div>
                   {c.matchedDocument && (
-                    <p className="text-[11px] text-[#4E7A5A] flex items-center gap-1">
+                    <p className="text-[11px] text-cq-sage-ink flex items-center gap-1">
                       <FileCheck2 className="w-3.5 h-3.5" /> Matched document: {c.matchedDocument}
                     </p>
                   )}
                   {c.status === 'needs parent check' && (
-                    <label className="flex items-center gap-2 text-xs text-[#5A4A85] cursor-pointer">
+                    <label className="flex items-center gap-2 text-xs text-cq-lilac-ink-2 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={Boolean(c.parentConfirmed)}
@@ -213,17 +213,17 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
                       I confirm this applies to us (CareQ can&apos;t check this)
                     </label>
                   )}
-                  <blockquote className="flex gap-2 border-l-2 border-[#D9E4D3] pl-2.5 text-[11px] italic text-[#5B6B66]">
-                    <Quote className="w-3 h-3 shrink-0 mt-0.5 text-[#9DBB86]" />
+                  <blockquote className="flex gap-2 border-l-2 border-cq-sage-line-2 pl-2.5 text-[11px] italic text-cq-muted">
+                    <Quote className="w-3 h-3 shrink-0 mt-0.5 text-cq-sage-accent" />
                     <span>
                       “{c.sourceSentence}”
                       {(c.citation || centre.requirementCitations?.[c.requirement]) && (
-                        <span className="not-italic text-[#7A8A84]"> From {c.citation || centre.requirementCitations![c.requirement]}</span>
+                        <span className="not-italic text-cq-soft"> From {c.citation || centre.requirementCitations![c.requirement]}</span>
                       )}
                       {c.sourceUrl && (
                         <>
                           {' · '}
-                          <a href={c.sourceUrl} target="_blank" rel="noreferrer" className="not-italic font-semibold text-[#0B4A52] hover:underline">
+                          <a href={c.sourceUrl} target="_blank" rel="noreferrer" className="not-italic font-semibold text-cq-brand hover:underline">
                             Source
                           </a>
                         </>
@@ -236,11 +236,11 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
           </div>
 
           {draft.missingItems.length > 0 && (
-            <div className="rounded-xl bg-[#FDF3DD]/60 border border-[#EADBB8] p-3">
-              <p className="text-xs font-semibold text-[#8A6411] flex items-center gap-1.5">
+            <div className="rounded-xl bg-cq-cream-amber/60 border border-cq-sand-line-2 p-3">
+              <p className="text-xs font-semibold text-cq-amber-ink flex items-center gap-1.5">
                 <AlertTriangle className="w-3.5 h-3.5" /> Still to do
               </p>
-              <ul className="mt-1 text-xs text-[#5B4A2E] list-disc pl-5 space-y-0.5">
+              <ul className="mt-1 text-xs text-cq-sand-ink list-disc pl-5 space-y-0.5">
                 {draft.missingItems.map((m) => (
                   <li key={m}>{m}</li>
                 ))}
@@ -250,7 +250,7 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
 
           {/* Note */}
           <div>
-            <label htmlFor={`note-${app.id}`} className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5B6B66]">
+            <label htmlFor={`note-${app.id}`} className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cq-muted">
               Note to {centre.name} (optional)
             </label>
             <textarea
@@ -258,10 +258,10 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
               rows={3}
               value={draft.noteToCentre}
               onChange={(e) => update({ noteToCentre: e.target.value, noteEditedByParent: true })}
-              className="mt-1 w-full rounded-xl border border-[#E7E4DA] bg-white p-2.5 text-sm text-[#173F42] focus:outline-hidden focus:ring-2 focus:ring-[#CBD9C6]"
+              className="mt-1 w-full rounded-xl border border-cq-line bg-white p-2.5 text-sm text-cq-ink focus:outline-hidden focus:ring-2 focus:ring-cq-sage-line"
             />
           </div>
-          <p className="text-[11px] text-[#7A8A84]">Nothing is sent until you press “Approve and send” and confirm.</p>
+          <p className="text-[11px] text-cq-soft">Nothing is sent until you press “Approve and send” and confirm.</p>
         </section>
       )}
     </div>

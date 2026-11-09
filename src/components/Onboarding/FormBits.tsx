@@ -4,8 +4,8 @@ import React from 'react';
 
 export const inputClass = (invalid?: boolean) =>
   `h-11 w-full rounded-xl border ${
-    invalid ? 'border-[#C46E4E] bg-[#FDF6F2]' : 'border-[#E8E4D6] bg-[#FBFAF3]'
-  } px-3.5 text-sm text-[#1E3F42] placeholder:text-[#9AA59F] focus:border-[#45B5A5] focus:ring-2 focus:ring-[#45B5A5]/25 outline-none transition-all`;
+    invalid ? 'border-cq-peach-ink bg-cq-peach-25' : 'border-cq-line-input bg-cq-input'
+  } px-3.5 text-sm text-cq-ink-body placeholder:text-cq-faint focus:border-cq-secondary focus:ring-2 focus:ring-cq-secondary/25 outline-none transition-all`;
 
 interface FieldProps {
   id: string;
@@ -20,18 +20,18 @@ export const Field: React.FC<FieldProps> = ({ id, label, hint, error, optional, 
   const describedBy = [hint ? `${id}-hint` : '', error ? `${id}-error` : ''].filter(Boolean).join(' ') || undefined;
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-[#3F5250] mb-1.5">
+      <label htmlFor={id} className="block text-sm font-medium text-cq-ink-2 mb-1.5">
         {label}
-        {optional && <span className="ml-1 text-xs font-normal text-[#7A8A84]">(optional)</span>}
+        {optional && <span className="ml-1 text-xs font-normal text-cq-soft">(optional)</span>}
       </label>
       {children({ id, 'aria-invalid': error ? true : undefined, 'aria-describedby': describedBy })}
       {hint && (
-        <p id={`${id}-hint`} className="mt-1 text-[11px] text-[#7A8A84]">
+        <p id={`${id}-hint`} className="mt-1 text-[11px] text-cq-soft">
           {hint}
         </p>
       )}
       {error && (
-        <p id={`${id}-error`} className="mt-1 text-xs font-medium text-[#A4543A]">
+        <p id={`${id}-error`} className="mt-1 text-xs font-medium text-cq-rust">
           {error}
         </p>
       )}
@@ -49,7 +49,7 @@ export const CheckboxGroup: React.FC<{
   error?: string;
 }> = ({ legend, name, options, value, onChange, error }) => (
   <fieldset aria-describedby={error ? `${name}-error` : undefined}>
-    <legend className="block text-sm font-medium text-[#3F5250] mb-1.5">{legend}</legend>
+    <legend className="block text-sm font-medium text-cq-ink-2 mb-1.5">{legend}</legend>
     <div className="flex flex-wrap gap-2">
       {options.map((o) => {
         const checked = value.includes(o.value);
@@ -57,7 +57,7 @@ export const CheckboxGroup: React.FC<{
           <label
             key={o.value}
             className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm cursor-pointer ${
-              checked ? 'border-[#0B4A52] bg-[#0B4A52]/5 text-[#0B4A52] font-semibold' : 'border-[#E8E4D6] bg-white text-[#3F5250]'
+              checked ? 'border-cq-brand bg-cq-brand/5 text-cq-brand font-semibold' : 'border-cq-line-input bg-white text-cq-ink-2'
             }`}
           >
             <input
@@ -73,7 +73,7 @@ export const CheckboxGroup: React.FC<{
       })}
     </div>
     {error && (
-      <p id={`${name}-error`} className="mt-1 text-xs font-medium text-[#A4543A]">
+      <p id={`${name}-error`} className="mt-1 text-xs font-medium text-cq-rust">
         {error}
       </p>
     )}
@@ -96,25 +96,25 @@ export const ProgressDots: React.FC<{ step: number; total: number }> = ({ step, 
   <div className="flex items-center gap-3" aria-label={`Step ${step} of ${total}`}>
     <div className="flex gap-1.5" aria-hidden="true">
       {Array.from({ length: total }, (_, i) => (
-        <span key={i} className={`h-2 rounded-full transition-all ${i + 1 === step ? 'w-6 bg-[#0B4A52]' : 'w-2 bg-[#CBD9C6]'}`} />
+        <span key={i} className={`h-2 rounded-full transition-all ${i + 1 === step ? 'w-6 bg-cq-brand' : 'w-2 bg-cq-sage-line'}`} />
       ))}
     </div>
-    <span className="text-xs font-semibold text-[#5B6B66]">
+    <span className="text-xs font-semibold text-cq-muted">
       Step {step} of {total}
     </span>
   </div>
 );
 
 export const OnboardingShell: React.FC<{ children: React.ReactNode; onLogout: () => void }> = ({ children, onLogout }) => (
-  <div className="min-h-screen bg-[#FAF9F4] text-[#1E3F42] antialiased">
+  <div className="min-h-screen bg-cq-page text-cq-ink-body antialiased">
     <header className="max-w-3xl mx-auto px-4 sm:px-6 pt-6 flex items-center justify-between">
-      <span className="text-lg font-bold text-[#0B4A52]">CareQ</span>
-      <button type="button" onClick={onLogout} className="text-xs text-[#5B6B66] hover:text-[#173F42] underline cursor-pointer">
+      <span className="text-lg font-bold text-cq-brand">CareQ</span>
+      <button type="button" onClick={onLogout} className="text-xs text-cq-muted hover:text-cq-ink underline cursor-pointer">
         Log out
       </button>
     </header>
     <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">{children}</main>
-    <footer className="max-w-3xl mx-auto px-4 sm:px-6 pb-8 text-[11px] text-[#7A8A84]">
+    <footer className="max-w-3xl mx-auto px-4 sm:px-6 pb-8 text-[11px] text-cq-soft">
       Demo account: everything you enter is saved only in this browser and removed by Reset demo. No email is sent.
     </footer>
   </div>

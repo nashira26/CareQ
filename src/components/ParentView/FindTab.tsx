@@ -296,7 +296,7 @@ export const FindTab: React.FC<FindTabProps> = ({
       return (
         <span className="inline-flex flex-wrap items-center gap-1.5">
           <Chip tone="sage">{appliedLabel(app.status)}</Chip>
-          {pos && <span className="text-[10px] text-[#5B6B66]">{pos}</span>}
+          {pos && <span className="text-[10px] text-cq-muted">{pos}</span>}
         </span>
       );
     }
@@ -312,16 +312,16 @@ export const FindTab: React.FC<FindTabProps> = ({
     return (
       <div
         key={centre.id}
-        className="bg-white rounded-2xl border border-[#E7E4DA] overflow-hidden hover:shadow-[0_12px_30px_-18px_rgba(23,63,66,0.35)] transition flex flex-col justify-between"
+        className="bg-white rounded-2xl border border-cq-line overflow-hidden hover:shadow-[0_12px_30px_-18px_rgba(23,63,66,0.35)] transition flex flex-col justify-between"
       >
         <div>
-          <div className="relative h-[150px] overflow-hidden bg-[#FAF9F4] flex items-center justify-center">
+          <div className="relative h-[150px] overflow-hidden bg-cq-page flex items-center justify-center">
             {reg?.photoDataUrl ? (
               <img src={reg.photoDataUrl} alt={`${centre.name}`} className="w-full h-full object-cover" />
             ) : (
               <HouseIllustration tone={tone} className="w-full h-full object-cover" />
             )}
-            <span className="absolute bottom-2.5 left-3 text-[10px] bg-white/80 backdrop-blur-xs text-[#5B6B66] font-medium rounded px-1.5 py-0.5 border border-[#E7E4DA]">
+            <span className="absolute bottom-2.5 left-3 text-[10px] bg-white/80 backdrop-blur-xs text-cq-muted font-medium rounded px-1.5 py-0.5 border border-cq-line">
               {reg?.photoDataUrl ? 'Photo provided by the centre' : 'Illustration · not a site photo'}
             </span>
           </div>
@@ -331,44 +331,44 @@ export const FindTab: React.FC<FindTabProps> = ({
               {reg ? (
                 <span
                   className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-                    reg.licenceVerified ? 'bg-[#E4ECE1] text-[#4E7A5A]' : 'bg-[#FBE9E1] text-[#A4543A]'
+                    reg.licenceVerified ? 'bg-cq-sage text-cq-sage-ink' : 'bg-cq-peach text-cq-rust'
                   }`}
                 >
                   {licenceLabel(centre)}
                 </span>
               ) : (
-                <span className="inline-block rounded px-1.5 py-0.5 bg-[#0B4A52]/10 text-[#0B4A52] text-[10px] font-semibold">
+                <span className="inline-block rounded px-1.5 py-0.5 bg-cq-brand/10 text-cq-brand text-[10px] font-semibold">
                   {demoCentreLabel(centre)}
                 </span>
               )}
               <HeartButton name={centre.name} active={shortlist.includes(centre.id)} onToggle={() => toggleShortlist(centre.id)} />
             </div>
-            <div className="flex items-center gap-1.5 text-[11px] text-[#7A8A84] mt-1">
+            <div className="flex items-center gap-1.5 text-[11px] text-cq-soft mt-1">
               <MapPin className="w-3 h-3 shrink-0" />
               <span>{centre.neighbourhood}</span>
               {result?.distanceKm != null && (
-                <span className="font-semibold text-[#173F42] flex items-center gap-1 ml-1">
+                <span className="font-semibold text-cq-ink flex items-center gap-1 ml-1">
                   <Navigation className="w-3 h-3" />
                   {distanceLabel(result.distanceKm, reg ? { neighbourhood: centre.neighbourhood } : undefined)}
                 </span>
               )}
             </div>
-            <h3 className="text-[17px] font-bold text-[#173F42] mt-1 leading-snug">{centre.name}</h3>
+            <h3 className="text-[17px] font-bold text-cq-ink mt-1 leading-snug">{centre.name}</h3>
             <div className="mt-1.5">{statusPill(centre.id)}</div>
-            {centre.address && <p className="text-xs text-[#5B6B66] mt-2">{centre.address}</p>}
+            {centre.address && <p className="text-xs text-cq-muted mt-2">{centre.address}</p>}
             {centre.demoKind === 'open-data' && (
-              <p className="text-[11px] text-[#7A8A84] mt-1">
+              <p className="text-[11px] text-cq-soft mt-1">
                 {centre.licenceNumber ? `Licence #${centre.licenceNumber} · ` : ''}Ontario open data
                 {centre.capacity ? ` · ${centre.capacity} licensed spaces (capacity, not availability)` : ''}
               </p>
             )}
             {notServed && (
-              <p className="mt-2 inline-block rounded-md border border-[#EADBB8] bg-[#FDF3DD] px-2 py-0.5 text-[11px] font-semibold text-[#8A6411]">
+              <p className="mt-2 inline-block rounded-md border border-cq-sand-line-2 bg-cq-cream-amber px-2 py-0.5 text-[11px] font-semibold text-cq-amber-ink">
                 {notServed}
               </p>
             )}
             {reg && (
-              <p className="text-[11px] text-[#7A8A84] mt-1">
+              <p className="text-[11px] text-cq-soft mt-1">
                 {reg.licenceNumber ? `Licence #${reg.licenceNumber} · ${reg.licenceVerified ? 'matches Ontario open data' : 'Self-reported, not verified'} · ` : ''}
                 Approximate location ({reg.locationSource})
                 {reg.capacity ? ` · ${reg.capacity} licensed spaces (capacity, not availability)` : ''}
@@ -376,36 +376,36 @@ export const FindTab: React.FC<FindTabProps> = ({
             )}
 
             {result?.reason && (
-              <p className="mt-3 text-xs text-[#5B6B66] bg-[#F3EEE3]/60 border border-[#E7E4DA] rounded-lg p-2.5">
+              <p className="mt-3 text-xs text-cq-muted bg-cq-sand/60 border border-cq-line rounded-lg p-2.5">
                 {result.reason}
               </p>
             )}
 
             <div className="flex flex-wrap gap-1.5 mt-3">
               {centre.ageGroups.map((age) => (
-                <span key={age} className="rounded-md border border-[#D9E4D3] bg-[#F4F6F1] px-2 py-0.5 text-[10px] text-[#4E7A5A] font-medium">
+                <span key={age} className="rounded-md border border-cq-sage-line-2 bg-cq-surface-sage px-2 py-0.5 text-[10px] text-cq-sage-ink font-medium">
                   {age}
                 </span>
               ))}
               {centre.hours && (
-                <span className="rounded-md border border-[#D9E4D3] bg-[#F4F6F1] px-2 py-0.5 text-[10px] text-[#4E7A5A] font-medium flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-[#4E7A5A]" />
+                <span className="rounded-md border border-cq-sage-line-2 bg-cq-surface-sage px-2 py-0.5 text-[10px] text-cq-sage-ink font-medium flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-cq-sage-ink" />
                   {centre.hours}
                 </span>
               )}
               {centre.feeNote && (
-                <span className="rounded-md border border-[#E7D6A8] bg-[#FBF6EA] px-2 py-0.5 text-[10px] text-[#8A6A3B] font-medium">
+                <span className="rounded-md border border-cq-sand-line bg-cq-sand-50 px-2 py-0.5 text-[10px] text-cq-sand-ink-2 font-medium">
                   CWELCC ($10/day)
                 </span>
               )}
             </div>
             {centre.programOptions && centre.programOptions.length > 0 && (
-              <p className="text-[11px] text-[#5B6B66] mt-2">
+              <p className="text-[11px] text-cq-muted mt-2">
                 <span className="font-semibold">Programs:</span> {centre.programOptions.join(', ')}
               </p>
             )}
             {centre.languages && centre.languages.length > 0 && (
-              <p className="text-[11px] text-[#5B6B66] mt-0.5">
+              <p className="text-[11px] text-cq-muted mt-0.5">
                 <span className="font-semibold">Language:</span> {centre.languages.join(', ')}
               </p>
             )}
@@ -415,13 +415,13 @@ export const FindTab: React.FC<FindTabProps> = ({
           </div>
         </div>
 
-        <div className="px-5 pb-5 pt-4 border-t border-[#E7E4DA] flex items-center justify-between gap-2">
-          <span className="text-[11px] text-[#7A8A84]">Availability reported by centre only</span>
+        <div className="px-5 pb-5 pt-4 border-t border-cq-line flex items-center justify-between gap-2">
+          <span className="text-[11px] text-cq-soft">Availability reported by centre only</span>
           <div className="flex items-center gap-3 shrink-0">
             <button
               type="button"
               onClick={() => onOpenConversation(centre.id)}
-              className="text-xs font-semibold text-[#5B6B66] hover:text-[#173F42] hover:underline cursor-pointer"
+              className="text-xs font-semibold text-cq-muted hover:text-cq-ink hover:underline cursor-pointer"
             >
               Message
             </button>
@@ -429,20 +429,20 @@ export const FindTab: React.FC<FindTabProps> = ({
               <button
                 type="button"
                 onClick={onNavigateToApply}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-[#173F42] hover:text-[#0B4A52] hover:underline cursor-pointer"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-cq-ink hover:text-cq-brand hover:underline cursor-pointer"
               >
                 <span>Manage ({existingApp.status})</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             ) : notServed ? (
-              <span className="text-xs text-[#7A8A84]" title={`${notServed}, so you can't apply for ${parentProfile.childName}.`}>
+              <span className="text-xs text-cq-soft" title={`${notServed}, so you can't apply for ${parentProfile.childName}.`}>
                 Can&apos;t apply
               </span>
             ) : (
               <button
                 type="button"
                 onClick={() => onSelectCentre(centre.id)}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-[#173F42] hover:text-[#0B4A52] hover:underline cursor-pointer"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-cq-ink hover:text-cq-brand hover:underline cursor-pointer"
               >
                 <span>Apply</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -473,19 +473,19 @@ export const FindTab: React.FC<FindTabProps> = ({
               const e = entryById.get(id)!;
               const app = appByCentre.get(id);
               return (
-                <div key={id} className="shrink-0 w-[230px] sm:w-auto rounded-xl border border-[#E7E4DA] bg-white p-3 space-y-1.5">
-                  <p className="text-[10px] font-semibold text-[#7A8A84]">
+                <div key={id} className="shrink-0 w-[230px] sm:w-auto rounded-xl border border-cq-line bg-white p-3 space-y-1.5">
+                  <p className="text-[10px] font-semibold text-cq-soft">
                     {e.kind === 'open-data'
                       ? 'Not on CareQ yet · Ontario open data'
                       : (e.centre as Centre).registration
                       ? licenceLabel(e.centre as Centre)
                       : demoCentreLabel(e.centre as Centre)}
                   </p>
-                  <p className="text-sm font-bold text-[#173F42] leading-snug line-clamp-2">{e.name}</p>
+                  <p className="text-sm font-bold text-cq-ink leading-snug line-clamp-2">{e.name}</p>
                   <div className="flex items-center justify-between gap-2">
                     {statusPill(id)}
                     {app && (
-                      <button type="button" onClick={onNavigateToApply} className="text-[11px] font-semibold text-[#0B4A52] hover:underline cursor-pointer">
+                      <button type="button" onClick={onNavigateToApply} className="text-[11px] font-semibold text-cq-brand hover:underline cursor-pointer">
                         Manage
                       </button>
                     )}
@@ -498,13 +498,13 @@ export const FindTab: React.FC<FindTabProps> = ({
       )}
 
       {/* B) Describe what you need */}
-      <div className="rounded-2xl border border-[#E7E4DA] bg-white shadow-2xs p-4 space-y-3">
+      <div className="rounded-2xl border border-cq-line bg-white shadow-2xs p-4 space-y-3">
         <label htmlFor="describe-need" className="block">
           <Eyebrow>Describe what you need</Eyebrow>
         </label>
         <div className="flex flex-col sm:flex-row gap-2">
-          <div className="flex-1 flex items-center gap-3 px-3 rounded-xl border border-[#E7E4DA] focus-within:border-[#0B4A52] min-w-0">
-            <Search className="w-4 h-4 text-[#7A8A84] shrink-0" />
+          <div className="flex-1 flex items-center gap-3 px-3 rounded-xl border border-cq-line focus-within:border-cq-brand min-w-0">
+            <Search className="w-4 h-4 text-cq-soft shrink-0" />
             <input
               id="describe-need"
               type="text"
@@ -512,7 +512,7 @@ export const FindTab: React.FC<FindTabProps> = ({
               onChange={(e) => setSearchText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="Full-time care for my 2-year-old near Danforth and Pape, from March"
-              className="w-full py-2.5 bg-transparent border-none text-sm text-[#173F42] placeholder-[#7A8A84] focus:outline-hidden"
+              className="w-full py-2.5 bg-transparent border-none text-sm text-cq-ink placeholder-cq-soft focus:outline-hidden"
             />
           </div>
           <div className="flex gap-2 shrink-0">
@@ -520,7 +520,7 @@ export const FindTab: React.FC<FindTabProps> = ({
               type="button"
               onClick={handleSearch}
               disabled={isParsing}
-              className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-[#0B4A52] hover:bg-[#08383E] text-white text-sm font-semibold disabled:opacity-50 cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-cq-brand hover:bg-cq-brand-hover text-white text-sm font-semibold disabled:opacity-50 cursor-pointer"
             >
               {isParsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
               Search
@@ -545,12 +545,12 @@ export const FindTab: React.FC<FindTabProps> = ({
         <AiFallbackNote aiMode={parseAiMode} />
         <AiNotice message={aiNotice} />
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1 text-xs text-[#173F42]">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1 text-xs text-cq-ink">
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={includeSchoolAgeOnly} onChange={(e) => setIncludeSchoolAgeOnly(e.target.checked)} />
             <span>
               Include school-age-only programs
-              {!includeSchoolAgeOnly && ontarioFile && <span className="text-[#7A8A84]"> ({hiddenSchoolAgeOnly} hidden)</span>}
+              {!includeSchoolAgeOnly && ontarioFile && <span className="text-cq-soft"> ({hiddenSchoolAgeOnly} hidden)</span>}
             </span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
@@ -562,9 +562,9 @@ export const FindTab: React.FC<FindTabProps> = ({
 
       {/* Area given but not placed: ask for an area before anything looks "ranked" by distance */}
       {areaUnplaced && (
-        <div className="rounded-2xl border-2 border-[#E7D6A8] bg-[#FBF6EA] p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-          <MapPin className="w-5 h-5 text-[#8A6A3B] shrink-0" />
-          <div className="flex-1 text-sm text-[#5B4A2E]">
+        <div className="rounded-2xl border-2 border-cq-sand-line bg-cq-sand-50 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+          <MapPin className="w-5 h-5 text-cq-sand-ink-2 shrink-0" />
+          <div className="flex-1 text-sm text-cq-sand-ink">
             <span className="font-bold">We couldn&apos;t place &lsquo;{criteria.areaText}&rsquo;.</span> Pick an area to
             sort centres by distance.
           </div>
@@ -572,7 +572,7 @@ export const FindTab: React.FC<FindTabProps> = ({
             aria-label="Pick an area to sort by distance"
             value=""
             onChange={(e) => e.target.value && setCriteria({ ...criteria, areaText: e.target.value })}
-            className="rounded-xl border border-[#E7D6A8] bg-white px-3 py-2 text-sm text-[#173F42] sm:w-64"
+            className="rounded-xl border border-cq-sand-line bg-white px-3 py-2 text-sm text-cq-ink sm:w-64"
           >
             <option value="">Pick an area…</option>
             {AREAS.map((a) => (
@@ -586,11 +586,11 @@ export const FindTab: React.FC<FindTabProps> = ({
 
       {/* Results line */}
       <div className="flex items-center justify-between gap-3 pt-1">
-        <div className="text-sm font-bold text-[#173F42]">
+        <div className="text-sm font-bold text-cq-ink">
           {searching && areaUnplaced ? (
             <>
               Pick an area to sort by distance — showing centres that fit your other criteria
-              <span className="ml-2 text-xs font-normal text-[#7A8A84]">({results.length} centres)</span>
+              <span className="ml-2 text-xs font-normal text-cq-soft">({results.length} centres)</span>
             </>
           ) : searching ? (
             <>
@@ -599,15 +599,15 @@ export const FindTab: React.FC<FindTabProps> = ({
           ) : (
             <>
               {results.length} centres
-              <span className="ml-2 text-xs font-normal text-[#7A8A84]">CareQ demo centres first, then licensed centres A–Z</span>
+              <span className="ml-2 text-xs font-normal text-cq-soft">CareQ demo centres first, then licensed centres A–Z</span>
             </>
           )}
           {!ontarioFile && !loadError && (
-            <span className="ml-2 text-xs font-normal text-[#7A8A84] inline-flex items-center gap-1">
+            <span className="ml-2 text-xs font-normal text-cq-soft inline-flex items-center gap-1">
               <Loader2 className="w-3 h-3 animate-spin" /> loading licensed centres…
             </span>
           )}
-          {loadError && <span className="ml-2 text-xs font-normal text-[#A4543A]">Could not load licensed centres.</span>}
+          {loadError && <span className="ml-2 text-xs font-normal text-cq-rust">Could not load licensed centres.</span>}
         </div>
         <GhostButton onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="h-9 px-3 text-xs shrink-0">
           {viewMode === 'list' ? (
@@ -642,7 +642,7 @@ export const FindTab: React.FC<FindTabProps> = ({
         <>
           {results.length === 0 ? (
             <Card className="text-center py-12">
-              <p className="text-[#5B6B66] text-sm">No centres match. Try removing a filter or widening the distance.</p>
+              <p className="text-cq-muted text-sm">No centres match. Try removing a filter or widening the distance.</p>
             </Card>
           ) : (
             <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -673,7 +673,7 @@ export const FindTab: React.FC<FindTabProps> = ({
 
       {searching && (
         <div className="space-y-1">
-          <p className="text-[11px] text-[#7A8A84]">
+          <p className="text-[11px] text-cq-soft">
             {areaUnplaced
               ? 'Ordered by fit with what you asked for, then by name. CareQ never knows availability unless a centre reports it.'
               : 'Ranked by distance and fit with what you asked for. CareQ never knows availability unless a centre reports it.'}

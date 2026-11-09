@@ -243,17 +243,17 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-900/60 backdrop-blur-xs">
-      <div className="bg-white rounded-2xl max-w-2xl w-full h-[90vh] max-h-[720px] flex flex-col shadow-2xl border border-stone-200 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-cq-stone-900/60 backdrop-blur-xs">
+      <div className="bg-white rounded-2xl max-w-2xl w-full h-[90vh] max-h-[720px] flex flex-col shadow-2xl border border-cq-stone-200 overflow-hidden">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-stone-200 bg-gradient-to-r from-stone-50 to-white flex items-center justify-between shrink-0">
+        <div className="p-4 sm:p-5 border-b border-cq-stone-200 bg-gradient-to-r from-cq-stone-50 to-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-teal-800 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <div className="w-10 h-10 rounded-xl bg-cq-teal-800 text-white flex items-center justify-center shrink-0 shadow-xs">
               {isParent ? <Building2 className="w-5 h-5" /> : <User className="w-5 h-5" />}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-stone-900 text-base sm:text-lg leading-tight">
+                <h3 className="font-bold text-cq-stone-900 text-base sm:text-lg leading-tight">
                   {isParent ? centre.name : `Parent: ${application.parentName}`}
                 </h3>
                 <StatusBadge
@@ -262,8 +262,8 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                   size="sm"
                 />
               </div>
-              <p className="text-xs text-stone-500 mt-0.5 flex items-center gap-1.5">
-                <Baby className="w-3.5 h-3.5 text-stone-400" />
+              <p className="text-xs text-cq-stone-500 mt-0.5 flex items-center gap-1.5">
+                <Baby className="w-3.5 h-3.5 text-cq-stone-400" />
                 <span>
                   Child: <strong>{application.childName}</strong> ({application.childAgeMonths} mos, Toddler) • Desired Start: {application.preferredStartDate}
                 </span>
@@ -274,7 +274,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors"
+            className="p-1.5 text-cq-stone-400 hover:text-cq-stone-700 hover:bg-cq-stone-100 rounded-lg transition-colors"
             title="Close conversation"
           >
             <X className="w-5 h-5" />
@@ -282,12 +282,12 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
         </div>
 
         {/* Messages List Area */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 bg-stone-50/50">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 bg-cq-stone-50/50">
           {messages.length === 0 ? (
-            <div className="text-center py-12 text-stone-500 space-y-2">
-              <MessageSquare className="w-8 h-8 mx-auto text-stone-400" />
+            <div className="text-center py-12 text-cq-stone-500 space-y-2">
+              <MessageSquare className="w-8 h-8 mx-auto text-cq-stone-400" />
               <p className="text-sm font-medium">No messages yet in this conversation.</p>
-              <p className="text-xs text-stone-400">
+              <p className="text-xs text-cq-stone-400">
                 Use the AI suggestions below or type a message to start communicating.
               </p>
             </div>
@@ -302,17 +302,17 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                   key={msg.id}
                   className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
                 >
-                  <div className="text-[11px] font-semibold text-stone-500 mb-1 px-1 flex items-center gap-1">
+                  <div className="text-[11px] font-semibold text-cq-stone-500 mb-1 px-1 flex items-center gap-1">
                     <span>{msg.senderName}</span>
                     {/* Every centre message in the demo is simulated */}
                     {msg.sender === 'centre' && <SimTag />}
                     {msg.aiAssisted && (
-                      <span className="text-[10px] text-teal-800 bg-teal-100 font-bold px-1.5 py-0.2 rounded">
+                      <span className="text-[10px] text-cq-teal-800 bg-cq-teal-100 font-bold px-1.5 py-0.2 rounded">
                         AI Drafted
                       </span>
                     )}
                     {msg.basedOnSimulatedData && (
-                      <span className="inline-flex items-center rounded px-1.5 py-0.5 bg-[#F3EBDD] text-[#5B4A2E] text-[10px] font-semibold leading-none">
+                      <span className="inline-flex items-center rounded px-1.5 py-0.5 bg-cq-band text-cq-sand-ink text-[10px] font-semibold leading-none">
                         Based on simulated application data
                       </span>
                     )}
@@ -320,13 +320,13 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                   <div
                     className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 text-xs sm:text-sm leading-relaxed shadow-xs ${
                       isMine
-                        ? 'bg-teal-700 text-white rounded-br-xs'
-                        : 'bg-white text-stone-800 border border-stone-200 rounded-bl-xs'
+                        ? 'bg-cq-teal-700 text-white rounded-br-xs'
+                        : 'bg-white text-cq-stone-800 border border-cq-stone-200 rounded-bl-xs'
                     }`}
                   >
                     {msg.text}
                   </div>
-                  <span className="text-[10px] text-stone-400 mt-1 px-1">
+                  <span className="text-[10px] text-cq-stone-400 mt-1 px-1">
                     {msg.timestamp}
                   </span>
                 </div>
@@ -336,11 +336,11 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
         </div>
 
         {/* AI Smart Draft Assistant Section */}
-        <div className="p-3 sm:p-4 bg-white border-t border-stone-200 shrink-0 space-y-3">
+        <div className="p-3 sm:p-4 bg-white border-t border-cq-stone-200 shrink-0 space-y-3">
           {/* AI Suggestions Chips */}
           <div>
-            <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold text-stone-700">
-              <Sparkles className="w-3.5 h-3.5 text-teal-700" />
+            <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold text-cq-stone-700">
+              <Sparkles className="w-3.5 h-3.5 text-cq-teal-700" />
               <span>
                 {isParent
                   ? 'AI Draft Assistant (Click to prepare message for review):'
@@ -357,11 +357,11 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                   onClick={() => handleGenerateDraft(suggestion)}
                   className={`text-xs px-2.5 py-1 rounded-lg border text-left transition-all flex items-center gap-1.5 ${
                     selectedIntent === suggestion
-                      ? 'bg-teal-50 border-teal-400 text-teal-900 font-semibold shadow-2xs'
-                      : 'bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-700'
+                      ? 'bg-cq-teal-50 border-cq-teal-400 text-cq-teal-900 font-semibold shadow-2xs'
+                      : 'bg-cq-stone-50 hover:bg-cq-stone-100 border-cq-stone-200 text-cq-stone-700'
                   } disabled:opacity-50`}
                 >
-                  <Bot className="w-3 h-3 text-teal-700 shrink-0" />
+                  <Bot className="w-3 h-3 text-cq-teal-700 shrink-0" />
                   <span className="truncate max-w-[260px] sm:max-w-none">{suggestion}</span>
                 </button>
               ))}
@@ -370,45 +370,45 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
 
           {/* AI Loading state */}
           {isGeneratingAiDraft && (
-            <div className="p-3 rounded-xl bg-teal-50 border border-teal-200 flex items-center gap-2 text-xs text-teal-900">
-              <Loader2 className="w-4 h-4 animate-spin text-teal-700" />
+            <div className="p-3 rounded-xl bg-cq-teal-50 border border-cq-teal-200 flex items-center gap-2 text-xs text-cq-teal-900">
+              <Loader2 className="w-4 h-4 animate-spin text-cq-teal-700" />
               <span>Drafting message for your review and approval...</span>
             </div>
           )}
 
           {/* Tone Checking in progress state */}
           {isCheckingTone && (
-            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-2 text-xs text-amber-900 animate-fade-in">
-              <Loader2 className="w-4 h-4 animate-spin text-amber-700" />
+            <div className="p-3 rounded-xl bg-cq-amber-50 border border-cq-amber-200 flex items-center gap-2 text-xs text-cq-amber-900 animate-fade-in">
+              <Loader2 className="w-4 h-4 animate-spin text-cq-amber-700" />
               <span>Checking message tone with Gemini...</span>
             </div>
           )}
 
           {/* Tone Warning Panel: If message is rude, threatening or aggressive */}
           {toneWarning && (
-            <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 shadow-sm space-y-3 animate-fade-in">
+            <div className="p-4 rounded-xl bg-cq-amber-50 border border-cq-amber-300 shadow-sm space-y-3 animate-fade-in">
               <div className="flex items-start gap-2.5">
-                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <AlertTriangle className="w-5 h-5 text-cq-amber-600 shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <h4 className="text-sm font-bold text-amber-950">
+                  <h4 className="text-sm font-bold text-cq-amber-950">
                     This message may come across as harsh
                   </h4>
-                  <p className="text-xs text-amber-800 mt-0.5">
+                  <p className="text-xs text-cq-amber-800 mt-0.5">
                     CareQ checked the tone of your message. You can edit your message or use the calmer suggestion below. The sender always makes the final choice.
                   </p>
                 </div>
               </div>
 
               {/* Calmer Suggested Version */}
-              <div className="bg-white border border-amber-200 rounded-lg p-3 text-xs sm:text-sm text-stone-800 space-y-1">
-                <span className="text-[10px] font-bold text-[#0B4A52] uppercase tracking-wider block">
+              <div className="bg-white border border-cq-amber-200 rounded-lg p-3 text-xs sm:text-sm text-cq-stone-800 space-y-1">
+                <span className="text-[10px] font-bold text-cq-brand uppercase tracking-wider block">
                   Calmer suggested version:
                 </span>
-                <p className="text-stone-700 italic">"{toneWarning.suggestedVersion}"</p>
+                <p className="text-cq-stone-700 italic">"{toneWarning.suggestedVersion}"</p>
               </div>
 
               {/* Actions: Use suggestion, edit, or send original */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-amber-200">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-cq-amber-200">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -418,7 +418,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                       setAiDraft(null);
                       setToneWarning(null);
                     }}
-                    className="px-3 py-1.5 text-xs font-semibold bg-[#0B4A52] hover:bg-[#08383e] text-white rounded-lg transition-colors shadow-2xs"
+                    className="px-3 py-1.5 text-xs font-semibold bg-cq-brand hover:bg-cq-brand-hover text-white rounded-lg transition-colors shadow-2xs"
                   >
                     Use Suggestion
                   </button>
@@ -432,7 +432,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                       setManualText('');
                       setAiDraft(null);
                     }}
-                    className="px-3 py-1.5 text-xs font-medium text-teal-800 bg-teal-100/80 hover:bg-teal-200/80 rounded-lg transition-colors"
+                    className="px-3 py-1.5 text-xs font-medium text-cq-teal-800 bg-cq-teal-100/80 hover:bg-cq-teal-200/80 rounded-lg transition-colors"
                   >
                     Send Suggestion
                   </button>
@@ -446,7 +446,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                       setManualText(toneWarning.originalText);
                       setToneWarning(null);
                     }}
-                    className="px-2.5 py-1 text-xs font-medium text-stone-700 hover:bg-amber-100 rounded transition-colors"
+                    className="px-2.5 py-1 text-xs font-medium text-cq-stone-700 hover:bg-cq-amber-100 rounded transition-colors"
                   >
                     Edit Message
                   </button>
@@ -460,7 +460,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                       setManualText('');
                       setAiDraft(null);
                     }}
-                    className="px-2.5 py-1 text-xs font-medium text-stone-500 hover:text-stone-900 underline transition-colors"
+                    className="px-2.5 py-1 text-xs font-medium text-cq-stone-500 hover:text-cq-stone-900 underline transition-colors"
                   >
                     Send Anyway
                   </button>
@@ -473,13 +473,13 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
               "ideally AI would make necesary messages and ask your approval to send it"
               Show AI Draft with Edit / Approve & Send controls */}
           {aiDraft && !toneWarning && (
-            <div className="p-3.5 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50/50 border border-amber-300 shadow-xs space-y-2 animate-fade-in">
-              <div className="flex items-center justify-between text-xs font-bold text-amber-950">
+            <div className="p-3.5 rounded-xl bg-gradient-to-br from-cq-amber-50 to-cq-orange-50/50 border border-cq-amber-300 shadow-xs space-y-2 animate-fade-in">
+              <div className="flex items-center justify-between text-xs font-bold text-cq-amber-950">
                 <span className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+                  <Sparkles className="w-3.5 h-3.5 text-cq-amber-700" />
                   AI Draft Generated — Review & Approve to Send:
                 </span>
-                <span className="text-[11px] text-amber-700 font-normal">
+                <span className="text-[11px] text-cq-amber-700 font-normal">
                   You can edit the text below before sending
                 </span>
               </div>
@@ -488,14 +488,14 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                 rows={3}
                 value={aiDraft}
                 onChange={(e) => setAiDraft(e.target.value)}
-                className="w-full text-xs sm:text-sm bg-white border border-amber-200 rounded-lg p-2.5 text-stone-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 leading-relaxed resize-y"
+                className="w-full text-xs sm:text-sm bg-white border border-cq-amber-200 rounded-lg p-2.5 text-cq-stone-800 focus:outline-hidden focus:ring-2 focus:ring-cq-amber-500 leading-relaxed resize-y"
               />
               <AiFallbackNote aiMode={draftAiMode} />
 
               {draftContext && draftContext.facts.length > 0 && (
-                <div className="rounded-lg border border-amber-200 bg-white/70 px-2.5 py-2 space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#5B6B66]">Facts used in this draft</p>
-                  <ul className="text-[11px] text-stone-700 space-y-0.5">
+                <div className="rounded-lg border border-cq-amber-200 bg-white/70 px-2.5 py-2 space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-cq-muted">Facts used in this draft</p>
+                  <ul className="text-[11px] text-cq-stone-700 space-y-0.5">
                     {draftContext.facts.map((f) => (
                       <li key={f.label} className="flex flex-wrap items-center gap-1">
                         <span className="font-semibold">{f.label}:</span>
@@ -505,15 +505,15 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                     ))}
                   </ul>
                   {draftContext.citation && (
-                    <div className="pt-1 mt-1 border-t border-amber-100 text-[11px] text-stone-700">
-                      <p className="font-semibold text-[#5B6B66]">
+                    <div className="pt-1 mt-1 border-t border-cq-amber-100 text-[11px] text-cq-stone-700">
+                      <p className="font-semibold text-cq-muted">
                         From {draftContext.citation.operatorName}'s {draftContext.citation.docTitle}, {draftContext.citation.page}
                       </p>
                       <p className="italic">“{draftContext.citation.quote}”</p>
                       {(draftContext.citation.sourceUrl || draftContext.citation.sourceNote) && (
-                        <p className="text-[10px] text-[#7A8A84]">
+                        <p className="text-[10px] text-cq-soft">
                           {draftContext.citation.sourceUrl && (
-                            <a href={draftContext.citation.sourceUrl} target="_blank" rel="noreferrer" className="font-semibold text-[#0B4A52] hover:underline">
+                            <a href={draftContext.citation.sourceUrl} target="_blank" rel="noreferrer" className="font-semibold text-cq-brand hover:underline">
                               Source
                             </a>
                           )}
@@ -524,7 +524,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                       )}
                     </div>
                   )}
-                  <p className="text-[10px] text-[#7A8A84]">Edit anything before sending. Nothing is sent until you approve.</p>
+                  <p className="text-[10px] text-cq-soft">Edit anything before sending. Nothing is sent until you approve.</p>
                 </div>
               )}
 
@@ -536,7 +536,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                     setDraftContext(null);
                     setSelectedIntent('');
                   }}
-                  className="px-3 py-1.5 text-xs text-stone-600 hover:text-stone-900 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-xs text-cq-stone-600 hover:text-cq-stone-900 rounded-lg transition-colors"
                 >
                   Discard Draft
                 </button>
@@ -545,7 +545,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                   type="button"
                   disabled={isCheckingTone}
                   onClick={handleApproveAndSendAiDraft}
-                  className="px-4 py-1.5 text-xs sm:text-sm font-semibold bg-[#0B4A52] hover:bg-[#08383e] text-white rounded-lg transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-4 py-1.5 text-xs sm:text-sm font-semibold bg-cq-brand hover:bg-cq-brand-hover text-white rounded-lg transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-50"
                 >
                   {isCheckingTone ? (
                     <>
@@ -574,12 +574,12 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                   ? `Type a message to ${centre.name}...`
                   : `Type a message to ${application.parentName}...`
               }
-              className="flex-1 bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-stone-900 placeholder-stone-400 focus:outline-hidden focus:ring-2 focus:ring-[#0B4A52] focus:bg-white"
+              className="flex-1 bg-cq-stone-50 border border-cq-stone-300 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-cq-stone-900 placeholder-cq-stone-400 focus:outline-hidden focus:ring-2 focus:ring-cq-brand focus:bg-white"
             />
             <button
               type="submit"
               disabled={!manualText.trim() || isCheckingTone}
-              className="px-4 py-2 bg-[#0B4A52] hover:bg-[#08383e] text-white rounded-xl text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              className="px-4 py-2 bg-cq-brand hover:bg-cq-brand-hover text-white rounded-xl text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
             >
               {isCheckingTone ? (
                 <>

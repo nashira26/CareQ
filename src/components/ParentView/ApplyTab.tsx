@@ -122,10 +122,10 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
       {draftApps.length > 0 ? (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#5B6B66]">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-cq-muted">
               Applications In Progress ({draftApps.length})
             </h3>
-            <span className="text-xs text-[#7A8A84]">
+            <span className="text-xs text-cq-soft">
               {parentProfile.childName} · {parentProfile.childAgeMonths} mos · {parentProfile.careType}
             </span>
           </div>
@@ -149,17 +149,17 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
               return (
                 <Card key={app.id} className="p-6 space-y-6">
                   {/* Card Header Row */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-[#E7E4DA]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-cq-line">
                     <div>
                       <div className="flex items-center gap-2.5">
-                        <h4 className="text-lg font-bold text-[#173F42]">
+                        <h4 className="text-lg font-bold text-cq-ink">
                           {centre.name}
                         </h4>
-                        <span className="text-xs font-semibold px-2 py-0.5 bg-[#FAF9F4] text-[#5B6B66] border border-[#E7E4DA] rounded-md">
+                        <span className="text-xs font-semibold px-2 py-0.5 bg-cq-page text-cq-muted border border-cq-line rounded-md">
                           {centre.neighbourhood}
                         </span>
                       </div>
-                      <p className="text-xs text-[#7A8A84] mt-1">
+                      <p className="text-xs text-cq-soft mt-1">
                         Intake: {parentProfile.careType} ({parentProfile.childAgeMonths} mos) · Desired Start: {parentProfile.preferredStartDate}
                       </p>
                     </div>
@@ -170,13 +170,13 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                   </div>
 
                   {noRequirements && (
-                    <div className="rounded-xl border border-[#E7D6A8] bg-[#FBF6EA] p-4 space-y-3">
-                      <p className="text-sm font-semibold text-[#5B4A2E]">This centre hasn't published its requirements yet</p>
-                      <p className="text-xs text-[#5B4A2E]">
+                    <div className="rounded-xl border border-cq-sand-line bg-cq-sand-50 p-4 space-y-3">
+                      <p className="text-sm font-semibold text-cq-sand-ink">This centre hasn't published its requirements yet</p>
+                      <p className="text-xs text-cq-sand-ink">
                         You can still send your application with a note. The centre may ask for documents later.
                       </p>
                       <div>
-                        <label htmlFor={`note-only-${app.id}`} className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5B6B66]">
+                        <label htmlFor={`note-only-${app.id}`} className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cq-muted">
                           Note to {centre.name}
                         </label>
                         <textarea
@@ -185,7 +185,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                           value={app.noteToCentre ?? ''}
                           onChange={(e) => onUpdateNoteToCentre(app.id, e.target.value)}
                           placeholder={`e.g. Hello, I'd like to apply for ${app.childName} for ${app.careType.toLowerCase()} care from ${app.preferredStartDate}.`}
-                          className="mt-1 w-full rounded-xl border border-[#E7E4DA] bg-white p-2.5 text-sm text-[#173F42] focus:outline-hidden focus:ring-2 focus:ring-[#CBD9C6]"
+                          className="mt-1 w-full rounded-xl border border-cq-line bg-white p-2.5 text-sm text-cq-ink focus:outline-hidden focus:ring-2 focus:ring-cq-sage-line"
                         />
                       </div>
                     </div>
@@ -194,15 +194,15 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                   {/* Thin Progress Bar: bg #E7E4DA, fill #4E7A5A */}
                   {!noRequirements && (
                   <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs text-[#5B6B66] font-medium">
+                    <div className="flex justify-between text-xs text-cq-muted font-medium">
                       <span>Checklist readiness</span>
                       <span>
                         {completedCount} of {totalRequirements} ready
                       </span>
                     </div>
-                    <div className="h-2 w-full bg-[#E7E4DA] rounded-full overflow-hidden">
+                    <div className="h-2 w-full bg-cq-line rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-[#4E7A5A] rounded-full transition-all duration-300"
+                        className="h-full bg-cq-sage-ink rounded-full transition-all duration-300"
                         style={{ width: `${progressPct}%` }}
                       />
                     </div>
@@ -211,7 +211,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
 
                   {/* Where the checklist comes from (real centres: quoted from their published handbook) */}
                   {!noRequirements && centre.requirementsExtractedFrom && (
-                    <p className="text-[11px] text-[#5B6B66]">
+                    <p className="text-[11px] text-cq-muted">
                       Extracted from {centre.requirementsExtractedFrom.docTitle}
                       {centre.requirementsExtractedFrom.sourceUrl ? '' : ' (source link not found)'}
                       {centre.requirementsExtractedFrom.fallback === 'licensing-manual' && centre.requirementsExtractedFrom.sourceNote
@@ -229,7 +229,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                       return (
                         <div
                           key={req}
-                          className="rounded-xl border border-[#E7E4DA] bg-[#FBFAF3] px-4 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors hover:border-[#CBD9C6]"
+                          className="rounded-xl border border-cq-line bg-cq-input px-4 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors hover:border-cq-sage-line"
                         >
                           {/* Left: Checkbox & requirement name */}
                           <div className="flex items-start gap-3 min-w-0">
@@ -240,28 +240,28 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                               title="Toggle requirement completion"
                             >
                               {uploadedDoc || isDone ? (
-                                <CheckCircle2 className="w-5 h-5 text-[#4E7A5A] fill-[#E4ECE1]" />
+                                <CheckCircle2 className="w-5 h-5 text-cq-sage-ink fill-cq-sage" />
                               ) : (
-                                <Circle className="w-5 h-5 text-[#7A8A84]" />
+                                <Circle className="w-5 h-5 text-cq-soft" />
                               )}
                             </button>
 
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-sm font-bold text-[#173F42]">
+                                <span className="text-sm font-bold text-cq-ink">
                                   {req}
                                 </span>
                                 {uploadedDoc || isDone ? (
-                                  <span className="text-[10px] font-semibold bg-[#E4ECE1] text-[#4E7A5A] border border-[#CBD9C6] px-2 py-0.5 rounded-full">
+                                  <span className="text-[10px] font-semibold bg-cq-sage text-cq-sage-ink border border-cq-sage-line px-2 py-0.5 rounded-full">
                                     Ready
                                   </span>
                                 ) : (
-                                  <span className="text-[10px] font-semibold bg-[#FDF3DD] text-[#8A6411] border border-[#EADBB8] px-2 py-0.5 rounded-full">
+                                  <span className="text-[10px] font-semibold bg-cq-cream-amber text-cq-amber-ink border border-cq-sand-line-2 px-2 py-0.5 rounded-full">
                                     Missing
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-[#7A8A84] mt-0.5">
+                              <p className="text-xs text-cq-soft mt-0.5">
                                 {centre.requirementCitations?.[req]
                                   ? `From ${centre.requirementCitations[req]}`
                                   : `Required by ${centre.name} policy for admissions intake.`}
@@ -272,13 +272,13 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                           {/* Right: Uploaded chip or upload actions */}
                           <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
                             {uploadedDoc ? (
-                              <div className="flex items-center gap-2 bg-white border border-[#CBD9C6] px-3 py-1.5 rounded-xl shadow-2xs">
-                                <FileCheck2 className="w-4 h-4 text-[#4E7A5A] shrink-0" />
+                              <div className="flex items-center gap-2 bg-white border border-cq-sage-line px-3 py-1.5 rounded-xl shadow-2xs">
+                                <FileCheck2 className="w-4 h-4 text-cq-sage-ink shrink-0" />
                                 <div className="text-left">
-                                  <div className="text-xs font-semibold text-[#173F42] max-w-[140px] truncate">
+                                  <div className="text-xs font-semibold text-cq-ink max-w-[140px] truncate">
                                     {uploadedDoc.fileName}
                                   </div>
-                                  <div className="text-[10px] text-[#7A8A84]">
+                                  <div className="text-[10px] text-cq-soft">
                                     {uploadedDoc.fileSize}
                                   </div>
                                 </div>
@@ -287,7 +287,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                                   type="button"
                                   onClick={() => setViewingAppForDocs(app)}
                                   title="Preview document"
-                                  className="p-1 text-[#5B6B66] hover:text-[#0B4A52] rounded hover:bg-[#FAF9F4] transition-colors ml-1 cursor-pointer"
+                                  className="p-1 text-cq-muted hover:text-cq-brand rounded hover:bg-cq-page transition-colors ml-1 cursor-pointer"
                                 >
                                   <Eye className="w-3.5 h-3.5" />
                                 </button>
@@ -296,7 +296,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                                   type="button"
                                   onClick={() => onRemoveDocument(app.id, req)}
                                   title="Remove document"
-                                  className="p-1 text-[#7A8A84] hover:text-rose-600 rounded hover:bg-[#FAF9F4] transition-colors cursor-pointer"
+                                  className="p-1 text-cq-soft hover:text-cq-rose-600 rounded hover:bg-cq-page transition-colors cursor-pointer"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -305,7 +305,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                               <div className="flex items-center gap-2">
                                 <label className="cursor-pointer">
                                   <GhostButton className="h-9 text-xs flex items-center gap-1.5 pointer-events-none">
-                                    <UploadCloud className="w-3.5 h-3.5 text-[#5B6B66]" />
+                                    <UploadCloud className="w-3.5 h-3.5 text-cq-muted" />
                                     <span>Upload document</span>
                                   </GhostButton>
                                   <input
@@ -331,9 +331,9 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                   </div>
 
                   {/* AI-prepared application: CareQ demo centres only (other open-data centres never have applications) */}
-                  <div className="pt-4 border-t border-[#E7E4DA]">
+                  <div className="pt-4 border-t border-cq-line">
                     {noRequirements ? (
-                      <p className="text-xs text-[#7A8A84]">
+                      <p className="text-xs text-cq-soft">
                         Prepare with AI is available once {centre.name} publishes its requirements.
                       </p>
                     ) : (
@@ -348,10 +348,10 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                   </div>
 
                   {/* Card Footer: Submit button */}
-                  <div className="pt-4 border-t border-[#E7E4DA] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <p className="text-xs text-[#5B6B66]">
+                  <div className="pt-4 border-t border-cq-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <p className="text-xs text-cq-muted">
                       {isAllReady ? (
-                        <span className="text-[#4E7A5A] font-semibold flex items-center gap-1">
+                        <span className="text-cq-sage-ink font-semibold flex items-center gap-1">
                           <Check className="w-4 h-4" />
                           All checklist requirements ready for review.
                         </span>
@@ -381,13 +381,13 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
         </div>
       ) : (
         <Card className="p-10 text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-[#E4ECE1] text-[#4E7A5A] flex items-center justify-center mx-auto">
+          <div className="w-12 h-12 rounded-full bg-cq-sage text-cq-sage-ink flex items-center justify-center mx-auto">
             <CheckCircle2 className="w-6 h-6" />
           </div>
-          <h3 className="text-lg font-bold text-[#173F42]">
+          <h3 className="text-lg font-bold text-cq-ink">
             No draft applications in progress
           </h3>
-          <p className="text-sm text-[#5B6B66] max-w-md mx-auto">
+          <p className="text-sm text-cq-muted max-w-md mx-auto">
             All your selected child care centres have been submitted, or you can find more centres to begin a new application.
           </p>
           <div className="pt-2 flex justify-center gap-3">
@@ -403,16 +403,16 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
 
       {/* Review and Approve Confirmation Modal */}
       {reviewingApp && reviewingCentre && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#173F42]/40 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-cq-ink/40 backdrop-blur-xs">
           <Card className="max-w-lg w-full p-6 shadow-xl space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
                 <IconTile icon={ShieldCheck} tone="sage" />
                 <div>
-                  <h3 className="text-lg font-bold text-[#173F42]">
+                  <h3 className="text-lg font-bold text-cq-ink">
                     Approve and send application
                   </h3>
-                  <p className="text-xs text-[#5B6B66]">
+                  <p className="text-xs text-cq-muted">
                     Ontario Child Care Intake Central Verification
                   </p>
                 </div>
@@ -420,35 +420,35 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
               <button
                 type="button"
                 onClick={() => setReviewingAppId(null)}
-                className="text-[#7A8A84] hover:text-[#173F42] p-1 rounded-lg transition-colors cursor-pointer"
+                className="text-cq-soft hover:text-cq-ink p-1 rounded-lg transition-colors cursor-pointer"
                 aria-label="Close"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="bg-[#FAF9F4] rounded-xl p-4 text-xs space-y-2 border border-[#E7E4DA]">
+            <div className="bg-cq-page rounded-xl p-4 text-xs space-y-2 border border-cq-line">
               <div className="flex justify-between">
-                <span className="text-[#5B6B66]">Child Care Centre:</span>
-                <span className="font-semibold text-[#173F42] text-right">
+                <span className="text-cq-muted">Child Care Centre:</span>
+                <span className="font-semibold text-cq-ink text-right">
                   {reviewingCentre.name} ({reviewingCentre.neighbourhood})
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#5B6B66]">Child &amp; Age:</span>
-                <span className="font-semibold text-[#173F42]">
+                <span className="text-cq-muted">Child &amp; Age:</span>
+                <span className="font-semibold text-cq-ink">
                   {parentProfile.childName} ({parentProfile.childAgeMonths} months)
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#5B6B66]">Desired Intake:</span>
-                <span className="font-semibold text-[#173F42]">
+                <span className="text-cq-muted">Desired Intake:</span>
+                <span className="font-semibold text-cq-ink">
                   {parentProfile.preferredStartDate} ({parentProfile.careType})
                 </span>
               </div>
-              <div className="flex justify-between pt-1 border-t border-[#E7E4DA]">
-                <span className="text-[#5B6B66]">Parent / Guardian:</span>
-                <span className="font-semibold text-[#173F42]">
+              <div className="flex justify-between pt-1 border-t border-cq-line">
+                <span className="text-cq-muted">Parent / Guardian:</span>
+                <span className="font-semibold text-cq-ink">
                   {parentProfile.name}
                 </span>
               </div>
@@ -456,7 +456,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
 
             {/* Checklist summary */}
             <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#5B6B66]">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cq-muted">
                 {reviewingDraft
                   ? 'Checklist as you reviewed it:'
                   : `Attached Checklist (${reviewingApp.completedRequirements.length}/${reviewingCentre.requirements.length}):`}
@@ -466,17 +466,17 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                 {reviewingDraft?.checklist.map((c) => (
                   <div
                     key={c.requirement}
-                    className="flex items-center justify-between text-xs py-2 px-3 rounded-lg bg-[#FBFAF3] border border-[#E7E4DA]"
+                    className="flex items-center justify-between text-xs py-2 px-3 rounded-lg bg-cq-input border border-cq-line"
                   >
                     <div className="truncate pr-2">
-                      <span className="text-[#173F42] font-medium">{c.requirement}</span>
+                      <span className="text-cq-ink font-medium">{c.requirement}</span>
                       {c.matchedDocument && (
-                        <span className="block text-[10px] text-[#7A8A84] truncate">File: {c.matchedDocument}</span>
+                        <span className="block text-[10px] text-cq-soft truncate">File: {c.matchedDocument}</span>
                       )}
                     </div>
                     <span
                       className={`shrink-0 text-[11px] font-semibold ${
-                        c.status === 'ready' ? 'text-[#4E7A5A]' : c.status === 'missing' ? 'text-[#8A6411]' : 'text-[#5A4A85]'
+                        c.status === 'ready' ? 'text-cq-sage-ink' : c.status === 'missing' ? 'text-cq-amber-ink' : 'text-cq-lilac-ink-2'
                       }`}
                     >
                       {centreStatusLabel(c)}
@@ -490,22 +490,22 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                   return (
                     <div
                       key={req}
-                      className="flex items-center justify-between text-xs py-2 px-3 rounded-lg bg-[#FBFAF3] border border-[#E7E4DA]"
+                      className="flex items-center justify-between text-xs py-2 px-3 rounded-lg bg-cq-input border border-cq-line"
                     >
                       <div className="truncate pr-2">
-                        <span className="text-[#173F42] font-medium">{req}</span>
+                        <span className="text-cq-ink font-medium">{req}</span>
                         {doc && (
-                          <span className="block text-[10px] text-[#7A8A84] truncate">
+                          <span className="block text-[10px] text-cq-soft truncate">
                             File: {doc.fileName}
                           </span>
                         )}
                       </div>
                       {isDone || doc ? (
-                        <span className="text-[#4E7A5A] font-semibold shrink-0 flex items-center gap-1 text-[11px]">
+                        <span className="text-cq-sage-ink font-semibold shrink-0 flex items-center gap-1 text-[11px]">
                           <Check className="w-3.5 h-3.5" /> Ready
                         </span>
                       ) : (
-                        <span className="text-[#8A6411] font-semibold shrink-0 text-[11px]">
+                        <span className="text-cq-amber-ink font-semibold shrink-0 text-[11px]">
                           Missing
                         </span>
                       )}
@@ -516,7 +516,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
             </div>
 
             {reviewingCentre.requirements.length === 0 && (
-              <p className="text-xs text-[#5B4A2E] bg-[#FBF6EA] border border-[#E7D6A8] rounded-lg px-3 py-2">
+              <p className="text-xs text-cq-sand-ink bg-cq-sand-50 border border-cq-sand-line rounded-lg px-3 py-2">
                 {reviewingCentre.name} hasn't published its requirements yet.
                 {reviewingApp.noteToCentre?.trim() ? ` Your note: “${reviewingApp.noteToCentre.trim()}”` : ' No note added.'}
               </p>
@@ -525,13 +525,13 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
             {/* AI draft summary: unfilled fields warn but don't block */}
             {reviewingDraft && (
               <div className="space-y-1.5 text-xs">
-                <p className="text-[#5B6B66] flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#8A6A3B]" />
+                <p className="text-cq-muted flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-cq-sand-ink-2" />
                   Includes your reviewed AI draft: {reviewingDraft.fields.length} details, checklist statuses
                   {reviewingDraft.noteToCentre.trim() ? ' and a note' : ''}.
                 </p>
                 {emptyFieldCount > 0 && (
-                  <p className="rounded-lg bg-[#FDF3DD] border border-[#EADBB8] px-3 py-2 text-[#8A6411]">
+                  <p className="rounded-lg bg-cq-cream-amber border border-cq-sand-line-2 px-3 py-2 text-cq-amber-ink">
                     {emptyFieldCount} {emptyFieldCount === 1 ? 'field' : 'fields'} still to provide. You can send now or fill
                     them in first.
                   </p>
@@ -539,11 +539,11 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
               </div>
             )}
 
-            <p className="text-xs text-[#5B6B66] bg-[#E4ECE1]/40 border border-[#CBD9C6] p-3 rounded-xl">
+            <p className="text-xs text-cq-muted bg-cq-sage/40 border border-cq-sage-line p-3 rounded-xl">
               By approving, your verified application package will be marked <strong>"Submitted"</strong> and immediately transmitted to <strong>{reviewingCentre.name}</strong>.
             </p>
 
-            <label className="flex items-start gap-2 text-sm text-[#173F42] cursor-pointer">
+            <label className="flex items-start gap-2 text-sm text-cq-ink cursor-pointer">
               <input
                 type="checkbox"
                 className="mt-1"

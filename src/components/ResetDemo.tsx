@@ -92,12 +92,12 @@ export const ResetDemo: React.FC<ResetDemoProps> = ({ variant = 'sidebar', class
         <button
           type="button"
           onClick={() => setDialog(adminLocked ? 'token' : 'confirm')}
-          className="flex items-center gap-2 text-xs text-[#5B6B66] hover:text-[#173F42] pl-2 transition-colors cursor-pointer"
+          className="flex items-center gap-2 text-xs text-cq-muted hover:text-cq-ink pl-2 transition-colors cursor-pointer"
         >
           {adminLocked ? <KeyRound className="w-3.5 h-3.5" /> : <RotateCcw className="w-3.5 h-3.5" />}
           <span>{adminLocked ? 'Admin reset' : 'Reset demo'}</span>
         </button>
-        <p className="text-[10px] text-[#7A8A84] pl-2 mt-1">
+        <p className="text-[10px] text-cq-soft pl-2 mt-1">
           {mode === 'local' ? 'Demo data is saved only in this browser.' : 'Demo data is shared by everyone using this demo.'}
         </p>
       </div>
@@ -106,11 +106,11 @@ export const ResetDemo: React.FC<ResetDemoProps> = ({ variant = 'sidebar', class
         <button
           type="button"
           onClick={() => setDialog(adminLocked ? 'token' : 'confirm')}
-          className="text-xs text-[#5B6B66] hover:text-[#173F42] underline cursor-pointer"
+          className="text-xs text-cq-muted hover:text-cq-ink underline cursor-pointer"
         >
           {adminLocked ? 'Admin reset' : 'Reset demo'}
         </button>
-        {mode === 'local' && <span className="text-[10px] text-[#7A8A84]">Demo data is saved only in this browser.</span>}
+        {mode === 'local' && <span className="text-[10px] text-cq-soft">Demo data is saved only in this browser.</span>}
       </span>
     );
 
@@ -118,13 +118,13 @@ export const ResetDemo: React.FC<ResetDemoProps> = ({ variant = 'sidebar', class
     <>
       {trigger}
       {dialog && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[#173F42]/40 backdrop-blur-xs" onClick={() => setDialog(null)}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-cq-ink/40 backdrop-blur-xs" onClick={() => setDialog(null)}>
           <div
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="reset-demo-title"
             onClick={(e) => e.stopPropagation()}
-            className="max-w-sm w-full rounded-2xl bg-white border border-[#E7E4DA] p-6 shadow-xl space-y-4"
+            className="max-w-sm w-full rounded-2xl bg-white border border-cq-line p-6 shadow-xl space-y-4"
           >
             {dialog === 'token' ? (
               <form
@@ -139,12 +139,12 @@ export const ResetDemo: React.FC<ResetDemoProps> = ({ variant = 'sidebar', class
                   setDialog('confirm');
                 }}
               >
-                <h3 id="reset-demo-title" className="text-lg font-bold text-[#173F42]">
+                <h3 id="reset-demo-title" className="text-lg font-bold text-cq-ink">
                   Admin reset
                 </h3>
-                <p className="text-sm text-[#5B6B66]">Enter the admin reset token to enable “Reset demo” in this tab.</p>
+                <p className="text-sm text-cq-muted">Enter the admin reset token to enable “Reset demo” in this tab.</p>
                 <div>
-                  <label htmlFor="reset-token" className="block text-sm font-medium text-[#3F5250] mb-1.5">
+                  <label htmlFor="reset-token" className="block text-sm font-medium text-cq-ink-2 mb-1.5">
                     Reset token
                   </label>
                   <input
@@ -153,41 +153,41 @@ export const ResetDemo: React.FC<ResetDemoProps> = ({ variant = 'sidebar', class
                     autoComplete="off"
                     value={tokenInput}
                     onChange={(e) => setTokenInput(e.target.value)}
-                    className="h-11 w-full rounded-xl border border-[#E8E4D6] bg-[#FBFAF3] px-3.5 text-sm outline-none focus:border-[#45B5A5] focus:ring-2 focus:ring-[#45B5A5]/25"
+                    className="h-11 w-full rounded-xl border border-cq-line-input bg-cq-input px-3.5 text-sm outline-none focus:border-cq-secondary focus:ring-2 focus:ring-cq-secondary/25"
                   />
                 </div>
-                {error && <p className="text-xs font-medium text-[#A4543A]">{error}</p>}
+                {error && <p className="text-xs font-medium text-cq-rust">{error}</p>}
                 <div className="flex justify-end gap-2">
                   <button
                     ref={firstButton}
                     type="button"
                     onClick={() => setDialog(null)}
-                    className="h-10 px-4 rounded-xl border border-[#E7E4DA] bg-white text-sm font-semibold text-[#173F42] hover:bg-[#FAF9F4] cursor-pointer"
+                    className="h-10 px-4 rounded-xl border border-cq-line bg-white text-sm font-semibold text-cq-ink hover:bg-cq-page cursor-pointer"
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="h-10 px-4 rounded-xl bg-[#0B4A52] text-white text-sm font-semibold cursor-pointer">
+                  <button type="submit" className="h-10 px-4 rounded-xl bg-cq-brand text-white text-sm font-semibold cursor-pointer">
                     Continue
                   </button>
                 </div>
               </form>
             ) : (
               <>
-                <h3 id="reset-demo-title" className="text-lg font-bold text-[#173F42]">
+                <h3 id="reset-demo-title" className="text-lg font-bold text-cq-ink">
                   Reset the demo?
                 </h3>
-                <p className="text-sm text-[#5B6B66]">
+                <p className="text-sm text-cq-muted">
                   {mode === 'local'
                     ? 'This clears everything saved in this browser: applications, drafts, messages, notifications, support requests, new accounts, centre changes and your shortlist. The demo goes back to its original data.'
                     : 'This resets the SHARED demo database for everyone: all new accounts, centres, applications and messages are removed, and everyone is signed out.'}
                 </p>
-                {error && <p className="text-xs font-medium text-[#A4543A]">{error}</p>}
+                {error && <p className="text-xs font-medium text-cq-rust">{error}</p>}
                 <div className="flex justify-end gap-2 pt-1">
                   <button
                     ref={firstButton}
                     type="button"
                     onClick={() => setDialog(null)}
-                    className="h-10 px-4 rounded-xl border border-[#E7E4DA] bg-white text-sm font-semibold text-[#173F42] hover:bg-[#FAF9F4] cursor-pointer"
+                    className="h-10 px-4 rounded-xl border border-cq-line bg-white text-sm font-semibold text-cq-ink hover:bg-cq-page cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -195,7 +195,7 @@ export const ResetDemo: React.FC<ResetDemoProps> = ({ variant = 'sidebar', class
                     type="button"
                     disabled={busy}
                     onClick={handleReset}
-                    className="h-10 px-4 rounded-xl bg-[#A4543A] hover:bg-[#8C4530] text-white text-sm font-semibold cursor-pointer disabled:opacity-60"
+                    className="h-10 px-4 rounded-xl bg-cq-rust hover:bg-cq-rust-deep text-white text-sm font-semibold cursor-pointer disabled:opacity-60"
                   >
                     {busy ? 'Resetting…' : 'Reset demo'}
                   </button>

@@ -417,7 +417,7 @@ export default function App() {
   const banners = (
     <>
       {modeNotice && !outage && (
-        <div role="status" className="fixed bottom-4 left-4 z-[65] max-w-sm rounded-xl bg-[#F3EBDD] border border-[#E7D6A8] shadow-lg p-3 pr-9 text-xs text-[#5B4A2E] flex items-start gap-2">
+        <div role="status" className="fixed bottom-4 left-4 z-[65] max-w-sm rounded-xl bg-cq-band border border-cq-sand-line shadow-lg p-3 pr-9 text-xs text-cq-sand-ink flex items-start gap-2">
           <WifiOff className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{modeNotice}</span>
           <button type="button" onClick={() => setModeNotice(null)} aria-label="Dismiss" className="absolute top-2 right-2 p-1 cursor-pointer">
@@ -426,13 +426,13 @@ export default function App() {
         </div>
       )}
       {outage && (
-        <div role="alert" className="fixed top-0 inset-x-0 z-[70] bg-[#A4543A] text-white text-xs sm:text-sm px-4 py-2 flex items-center justify-center gap-2">
+        <div role="alert" className="fixed top-0 inset-x-0 z-[70] bg-cq-rust text-white text-xs sm:text-sm px-4 py-2 flex items-center justify-center gap-2">
           <WifiOff className="w-4 h-4 shrink-0" />
           <span>{outage} Retrying…</span>
         </div>
       )}
       {actionError && (
-        <div role="alert" className="fixed top-12 right-4 z-[70] max-w-sm rounded-xl bg-white border border-[#E7D6A8] shadow-lg p-3 pr-9 text-sm text-[#5B4A2E]">
+        <div role="alert" className="fixed top-12 right-4 z-[70] max-w-sm rounded-xl bg-white border border-cq-sand-line shadow-lg p-3 pr-9 text-sm text-cq-sand-ink">
           {actionError}
           <button type="button" onClick={() => setActionError(null)} aria-label="Dismiss" className="absolute top-2 right-2 p-1 cursor-pointer">
             <X className="w-4 h-4" />
@@ -446,19 +446,19 @@ export default function App() {
 
   if (!store) {
     return (
-      <div className="min-h-screen bg-[#FAF9F4] flex flex-col items-center justify-center gap-4 p-6 text-center text-[#173F42]">
+      <div className="min-h-screen bg-cq-page flex flex-col items-center justify-center gap-4 p-6 text-center text-cq-ink">
         <LogoFull size={44} />
         {bootError ? (
           <>
-            <p role="alert" className="text-sm text-[#A4543A] flex items-center gap-2">
+            <p role="alert" className="text-sm text-cq-rust flex items-center gap-2">
               <WifiOff className="w-4 h-4" /> {bootError}
             </p>
-            <button type="button" onClick={boot} className="h-10 px-4 rounded-xl bg-[#0B4A52] text-white text-sm font-semibold cursor-pointer">
+            <button type="button" onClick={boot} className="h-10 px-4 rounded-xl bg-cq-brand text-white text-sm font-semibold cursor-pointer">
               Try again
             </button>
           </>
         ) : (
-          <p className="text-sm text-[#5B6B66] flex items-center gap-2">
+          <p className="text-sm text-cq-muted flex items-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" /> Loading CareQ…
           </p>
         )}
@@ -512,14 +512,14 @@ export default function App() {
       return (
         <ResetContext.Provider value={resetCtx}>
           {banners}
-          <div className="min-h-screen bg-[#F7F8F7] text-stone-900 font-sans flex flex-col antialiased">
-            <header className="bg-white border-b border-stone-200 py-3.5 px-4 sm:px-8 shadow-2xs">
+          <div className="min-h-screen bg-cq-surface-grey text-cq-stone-900 font-sans flex flex-col antialiased">
+            <header className="bg-white border-b border-cq-stone-200 py-3.5 px-4 sm:px-8 shadow-2xs">
               <div className="max-w-6xl mx-auto flex items-center justify-between">
                 <LogoFull size={38} />
                 <button
                   type="button"
                   onClick={() => setIsTrustPageOpen(false)}
-                  className="text-xs font-semibold text-[#0B4A52] hover:text-[#45B5A5] underline cursor-pointer"
+                  className="text-xs font-semibold text-cq-brand hover:text-cq-secondary underline cursor-pointer"
                 >
                   {loggedOutView === 'landing' ? '← Back to Home' : 'Back to Sign-in'}
                 </button>
@@ -528,7 +528,7 @@ export default function App() {
             <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
               <TrustTransparencyPage onBack={() => setIsTrustPageOpen(false)} centres={centres} />
             </main>
-            <footer className="border-t border-stone-200 bg-white py-4 px-4 text-center text-xs text-stone-500">
+            <footer className="border-t border-cq-stone-200 bg-white py-4 px-4 text-center text-xs text-cq-stone-500">
               <p>CareQ • Simplified Ontario Child Care Intake & Central Waitlist Management</p>
             </footer>
             <AskCareQAssistant />
@@ -583,7 +583,7 @@ export default function App() {
   return (
     <ResetContext.Provider value={resetCtx}>
       {banners}
-      <div className="flex min-h-screen bg-[#FAF9F4] text-[#1E3F42] font-sans antialiased">
+      <div className="flex min-h-screen bg-cq-page text-cq-ink-body font-sans antialiased">
         <AppSidebar
           role={currentRole}
           items={currentRole === 'parent' ? parentSidebarItems : centreSidebarItems}
@@ -596,12 +596,12 @@ export default function App() {
         />
         <div className="flex-1 min-w-0 flex flex-col">
           {/* Thin simulation prototype notice band above Navbar */}
-          <div className="h-8 bg-[#F3EBDD] text-[11px] text-[#5B4A2E] flex items-center justify-center gap-3 px-4 shrink-0 select-none">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#B9933E] shrink-0" />
+          <div className="h-8 bg-cq-band text-[11px] text-cq-sand-ink flex items-center justify-center gap-3 px-4 shrink-0 select-none">
+            <span className="w-1.5 h-1.5 rounded-full bg-cq-sand-500 shrink-0" />
             <span className="font-bold tracking-[0.14em]">PROTOTYPE</span>
             <span className="hidden sm:inline">Families, applications, positions, offers and messages in this demo are simulated.</span>
             <span className="sm:hidden">Simulated data prototype.</span>
-            <Info className="w-3.5 h-3.5 text-[#5B4A2E] shrink-0" />
+            <Info className="w-3.5 h-3.5 text-cq-sand-ink shrink-0" />
           </div>
 
           {/* Top Navbar: Role is fixed to the logged-in account (parents see only parent view; centres see only centre view) */}
@@ -758,22 +758,22 @@ export default function App() {
           )}
 
           {/* Footer linked for both parents and centres */}
-          <footer className="border-t border-[#E7E4DA] bg-white/70 py-6 mt-12 text-center text-xs text-[#6E7C77]">
+          <footer className="border-t border-cq-line bg-white/70 py-6 mt-12 text-center text-xs text-cq-muted-2">
             <div className="max-w-[1180px] w-full mx-auto px-6 lg:px-10 flex flex-col sm:flex-row items-center justify-between gap-3">
               <p>CareQ • Simplified Ontario Child Care Intake &amp; Central Waitlist Management</p>
               <div className="flex items-center gap-4 text-xs">
                 <button
                   type="button"
                   onClick={() => setIsTrustPageOpen(true)}
-                  className="text-[#0B4A52] hover:text-[#4E7A5A] font-semibold underline transition-colors cursor-pointer"
+                  className="text-cq-brand hover:text-cq-sage-ink font-semibold underline transition-colors cursor-pointer"
                 >
                   Trust and transparency
                 </button>
-                <span className="text-stone-300">|</span>
+                <span className="text-cq-stone-300">|</span>
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="text-[#5B6B66] hover:text-[#173F42] transition-colors cursor-pointer"
+                  className="text-cq-muted hover:text-cq-ink transition-colors cursor-pointer"
                   title="Log out of session"
                 >
                   Log out

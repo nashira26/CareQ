@@ -61,10 +61,10 @@ export const ParentOnboarding: React.FC<Props> = ({ parentName, areas, onComplet
         {step === 1 ? (
           <Card className="space-y-5">
             <div>
-              <h1 className="text-2xl font-bold text-[#173F42]">
+              <h1 className="text-2xl font-bold text-cq-ink">
                 {children.length ? 'Tell us about another child' : 'Tell us about your child'}
               </h1>
-              <p className="text-sm text-[#5B6B66] mt-1">
+              <p className="text-sm text-cq-muted mt-1">
                 Welcome{parentName ? `, ${parentName.split(' ')[0]}` : ''}. This is used to prepare applications and find centres near you.
               </p>
             </div>
@@ -152,20 +152,20 @@ export const ParentOnboarding: React.FC<Props> = ({ parentName, areas, onComplet
         ) : (
           <Card className="space-y-5">
             <div>
-              <h1 className="text-2xl font-bold text-[#173F42]">Your family</h1>
-              <p className="text-sm text-[#5B6B66] mt-1">You can add more children now. For now, the first child is the one CareQ applies for.</p>
+              <h1 className="text-2xl font-bold text-cq-ink">Your family</h1>
+              <p className="text-sm text-cq-muted mt-1">You can add more children now. For now, the first child is the one CareQ applies for.</p>
             </div>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {children.map((c, i) => (
-                <li key={c.id} className="rounded-xl border border-[#E7E4DA] bg-[#FBFAF3] p-4 space-y-1">
-                  <p className="flex items-center gap-2 text-sm font-bold text-[#173F42]">
-                    <Baby className="w-4 h-4 text-[#4E7A5A]" /> {c.firstName}, {formatAge(ageInMonths(c.dateOfBirth))}
-                    {i === 0 && <span className="ml-auto text-[10px] font-semibold text-[#4E7A5A]">Active child</span>}
+                <li key={c.id} className="rounded-xl border border-cq-line bg-cq-input p-4 space-y-1">
+                  <p className="flex items-center gap-2 text-sm font-bold text-cq-ink">
+                    <Baby className="w-4 h-4 text-cq-sage-ink" /> {c.firstName}, {formatAge(ageInMonths(c.dateOfBirth))}
+                    {i === 0 && <span className="ml-auto text-[10px] font-semibold text-cq-sage-ink">Active child</span>}
                   </p>
-                  <p className="text-xs text-[#5B6B66]">
+                  <p className="text-xs text-cq-muted">
                     {c.careType} · from {c.preferredStartDate}
                   </p>
-                  <p className="text-xs text-[#5B6B66] flex items-center gap-1">
+                  <p className="text-xs text-cq-muted flex items-center gap-1">
                     <MapPin className="w-3 h-3" /> {c.homeArea}
                   </p>
                 </li>
