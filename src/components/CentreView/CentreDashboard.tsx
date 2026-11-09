@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { shortRef } from '../../lib/centreQueue';
 import { EmptyState, SpotChecklist } from '../ui/Illustrations';
 import {
   Centre,
@@ -442,7 +443,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                                 {app.childName}
                               </div>
                               <div className="text-xs text-ink-muted mt-0.5 truncate">
-                                {app.parentName} · {app.id}
+                                {app.parentName} · {shortRef(app.id)}
                               </div>
                               {app.submittedAt && (
                                 <div className="text-xs text-cq-soft mt-0.5">
@@ -635,7 +636,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                             {app.childName}
                           </div>
                           <div className="text-xs text-ink-muted mt-0.5">
-                            {app.parentName} · {app.id}
+                            {app.parentName} · {shortRef(app.id)}
                           </div>
                           {app.submittedAt && (
                             <div className="text-xs text-cq-soft mt-0.5">

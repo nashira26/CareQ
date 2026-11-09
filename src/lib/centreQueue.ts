@@ -16,3 +16,6 @@ export function newestRequests<T extends Pick<Application, 'status' | 'submitted
     .slice(0, limit)
     .map((x) => x.a);
 }
+
+/** Short reference shown instead of an internal id: "Ref. CQ-4F2A" (last 4 letters or digits, uppercase). */
+export const shortRef = (id: string): string => `Ref. CQ-${id.replace(/[^a-z0-9]/gi, '').slice(-4).toUpperCase()}`;

@@ -107,7 +107,21 @@ export const MoreDetails: React.FC<{ children: React.ReactNode }> = ({ children 
 export interface ResultInfo {
   distanceKm: number | null;
   reason: string | null;
+  /** Requested languages too rare to filter on: shown on each card. */
+  languageStatus?: { language: string; offered: boolean | null }[];
 }
+
+/** "French: offered" / "French: not offered" / "French: not reported" on a result card. */
+export const LanguageStatus: React.FC<{ items?: ResultInfo['languageStatus'] }> = ({ items }) =>
+  items?.length ? (
+    <div className="flex flex-wrap gap-1.5 mt-2">
+      {items.map(({ language, offered }) => (
+        <Chip key={language} tone={offered ? 'sage' : 'grey'}>
+          {language}: {offered === true ? 'offered' : offered === false ? 'not offered' : 'not reported'}
+        </Chip>
+      ))}
+    </div>
+  ) : null;
 
 /** "Availability not reported" box, shared by both card types. */
 export const AvailabilityBox: React.FC<{ title: string; children?: React.ReactNode }> = ({ title, children }) => (
@@ -157,6 +171,7 @@ export const OntarioCentreCard: React.FC<{
           {centre.area}
         </p>
       )}
+      <LanguageStatus items={result?.languageStatus} />
 
       {/* Ages: only from City of Toronto data */}
       <div className="flex flex-wrap gap-1.5 mt-3">

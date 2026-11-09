@@ -40,7 +40,7 @@ export const HELP_FAQS: FAQItem[] = [
     id: 'faq-1',
     question: 'How do applications work in CareQ?',
     answer:
-      'CareQ simplifies child care intake across Ontario licensed centres. Parents explore licensed centres, add centres to their intake list, upload required documents (such as immunization records and proof of residency), and review their application before submitting. Participating centres receive the verified file directly and update application progress.',
+      'CareQ simplifies child care intake across Ontario licensed centres. Parents explore licensed centres, add centres to their intake list, upload required documents (such as immunization records and proof of residency), and review their application before submitting. When you send an application, your application package is sent to the centre (simulated in this demo), and the centre updates its progress.',
     source: 'Help FAQ',
   },
   {

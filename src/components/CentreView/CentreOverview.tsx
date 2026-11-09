@@ -14,7 +14,7 @@ import {
 } from '../ui/CareUI';
 import { FileText, Clock, Heart, ArrowRight, Leaf, Check } from 'lucide-react';
 import { EmptyState, SpotChecklist } from '../ui/Illustrations';
-import { newestRequests } from '../../lib/centreQueue';
+import { newestRequests, shortRef } from '../../lib/centreQueue';
 
 export interface CentreOverviewProps {
   singleCentre: Centre;
@@ -173,7 +173,7 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
                           {app.childName}
                         </div>
                         <div className="text-xs text-ink-muted mt-0.5 truncate">
-                          {app.parentName} · {app.id}
+                          {app.parentName} · {shortRef(app.id)}
                         </div>
                         {app.submittedAt && (
                           <div className="text-xs text-cq-soft mt-0.5">
@@ -234,7 +234,7 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
                         {app.childName}
                       </div>
                       <div className="text-xs text-ink-muted mt-0.5">
-                        {app.parentName} · {app.id}
+                        {app.parentName} · {shortRef(app.id)}
                       </div>
                       {app.submittedAt && (
                         <div className="text-xs text-cq-soft mt-0.5">

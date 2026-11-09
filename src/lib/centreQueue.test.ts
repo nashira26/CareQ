@@ -25,3 +25,10 @@ test('newest requests on the seeded demo centre queue are in date order', () => 
   const times = list.map((a) => Date.parse(a.submittedAt!));
   assert.deepEqual(times, [...times].sort((a, b) => b - a));
 });
+
+test('short reference: last 4 letters or digits, uppercase, never the internal id', async () => {
+  const { shortRef } = await import('./centreQueue');
+  assert.equal(shortRef('app-careq-demo-anya-17f4f2a'), 'Ref. CQ-4F2A');
+  assert.equal(shortRef('app-x-y-1'), 'Ref. CQ-PXY1');
+  assert.doesNotMatch(shortRef('app-on-00576-child-anya-1730000000000'), /app-|child/);
+});

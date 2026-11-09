@@ -65,6 +65,12 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
   const emptyFieldCount = reviewingDraft
     ? reviewingDraft.fields.filter((f) => f.source === 'parent to provide' && !f.value.trim()).length
     : 0;
+  // Checklist items still missing (the reviewed AI draft's checklist, or the centre's requirements)
+  const missingCount = !reviewingApp || !reviewingCentre
+    ? 0
+    : reviewingDraft
+    ? reviewingDraft.checklist.filter((c) => c.status === 'missing').length
+    : reviewingCentre.requirements.filter((r) => !reviewingApp.completedRequirements.includes(r) && !reviewingApp.uploadedDocuments?.[r]).length;
 
   // Handle actual file upload
   const handleFileChange = (
@@ -540,8 +546,14 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
               </div>
             )}
 
+            {missingCount > 0 && (
+              <p className="text-xs rounded-lg bg-cq-cream-amber border border-cq-sand-line-2 px-3 py-2 text-cq-amber-ink">
+                {missingCount} {missingCount === 1 ? 'item is' : 'items are'} still missing. You can send now or add them first.
+              </p>
+            )}
+
             <p className="text-xs text-cq-muted bg-cq-sage/40 border border-cq-sage-line p-3 rounded-xl">
-              By approving, your verified application package will be marked <strong>"Submitted"</strong> and immediately transmitted to <strong>{reviewingCentre.name}</strong>.
+              Your application package will be sent to <strong>{reviewingCentre.name}</strong> (simulated in this demo).
             </p>
 
             <label className="flex items-start gap-2 text-sm text-cq-ink cursor-pointer">

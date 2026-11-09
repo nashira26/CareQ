@@ -12,7 +12,7 @@ import {
   Map as MapIcon,
 } from 'lucide-react';
 import { DaycareMap } from './DaycareMap';
-import { useOntarioData, useShortlist, OntarioCentreCard, HeartButton, Chip, ResultInfo, MoreDetails, AvailabilityBox } from './OntarioCentres';
+import { useOntarioData, useShortlist, OntarioCentreCard, HeartButton, Chip, ResultInfo, MoreDetails, AvailabilityBox, LanguageStatus } from './OntarioCentres';
 import { SearchChips } from './SearchChips';
 import { reportedLineOnCard } from '../../lib/simulated';
 import { licenceLabel } from '../../lib/family';
@@ -355,6 +355,7 @@ export const FindTab: React.FC<FindTabProps> = ({
               {centre.neighbourhood}
             </p>
           )}
+          <LanguageStatus items={result?.languageStatus} />
 
           {pill && <div className="mt-2">{pill}</div>}
           {notServed && (
@@ -628,7 +629,7 @@ export const FindTab: React.FC<FindTabProps> = ({
           ) : (
             <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
               {shown.map(({ entry, rank }, i) => {
-                const result: ResultInfo | undefined = rank ? { distanceKm: rank.distanceKm, reason: reasonFor(rank) } : undefined;
+                const result: ResultInfo | undefined = rank ? { distanceKm: rank.distanceKm, reason: reasonFor(rank), languageStatus: rank.languageStatus } : undefined;
                 return entry.kind === 'partner' ? (
                   renderPartnerCard(entry.centre, i, result)
                 ) : (

@@ -15,6 +15,9 @@
  *                        including a language that appears in no centre's data at all.
  * Hard filters: the centre must serve the requested age group (unknown ages are kept), and must be
  * within maxDistanceKm when both the distance and the maximum are known.
+ * Languages: a requested language becomes a filter when at least LANGUAGE_FILTER_MIN centres (after the
+ * other filters) offer it. Otherwise every centre is still ranked and its result says, per language,
+ * whether it's offered ("French: offered" / "French: not offered" / not reported).
  * Sort: score (high to low), then distance (near to far, unknown last), then name.
  */
 import type { AgeGroup } from '../data/mockData';
@@ -56,7 +59,12 @@ export interface RankedCentre {
   distanceKm: number | null;
   matchedFacts: string[];
   unknownFacts: string[];
+  /** Only when a requested language had too few matches to filter on: offered, not offered, or not reported (null). */
+  languageStatus?: { language: string; offered: boolean | null }[];
 }
+
+/** A requested language filters the results only when at least this many centres offer it. */
+export const LANGUAGE_FILTER_MIN = 3;
 
 export const DEFAULT_DISTANCE_SCALE_KM = 10;
 const POINTS = { distance: 50, program: 30, extras: 20 };
@@ -264,8 +272,20 @@ export function rankCentres(
     results.push({ id: c.id, score: Math.round(score * 10) / 10, distanceKm, matchedFacts: matched, unknownFacts: unknown });
   }
 
+  // Languages: filter when enough centres offer it, otherwise label each result
+  const byId = new Map(centres.map((c) => [c.id, c]));
+  let kept = results;
+  for (const l of criteria.languages.filter((x) => isKnownLanguage(x, known))) {
+    const offers = hasLanguage(l);
+    const offering = kept.filter((r) => offers(byId.get(r.id)!) === true);
+    if (offering.length >= LANGUAGE_FILTER_MIN) kept = offering;
+    else {
+      for (const r of kept) r.languageStatus = [...(r.languageStatus ?? []), { language: l, offered: offers(byId.get(r.id)!) }];
+    }
+  }
+
   const names = new Map(centres.map((c) => [c.id, c.name]));
-  return results.sort(
+  return kept.sort(
     (a, b) =>
       b.score - a.score ||
       (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity) ||

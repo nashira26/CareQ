@@ -9,6 +9,7 @@ import {
   factsSentence,
   distanceLabel,
   knownLanguagesOf,
+  LANGUAGE_FILTER_MIN,
   unverifiableLanguages,
   RankableCentre,
   Place,
@@ -234,4 +235,47 @@ test('factsSentence joins facts without adding anything', () => {
     factsSentence(['1.2 km from Danforth & Pape', 'Serves toddlers'], ['Ages not reported']),
     '1.2 km from Danforth & Pape, Serves toddlers. Ages not reported.'
   );
+});
+
+test('language: a filter when at least 3 centres offer it', () => {
+  const pool = [
+    centre('fr1', 1, { languages: ['French'] }),
+    centre('fr2', 2, { languages: ['English', 'French'] }),
+    centre('fr3', 3, { languages: ['French'] }),
+    centre('en', 1, { languages: ['English'] }),
+    centre('unreported', 1, { languages: [] }),
+  ];
+  const r = rankCentres(criteria({ languages: ['French'] }), pool, origin);
+  assert.deepEqual(r.map((x) => x.id).sort(), ['fr1', 'fr2', 'fr3']);
+  assert.ok(r.every((x) => !x.languageStatus), 'no per-card label when filtering');
+  assert.equal(LANGUAGE_FILTER_MIN, 3);
+});
+
+test('language: fewer than 3 matches -> ranked, each card says offered / not offered / not reported', () => {
+  const pool = [
+    centre('fr1', 2, { languages: ['French'] }),
+    centre('fr2', 3, { languages: ['English', 'French'] }),
+    centre('en', 1, { languages: ['English'] }),
+    centre('unreported', 1, { languages: [] }),
+  ];
+  const r = rankCentres(criteria({ languages: ['French'] }), pool, origin);
+  assert.equal(r.length, 4);
+  const status = Object.fromEntries(r.map((x) => [x.id, x.languageStatus]));
+  assert.deepEqual(status.fr1, [{ language: 'French', offered: true }]);
+  assert.deepEqual(status.en, [{ language: 'French', offered: false }]);
+  assert.deepEqual(status.unreported, [{ language: 'French', offered: null }]);
+  // Offering centres still rank above a nearer one that doesn't offer it
+  assert.ok(r.findIndex((x) => x.id === 'fr1') < r.findIndex((x) => x.id === 'en'));
+});
+
+test('language: the 3-centre threshold counts only centres left after the other filters', () => {
+  const pool = [
+    centre('fr-near', 1, { languages: ['French'] }),
+    centre('fr-near2', 2, { languages: ['French'] }),
+    centre('fr-far', 30, { languages: ['French'] }),
+    centre('en', 1, { languages: ['English'] }),
+  ];
+  const r = rankCentres(criteria({ languages: ['French'], maxDistanceKm: 5 }), pool, origin);
+  assert.deepEqual(r.map((x) => x.id).sort(), ['en', 'fr-near', 'fr-near2']);
+  assert.ok(r.every((x) => x.languageStatus?.length === 1));
 });

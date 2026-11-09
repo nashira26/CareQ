@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { shortRef } from '../../lib/centreQueue';
 import { Centre, Application, ParentProfile } from '../../data/mockData';
 import { StatusBadge } from '../StatusBadge';
 import { AskAboutCentre } from '../AskAboutCentre';
@@ -144,7 +145,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                   <div className="min-w-0 flex-1">
                     <h3 className="text-[17px] font-extrabold text-ink leading-snug">{centreName}</h3>
                     <p className="text-xs text-ink-muted mt-0.5">
-                      {centre?.neighbourhood || 'Toronto'} · {app.id}
+                      {centre?.neighbourhood || 'Toronto'} · {shortRef(app.id)}
                     </p>
                     {app.submittedAt && <p className="text-xs text-ink-muted">Submitted {app.submittedAt}</p>}
                   </div>
