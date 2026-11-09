@@ -53,7 +53,11 @@ export const HeroPhoto: React.FC<{
   frameClassName?: string;
   /** Overlays inside the photo frame (e.g. a small badge). */
   children?: React.ReactNode;
-}> = ({ photo = PHOTOS.hero, load, priority = false, className = '', frameClassName, children }) => {
+  /** false when one shared caption sits under a group of photos. */
+  caption?: boolean;
+  /** Corner rounding of the image (default 20px); e.g. "rounded-none" inside a card that clips its own corners. */
+  roundedClassName?: string;
+}> = ({ photo = PHOTOS.hero, load, priority = false, className = '', frameClassName, children, caption = true, roundedClassName = 'rounded-[20px]' }) => {
   const mode = load ?? (priority ? 'priority' : 'lazy');
   const fill = Boolean(frameClassName);
   return (
@@ -69,13 +73,13 @@ export const HeroPhoto: React.FC<{
             loading={mode === 'lazy' ? 'lazy' : 'eager'}
             decoding="async"
             fetchPriority={mode === 'priority' ? 'high' : 'auto'}
-            className={`block w-full object-cover rounded-[20px] bg-mint ${fill ? 'h-full' : 'h-[220px] sm:h-auto sm:aspect-[16/10]'}`}
+            className={`block w-full object-cover ${roundedClassName} bg-mint ${fill ? 'h-full' : 'h-[220px] sm:h-auto sm:aspect-[16/10]'}`}
             style={{ objectPosition: photo.focus }}
           />
         </picture>
         {children}
       </div>
-      <figcaption className="mt-2 text-xs text-ink-muted">Illustrative image, generated with AI.</figcaption>
+      {caption && <figcaption className="mt-2 text-xs text-ink-muted">Illustrative image, generated with AI.</figcaption>}
     </figure>
   );
 };

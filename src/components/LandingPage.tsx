@@ -3,7 +3,7 @@ import { CentreCounts } from './CentreCounts';
 import { ArrowRight, ShieldCheck, FileText, CheckCheck, Lock, Check } from 'lucide-react';
 import { SpotNeighbourhood, SpotChecklist, SpotJourney, SpotCentre } from './ui/Illustrations';
 import { LogoFull } from './Logo';
-import { HeroPhoto, preloadHeroPhoto } from './ui/HeroPhoto';
+import { HeroPhoto, PHOTOS, preloadHeroPhoto } from './ui/HeroPhoto';
 
 export interface LandingPageProps {
   onGetStarted: () => void;
@@ -305,8 +305,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
 
             <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              {/* Card 1: For parents */}
-              <div className="rounded-2xl border border-cq-line bg-cq-page p-8 flex flex-col justify-between">
+              {/* Card 1: For parents (photo on top, lazy; the card's corners round it) */}
+              <div className="rounded-2xl border border-cq-line bg-cq-page overflow-hidden flex flex-col">
+                <HeroPhoto photo={PHOTOS.parent} load="lazy" caption={false} roundedClassName="rounded-none" frameClassName="h-[180px] sm:h-[220px]" />
+                <div className="p-8 flex-1 flex flex-col justify-between">
                 <div>
                   <div className="inline-flex items-center gap-2 rounded-full border border-cq-sage-250 bg-cq-sage-50 px-3.5 py-1 text-xs font-semibold text-cq-sage-ink mb-5">
                     <span>Families</span>
@@ -318,10 +320,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     Less paperwork, fewer follow-ups, clearer answers.
                   </p>
                 </div>
+                </div>
               </div>
 
               {/* Card 2: For centres */}
-              <div className="rounded-2xl border border-cq-line bg-cq-page p-8 flex flex-col justify-between">
+              <div className="rounded-2xl border border-cq-line bg-cq-page overflow-hidden flex flex-col">
+                <HeroPhoto photo={PHOTOS.centre} load="lazy" caption={false} roundedClassName="rounded-none" frameClassName="h-[180px] sm:h-[220px]" />
+                <div className="p-8 flex-1 flex flex-col justify-between">
                 <div>
                   <div className="inline-flex items-center gap-2 rounded-full border border-cq-lilac-line-3 bg-cq-lilac px-3.5 py-1 text-xs font-semibold text-cq-lilac-ink mb-5">
                     <span>Licensed Operators</span>
@@ -345,8 +350,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     </button>
                   )}
                 </div>
+                </div>
               </div>
             </div>
+            <p className="mt-4 max-w-4xl mx-auto text-xs text-ink-muted">Illustrative images, generated with AI.</p>
           </div>
         </section>
 
