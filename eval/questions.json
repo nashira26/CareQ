@@ -19,6 +19,8 @@
     "source": { "operatorId": "macaulay-centres-for-children", "pages": [29] } },
   { "id": "a10", "question": "What should I pack for outdoor play?", "centreId": "on-0004062", "as": "anonymous", "expect": "answer",
     "source": { "operatorId": "macaulay-centres-for-children", "pages": [20] } },
+  { "id": "a11", "question": "What are the fees?", "centreId": "on-00576", "as": "anonymous", "expect": "answer", "source": { "operatorId": "toronto-early-learning-child-care-services", "pages": [56, 11] }, "note": "Pages from a search of the stored passages (p.56 Appendix E fee table, p.11 Fee payment); check by hand" },
+  { "id": "a12", "question": "How much does full-day care cost?", "centreId": "on-00576", "as": "anonymous", "expect": "answer", "source": { "operatorId": "toronto-early-learning-child-care-services", "pages": [56] }, "note": "Page from a search of the stored passages (p.56 Appendix E, full time care daily fees); check by hand" },
 
   { "id": "r1", "question": "When will I get a spot?", "centreId": "on-00576", "as": "anonymous", "expect": "refuse" },
   { "id": "r2", "question": "Is there a space available next week?", "centreId": "on-0004062", "as": "anonymous", "expect": "refuse" },

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
+import { ResetContext } from './ResetDemo';
 import {
   SupportRequest,
   RequestType,
@@ -38,6 +39,7 @@ export const HelpTab: React.FC<HelpTabProps> = ({
   onSubmitRequest,
   onAdvanceConcernStep,
 }) => {
+  const { mode: dataMode } = useContext(ResetContext);
   // Form states: Contact / Tech support / Concern
   const [requestType, setRequestType] = useState<RequestType>('contact');
   const [concernCategory, setConcernCategory] = useState<ConcernCategory>('Communication');
@@ -162,7 +164,8 @@ export const HelpTab: React.FC<HelpTabProps> = ({
               <h2 className="text-xl font-extrabold text-brand">
                 Your support requests
               </h2>
-              <Eyebrow>Local only</Eyebrow>
+              {/* Requests stay in this browser only in local / offline mode */}
+              {dataMode === 'local' && <Eyebrow>Local only</Eyebrow>}
             </div>
 
             {myRequests.length === 0 ? (

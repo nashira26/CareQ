@@ -55,15 +55,20 @@ test('real demo centres keep their open-data details exactly', () => {
 });
 
 test('every real-centre requirement has a word-for-word quote and a citation', () => {
+  // A merged item may cite more than one page ("PDF p.15 and p.17"), each page given explicitly
   for (const c of REAL_DEMO_CENTRES) {
     assert.ok(c.requirements.length > 0, c.id);
     assert.ok(c.requirementsExtractedFrom?.docTitle, c.id);
     for (const r of c.requirements) {
       assert.ok(c.requirementSources?.[r]?.length, `${c.id}: quote for ${r}`);
-      assert.match(c.requirementCitations?.[r] ?? '', /, (PDF p\.\d+|section \d+ \(.+\))$/, `${c.id}: citation for ${r}`);
+      assert.match(c.requirementCitations?.[r] ?? '', /, (PDF p\.\d+( and p\.\d+)*|section \d+ \(.+\))$/, `${c.id}: citation for ${r}`);
       assert.ok(c.requirementCitations![r].startsWith(c.requirementsExtractedFrom!.docTitle));
     }
   }
+  // Macaulay: the two immunization items are one checklist item quoting both pages
+  const macaulay = REAL_DEMO_CENTRES.find((c) => c.id === 'on-0004062')!;
+  assert.equal(macaulay.requirements.filter((r) => /immuni[sz]/i.test(r)).length, 1);
+  assert.match(macaulay.requirementCitations!['Admission forms and up-to-date immunization records'], /PDF p\.15 and p\.17$/);
   // B.F. Toronto: real handbook, download link not found
   const bf = REAL_DEMO_CENTRES.find((c) => c.id === 'on-07205')!;
   assert.ok(Object.values(bf.requirementCitations!).every((x) => x.includes('(source link not found)')));

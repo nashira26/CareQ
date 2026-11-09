@@ -14,6 +14,7 @@ import {
 import { LogoFull } from './Logo';
 import { ResetDemo } from './ResetDemo';
 import { HouseIllustration } from './ui/CareUI';
+import { CentreCounts } from './CentreCounts';
 import { isValidEmail, MIN_PASSWORD_LENGTH, Child } from '../lib/family';
 
 export interface MockAccount {
@@ -192,19 +193,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             </div>
           </div>
 
-          {/* 5. Stat Row */}
-          <div className="mt-8 flex items-center gap-5">
-            <span className="text-4xl font-extrabold text-brand">5,989</span>
-            <div className="h-12 w-px bg-cq-stone-300 shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-cq-ink-2">
-                Licensed child care centres in Ontario
-              </p>
-              <p className="text-xs text-cq-grey-sage mt-0.5">
-                Ontario Early Years and Child Care Annual Report 2025 · as of Mar 31, 2025
-              </p>
-            </div>
-          </div>
+          {/* 5. Stat Row: Ontario and the Toronto centres in CareQ */}
+          <CentreCounts className="mt-8" compact />
         </div>
 
         {/* RIGHT COLUMN (the existing login card, restyled) */}

@@ -164,7 +164,7 @@ export function computeMissingItems(fields: PreparedField[], checklist: Checklis
 export function templateNote(input: PrepareInput): string {
   const docs = input.documents.length;
   return wordCap(
-    `Hello ${input.centreName || 'team'}, I would like to apply for ${input.childFirstName}` +
+    `Hello ${input.centreName || 'team'}, I'm applying for my child ${input.childFirstName}` +
       `${input.childAgeMonths ? ` (${input.childAgeMonths} months)` : ''}` +
       `${input.careType ? ` for ${input.careType.toLowerCase()} care` : ''}` +
       `${input.preferredStartDate ? ` starting ${input.preferredStartDate}` : ''}. ` +
@@ -197,6 +197,18 @@ export function prepareFallback(input: PrepareInput): PrepareResult {
   });
   const fields = profileFields(input);
   return { fields, checklist: withCitations(input, checklist), missingItems: computeMissingItems(fields, checklist), noteToCentre: templateNote(input) };
+}
+
+/**
+ * The note is the parent's own voice: it must say "I"/"my", and must not describe the parent in the
+ * third person ("Priya is applying…", "Priya Patel would like…"). Otherwise the template is used.
+ */
+export function isFirstPerson(note: string, parentFirstName: string): boolean {
+  if (!/\b(I|I'm|I am|I've|I'd|my|My)\b/.test(note)) return false;
+  if (/\bthe parent\b/i.test(note)) return false;
+  const name = parentFirstName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (!name) return true;
+  return !new RegExp(`\\b${name}(\\s+\\w+)?\\s+(is|would|has|wants|will|needs)\\b`, 'i').test(note);
 }
 
 const FORBIDDEN_NOTE = /\b(priority|prioriti[sz]e|other famil|rank|ranking|queue position|waitlist position|jump)\b/i;
@@ -251,7 +263,7 @@ export function finalizePrepared(input: PrepareInput, raw: unknown): PrepareResu
   }
 
   const note = clip(r.noteToCentre, 1200);
-  const noteToCentre = note && !FORBIDDEN_NOTE.test(note) ? wordCap(note, 80) : rules.noteToCentre;
+  const noteToCentre = note && !FORBIDDEN_NOTE.test(note) && isFirstPerson(note, input.parentFirstName) ? wordCap(note, 80) : rules.noteToCentre;
 
   return { fields, checklist: withCitations(input, checklist), missingItems: computeMissingItems(fields, checklist), noteToCentre };
 }

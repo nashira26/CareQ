@@ -583,7 +583,7 @@ Rules:
   - "ready" ONLY if an uploaded document clearly matches the requirement; put its exact fileName in matchedDocument.
   - "needs parent check" if the requirement is a condition the app cannot verify (e.g. living in a catchment area, toilet training).
   - otherwise "missing".
-- noteToCentre: an optional short, polite cover note from the parent to the centre (max 80 words), using only the given facts.
+- noteToCentre: a short, polite cover note written BY the parent, in the first person ("I'm applying for my child <child's first name>…"), to the centre (max 80 words), using only the given facts. Never refer to the parent by name or in the third person; sign off with the parent's first name.
 
 Data (JSON):
 ${JSON.stringify(input)}`,

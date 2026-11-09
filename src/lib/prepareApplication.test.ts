@@ -4,6 +4,7 @@ import {
   sanitizePrepareInput,
   prepareFallback,
   finalizePrepared,
+  isFirstPerson,
   mergePrepared,
   isConditionRequirement,
   matchDocument,
@@ -169,4 +170,14 @@ test('Prepare with AI keeps each requirement\'s quote, citation and link from th
     assert.equal(result.checklist[0].sourceSentence, 'review the Child Admission Package');
     assert.equal(result.checklist[1].citation, 'Parent Handbook (March 2026), PDF p.14');
   }
+});
+
+test('note to the centre is in the parent\'s own voice (first person); third person falls back to the template', () => {
+  assert.match(prepareFallback(input).noteToCentre, /I'm applying for my child Anya/);
+  const third = finalizePrepared(input, { fields: [], checklist: [], noteToCentre: 'Priya is applying for her child Anya and would love a spot.' });
+  assert.match(third.noteToCentre, /^Hello .*I'm applying for my child Anya/);
+  const own = 'Hello, I\'m applying for my child Anya for full day care from March 2027. Thank you, Priya.';
+  assert.equal(finalizePrepared(input, { fields: [], checklist: [], noteToCentre: own }).noteToCentre, own);
+  assert.equal(isFirstPerson('The parent would like a spot for Anya.', 'Priya'), false);
+  assert.equal(isFirstPerson('Priya Patel would like to apply. I have the documents.', 'Priya'), false);
 });

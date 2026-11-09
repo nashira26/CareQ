@@ -176,14 +176,11 @@ export const REAL_DEMO_CENTRES: Centre[] = [
         page: 'PDF p.26',
       },
       {
-        title: 'Admission forms, including immunization records',
-        quote: "All admission forms, including immunization records must be completed before your child's first day.",
-        page: 'PDF p.15',
-      },
-      {
-        title: 'Up-to-date immunizations',
-        quote: "Toronto Public Health requires that your child's immunizations are up-to-date before your child can start.",
-        page: 'PDF p.17',
+        // One checklist item for immunization (p.15 and p.17 both ask for it); both sentences quoted word for word
+        title: 'Admission forms and up-to-date immunization records',
+        quote:
+          "All admission forms, including immunization records must be completed before your child's first day. Toronto Public Health requires that your child's immunizations are up-to-date before your child can start.",
+        page: 'PDF p.15 and p.17',
       },
     ]
   ),

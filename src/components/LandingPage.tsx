@@ -1,4 +1,5 @@
 import React from 'react';
+import { CentreCounts } from './CentreCounts';
 import { ArrowRight, ShieldCheck, FileText, CheckCheck, Lock, Check } from 'lucide-react';
 import { SpotNeighbourhood, SpotChecklist, SpotJourney, SpotCentre } from './ui/Illustrations';
 import { LogoFull } from './Logo';
@@ -111,6 +112,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </li>
               ))}
             </ul>
+
+            <CentreCounts className="mt-8" compact />
           </div>
 
           <div className="w-full max-w-[540px] mx-auto lg:max-w-none">
