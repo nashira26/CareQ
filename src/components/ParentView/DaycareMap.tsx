@@ -14,7 +14,6 @@ import {
   CheckCircle2,
   Plus,
   MessageSquare,
-  Sparkles,
   ExternalLink,
   Navigation,
   Layers,

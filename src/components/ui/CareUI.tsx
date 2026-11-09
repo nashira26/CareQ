@@ -79,7 +79,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
     className={`inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-cq-brand hover:bg-cq-brand-hover active:bg-brand-press text-white text-sm font-bold disabled:bg-stone disabled:text-ink-faint ${pressable} ${className}`}
     {...props}
   >
-    <span>{children}</span>
+    <span className="inline-flex items-center gap-1.5">{children}</span>
     {arrow && <ArrowRight className="w-4 h-4 shrink-0" aria-hidden="true" />}
   </button>
 );

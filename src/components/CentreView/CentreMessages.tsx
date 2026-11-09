@@ -8,7 +8,8 @@ import {
   DemoBanner,
   SimNote,
 } from '../ui/CareUI';
-import { Heart } from 'lucide-react';
+import { Heart, PenLine, MessageCircle } from 'lucide-react';
+import { EmptyState, SpotMessages } from '../ui/Illustrations';
 
 export interface CentreMessagesProps {
   singleCentre: Centre;
@@ -41,8 +42,7 @@ export const CentreMessages: React.FC<CentreMessagesProps> = ({
   return (
     <div className="space-y-6 animate-fadeIn">
       <PageHeader
-        eyebrow="Family communication"
-        title="Clear words, calmer families."
+        title="Family messages"
         subtitle="Read and reply to simulated family messages. AI can help you draft; you approve every message. Nothing leaves this browser."
       />
 
@@ -52,12 +52,7 @@ export const CentreMessages: React.FC<CentreMessagesProps> = ({
 
       <Card>
         {centreApps.length === 0 ? (
-          <div className="py-10 flex flex-col items-center gap-3 text-center">
-            <IconTile icon={Heart} tone="sage" />
-            <p className="text-sm font-semibold text-cq-ink">
-              No families to message yet.
-            </p>
-          </div>
+          <EmptyState title="No families to message yet." spot={<SpotMessages />} />
         ) : (
           <div className="divide-y divide-cq-line">
             {centreApps.map((app) => {
@@ -66,8 +61,9 @@ export const CentreMessages: React.FC<CentreMessagesProps> = ({
               const lastMessage = thread.length > 0 ? thread[thread.length - 1] : null;
 
               return (
-                <div key={app.id} className="py-6 flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-cq-sage border border-cq-sage-line-2 text-xs font-bold text-cq-sage-ink flex items-center justify-center shrink-0">
+                <div key={app.id} className="py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <div className="w-11 h-11 rounded-full bg-mint text-sm font-extrabold text-brand flex items-center justify-center shrink-0">
                     {getInitials(app.parentName)}
                   </div>
 
@@ -81,7 +77,7 @@ export const CentreMessages: React.FC<CentreMessagesProps> = ({
                         {app.childName}
                       </span>
                     </div>
-                    <p className="text-sm text-cq-sage-ink truncate mt-0.5">
+                    <p className="text-sm text-ink-muted truncate mt-0.5">
                       {lastMessage
                         ? lastMessage.text
                         : 'No messages yet. Start a conversation.'}
@@ -91,18 +87,21 @@ export const CentreMessages: React.FC<CentreMessagesProps> = ({
                         {app.id} · {app.status}
                       </span>
                       {lastMessage?.aiAssisted && (
-                        <span className="rounded-full bg-cq-lilac text-cq-lilac-ink text-xs font-semibold px-2 py-0.5">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-mint text-brand text-xs font-bold px-2 py-0.5">
+                          <PenLine className="w-3.5 h-3.5" aria-hidden="true" />
                           AI-assisted draft
                         </span>
                       )}
                     </div>
                   </div>
+                  </div>
 
                   <GhostButton
                     onClick={() => onOpenConversation(app)}
-                    className="h-10 text-xs shrink-0"
+                    className="h-10 shrink-0 self-start sm:self-auto"
                   >
-                    Open messages →
+                    <MessageCircle className="w-4 h-4" aria-hidden="true" />
+                    Open messages
                   </GhostButton>
                 </div>
               );

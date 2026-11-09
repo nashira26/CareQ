@@ -10,16 +10,11 @@ import {
   Eyebrow,
   DemoBanner,
   SimNote,
+  TertiaryButton,
+  CentreAvatar,
 } from '../ui/CareUI';
-import {
-  Users,
-  FileText,
-  Clock,
-  Heart,
-  ArrowRight,
-  Leaf,
-  Check,
-} from 'lucide-react';
+import { FileText, Clock, Heart, ArrowRight, Leaf, Check } from 'lucide-react';
+import { EmptyState, SpotChecklist } from '../ui/Illustrations';
 
 export interface CentreOverviewProps {
   singleCentre: Centre;
@@ -69,8 +64,7 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
     <div className="space-y-6 animate-fadeIn">
       {/* 1. PageHeader */}
       <PageHeader
-        eyebrow="Centre portal"
-        title="More time for the children in the room."
+        title="Centre overview"
         subtitle={`Your simulated workspace for ${singleCentre.name}.`}
         action={
           <PrimaryButton arrow onClick={() => onNavigate('applications')}>
@@ -79,18 +73,17 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
         }
       />
 
-      {/* 2. Centre Identity Card */}
-      <div className="rounded-3xl bg-cq-sage border border-cq-sage-line-2 p-8 sm:p-10 flex items-center justify-between gap-6">
-        <div>
-          <Eyebrow className="text-xs">Simulated centre workspace</Eyebrow>
-          <h2 className="mt-3 text-[28px] sm:text-[32px] font-bold text-cq-ink leading-tight">
-            {singleCentre.name}
-          </h2>
-          <p className="mt-3 text-sm text-cq-muted">
+      {/* 2. Centre identity */}
+      <div className="rounded-2xl bg-white border border-cq-line p-4 sm:p-5 flex items-center gap-4">
+        <CentreAvatar centreId={singleCentre.id} size="lg" />
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-sim">Simulated centre workspace</p>
+          <h2 className="text-xl font-extrabold text-ink leading-snug">{singleCentre.name}</h2>
+          <p className="text-sm text-ink-muted mt-0.5">
             {singleCentre.address || singleCentre.neighbourhood}
             {singleCentre.hours ? ` · ${singleCentre.hours}` : ''}
           </p>
-          <span className="mt-4 inline-block rounded-md border border-cq-sage-200 bg-white/70 px-2.5 py-1 text-xs text-cq-sage-ink font-semibold">
+          <span className="mt-2 inline-flex rounded-md bg-mint px-2 py-0.5 text-xs text-brand font-bold">
             {singleCentre.demoKind === 'open-data'
               ? `Licensed centre · Ontario open data${singleCentre.licenceNumber ? ` (licence #${singleCentre.licenceNumber})` : ''}`
               : singleCentre.demoKind === 'fictional'
@@ -98,71 +91,39 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
               : 'Licensed centre · Demo details'}
           </span>
         </div>
+      </div>
 
-        <div className="hidden sm:flex w-[72px] h-[72px] rounded-3xl bg-cq-sage-250 rotate-[-6deg] items-center justify-center shrink-0 shadow-2xs">
-          <Users className="w-8 h-8 text-cq-sage-ink rotate-[6deg]" />
+      {/* 3. Needs attention: counts that open the queue */}
+      <section aria-labelledby="attention-heading">
+        <h2 id="attention-heading" className="text-lg font-extrabold text-brand mb-3">
+          Needs your attention
+        </h2>
+        <div className="grid sm:grid-cols-3 gap-3">
+          {[
+            { n: reviewCount, label: 'New applications to review', Icon: FileText, tone: 'bg-info-bg text-info', urgent: reviewCount > 0 },
+            { n: waitlistCount, label: 'Families on your waitlist', Icon: Clock, tone: 'bg-status-wait-bg text-status-wait', urgent: false },
+            { n: offerCount, label: 'Offers waiting on families', Icon: Heart, tone: 'bg-sun text-status-offer', urgent: false },
+          ].map(({ n, label, Icon, tone, urgent }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => onNavigate('applications')}
+              className={`group rounded-2xl bg-white border border-cq-line p-4 flex items-center gap-3.5 text-left hover:bg-mint-50 transition-colors cursor-pointer ${
+                urgent ? 'border-l-4 border-l-coral' : ''
+              }`}
+            >
+              <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${tone}`}>
+                <Icon className="w-5 h-5" aria-hidden="true" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-2xl font-extrabold text-ink leading-none">{n}</span>
+                <span className="block text-sm text-ink-muted mt-1">{label}</span>
+              </span>
+              <ArrowRight className="w-4 h-4 text-ink-faint group-hover:translate-x-0.5 transition-transform shrink-0" aria-hidden="true" />
+            </button>
+          ))}
         </div>
-      </div>
-
-      {/* 3. Three Stat Cards */}
-      <div className="grid sm:grid-cols-3 gap-4">
-        {/* Stat 1: New applications to review */}
-        <Card
-          onClick={() => onNavigate('applications')}
-          className="p-5 flex items-center gap-4 cursor-pointer hover:border-cq-sage-200 transition-colors group justify-between"
-        >
-          <div className="flex items-center gap-3.5 min-w-0">
-            <IconTile icon={FileText} tone="sage" />
-            <div className="min-w-0">
-              <div className="text-2xl font-bold text-cq-ink">
-                {reviewCount}
-              </div>
-              <div className="text-xs text-cq-muted truncate mt-0.5">
-                New applications to review
-              </div>
-            </div>
-          </div>
-          <ArrowRight className="w-4 h-4 text-cq-faint group-hover:translate-x-0.5 transition-transform shrink-0" />
-        </Card>
-
-        {/* Stat 2: Families on your waitlist */}
-        <Card
-          onClick={() => onNavigate('applications')}
-          className="p-5 flex items-center gap-4 cursor-pointer hover:border-cq-sage-200 transition-colors group justify-between"
-        >
-          <div className="flex items-center gap-3.5 min-w-0">
-            <IconTile icon={Clock} tone="peach" />
-            <div className="min-w-0">
-              <div className="text-2xl font-bold text-cq-ink">
-                {waitlistCount}
-              </div>
-              <div className="text-xs text-cq-muted truncate mt-0.5">
-                Families on your waitlist
-              </div>
-            </div>
-          </div>
-          <ArrowRight className="w-4 h-4 text-cq-faint group-hover:translate-x-0.5 transition-transform shrink-0" />
-        </Card>
-
-        {/* Stat 3: Offers waiting on families */}
-        <Card
-          onClick={() => onNavigate('applications')}
-          className="p-5 flex items-center gap-4 cursor-pointer hover:border-cq-sage-200 transition-colors group justify-between"
-        >
-          <div className="flex items-center gap-3.5 min-w-0">
-            <IconTile icon={Heart} tone="lilac" />
-            <div className="min-w-0">
-              <div className="text-2xl font-bold text-cq-ink">
-                {offerCount}
-              </div>
-              <div className="text-xs text-cq-muted truncate mt-0.5">
-                Offers waiting on families
-              </div>
-            </div>
-          </div>
-          <ArrowRight className="w-4 h-4 text-cq-faint group-hover:translate-x-0.5 transition-transform shrink-0" />
-        </Card>
-      </div>
+      </section>
 
       {/* 4. DemoBanner */}
       <DemoBanner title="Demo workspace.">
@@ -173,25 +134,24 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
       <div className="space-y-4">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <h3 className="text-lg font-bold text-cq-ink">
+            <h2 className="text-lg font-extrabold text-brand">
               Applications at a glance
-            </h3>
+            </h2>
             <p className="text-xs text-cq-muted mt-0.5">
               The newest requests. Keep families in the loop.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigate('applications')}
-            className="text-xs font-semibold text-cq-ink hover:underline cursor-pointer shrink-0"
-          >
-            View queue →
-          </button>
+          <TertiaryButton onClick={() => onNavigate('applications')} className="shrink-0">
+            View queue
+            <ArrowRight className="w-4 h-4" aria-hidden="true" />
+          </TertiaryButton>
         </div>
 
         {nonDraftApps.length === 0 ? (
-          <Card className="py-10 text-center text-xs text-cq-soft">
-            No applications yet. When a family applies, it shows up here.
+          <Card>
+            <EmptyState title="No applications yet." spot={<SpotChecklist />}>
+              When a family applies, it shows up here.
+            </EmptyState>
           </Card>
         ) : (
           <>
@@ -199,12 +159,12 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
             <div className="hidden md:block">
               <Card className="p-0 overflow-hidden shadow-2xs">
                 {/* Header row */}
-                <div className="grid grid-cols-[2fr_1.4fr_1fr_1fr_1fr] gap-4 items-center bg-cq-page border-b border-cq-line px-6 py-4">
-                  <Eyebrow className="text-xs">CHILD / FAMILY</Eyebrow>
-                  <Eyebrow className="text-xs">PROGRAM / START</Eyebrow>
-                  <Eyebrow className="text-xs">STATUS</Eyebrow>
-                  <Eyebrow className="text-xs">QUEUE</Eyebrow>
-                  <Eyebrow className="text-xs text-right">ACTIONS</Eyebrow>
+                <div className="grid grid-cols-[2fr_1.4fr_1fr_1fr_1fr] gap-4 items-center bg-page border-b border-cq-line px-6 py-3">
+                  <Eyebrow className="text-xs">Child / family</Eyebrow>
+                  <Eyebrow className="text-xs">Program / start</Eyebrow>
+                  <Eyebrow className="text-xs">Status</Eyebrow>
+                  <Eyebrow className="text-xs">Queue</Eyebrow>
+                  <Eyebrow className="text-xs text-right">Actions</Eyebrow>
                 </div>
 
                 {/* Rows */}
@@ -212,14 +172,14 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
                   {nonDraftApps.map((app) => (
                     <div
                       key={app.id}
-                      className="grid grid-cols-[2fr_1.4fr_1fr_1fr_1fr] gap-4 items-center px-6 py-6 hover:bg-cq-page/60 transition-colors"
+                      className="grid grid-cols-[2fr_1.4fr_1fr_1fr_1fr] gap-4 items-center px-6 py-4 hover:bg-cq-page/60 transition-colors"
                     >
                       {/* Child / Family */}
                       <div className="min-w-0 pr-2">
                         <div className="text-sm font-bold text-cq-ink truncate">
                           {app.childName}
                         </div>
-                        <div className="text-xs text-cq-sage-ink font-medium mt-0.5 truncate">
+                        <div className="text-xs text-ink-muted mt-0.5 truncate">
                           {app.parentName} · {app.id}
                         </div>
                         {app.submittedAt && (
@@ -262,7 +222,7 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
                           onClick={() => onNavigate('applications')}
                           className="h-9 px-4 text-xs"
                         >
-                          Review →
+                          Review <ArrowRight className="w-4 h-4 inline-block" aria-hidden="true" />
                         </GhostButton>
                       </div>
                     </div>
@@ -280,7 +240,7 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
                       <div className="text-sm font-bold text-cq-ink">
                         {app.childName}
                       </div>
-                      <div className="text-xs text-cq-sage-ink font-medium mt-0.5">
+                      <div className="text-xs text-ink-muted mt-0.5">
                         {app.parentName} · {app.id}
                       </div>
                       {app.submittedAt && (
@@ -325,7 +285,7 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
                       onClick={() => onNavigate('applications')}
                       className="h-8 px-3 text-xs"
                     >
-                      Review →
+                      Review <ArrowRight className="w-4 h-4 inline-block" aria-hidden="true" />
                     </GhostButton>
                   </div>
                 </Card>
@@ -420,7 +380,7 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
                   onClick={() => onNavigate('policy')}
                   className="text-xs font-semibold text-cq-brand hover:underline cursor-pointer"
                 >
-                  Go to Policy &amp; requirements →
+                  Go to Policy &amp; requirements <ArrowRight className="w-4 h-4 inline-block" aria-hidden="true" />
                 </button>
               </div>
             ) : (

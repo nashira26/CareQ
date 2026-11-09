@@ -2,29 +2,7 @@ import React, { useState } from 'react';
 import { Application, Centre, UploadedDocument } from '../data/mockData';
 import { StatusBadge } from './StatusBadge';
 import { NOT_PROVIDED, centreStatusLabel } from '../lib/prepareApplication';
-import {
-  X,
-  FileText,
-  FileCheck2,
-  Eye,
-  CheckCircle2,
-  AlertCircle,
-  Download,
-  Printer,
-  ZoomIn,
-  ZoomOut,
-  Calendar,
-  Baby,
-  User,
-  MapPin,
-  ShieldCheck,
-  Building2,
-  ExternalLink,
-  MessageSquare,
-  Sparkles,
-  ArrowLeft,
-  Stamp,
-} from 'lucide-react';
+import { X, FileText, FileCheck2, Eye, CheckCircle2, AlertCircle, Download, Printer, ZoomIn, ZoomOut, Calendar, Baby, User, MapPin, ShieldCheck, Building2, ExternalLink, MessageSquare, ArrowLeft, Stamp, PenLine } from 'lucide-react';
 
 interface ApplicationDetailsModalProps {
   isOpen: boolean;
@@ -75,7 +53,7 @@ export const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-cq-stone-900/60 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-ink/45">
       <div className="bg-white rounded-2xl max-w-4xl w-full h-[92vh] max-h-[820px] flex flex-col shadow-2xl border border-cq-stone-200 overflow-hidden">
         {/* Top Header Bar */}
         <div className="p-4 sm:p-5 border-b border-cq-stone-200 bg-cq-stone-50 flex items-center justify-between shrink-0">
@@ -553,7 +531,7 @@ export const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = (
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-xs font-bold text-cq-stone-600">Application details from the parent</h3>
                   <span className="inline-flex items-center gap-1 rounded-full bg-cq-band px-2 py-0.5 text-xs font-semibold text-cq-sand-ink">
-                    <Sparkles className="w-3 h-3" /> Prepared with AI · approved by parent
+                    <PenLine className="w-3.5 h-3.5" aria-hidden="true" /> Prepared with AI · approved by parent
                   </span>
                 </div>
 

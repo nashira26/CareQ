@@ -3,20 +3,7 @@ import { Centre, Application, ChatMessage } from '../data/mockData';
 import { StatusBadge } from './StatusBadge';
 import { AiFallbackNote, AiMode, AiNotice, SimTag } from './ui/CareUI';
 import { AI_OFFLINE_STATUS, aiPost, isUserFacingAiError } from '../lib/aiFetch';
-import {
-  X,
-  Send,
-  Sparkles,
-  Bot,
-  Loader2,
-  Check,
-  Building2,
-  User,
-  Baby,
-  RefreshCw,
-  MessageSquare,
-  AlertTriangle,
-} from 'lucide-react';
+import { X, Send, Bot, Loader2, Check, Building2, User, Baby, RefreshCw, MessageSquare, AlertTriangle, PenLine } from 'lucide-react';
 
 interface ConversationModalProps {
   isOpen: boolean;
@@ -243,7 +230,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-cq-stone-900/60 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-ink/45">
       <div className="bg-white rounded-2xl max-w-2xl w-full h-[90vh] max-h-[720px] flex flex-col shadow-2xl border border-cq-stone-200 overflow-hidden">
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-cq-stone-200 bg-gradient-to-r from-cq-stone-50 to-white flex items-center justify-between shrink-0">
@@ -318,10 +305,10 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                     )}
                   </div>
                   <div
-                    className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 text-xs sm:text-sm leading-relaxed shadow-xs ${
+                    className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed ${
                       isMine
-                        ? 'bg-cq-teal-700 text-white rounded-br-xs'
-                        : 'bg-white text-cq-stone-800 border border-cq-stone-200 rounded-bl-xs'
+                        ? 'bg-brand text-white rounded-br-md'
+                        : 'bg-white text-ink border border-cq-line rounded-bl-md'
                     }`}
                   >
                     {msg.text}
@@ -340,7 +327,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
           {/* AI Suggestions Chips */}
           <div>
             <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold text-cq-stone-700">
-              <Sparkles className="w-3.5 h-3.5 text-cq-teal-700" />
+              <PenLine className="w-4 h-4 text-brand" aria-hidden="true" />
               <span>
                 {isParent
                   ? 'AI Draft Assistant (Click to prepare message for review):'
@@ -476,7 +463,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
             <div className="p-3.5 rounded-xl bg-gradient-to-br from-cq-amber-50 to-cq-orange-50/50 border border-cq-amber-300 shadow-xs space-y-2 animate-fade-in">
               <div className="flex items-center justify-between text-xs font-bold text-cq-amber-950">
                 <span className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-cq-amber-700" />
+                  <PenLine className="w-4 h-4 text-warning" aria-hidden="true" />
                   AI Draft Generated — Review & Approve to Send:
                 </span>
                 <span className="text-xs text-cq-amber-700 font-normal">

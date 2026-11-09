@@ -13,13 +13,8 @@ import {
   IconTile,
   Eyebrow,
 } from './ui/CareUI';
-import {
-  Plus,
-  Heart,
-  CheckCircle2,
-  Sparkles,
-  ShieldAlert,
-} from 'lucide-react';
+import { Plus, Heart, CheckCircle2, ShieldAlert, ChevronsRight, ChevronDown } from 'lucide-react';
+import { EmptyState, SpotMessages } from './ui/Illustrations';
 
 interface HelpTabProps {
   role: 'parent' | 'centre';
@@ -102,18 +97,17 @@ export const HelpTab: React.FC<HelpTabProps> = ({
     <div className="space-y-6">
       {/* Page Header */}
       <PageHeader
-        eyebrow="Help & support"
-        title="A little help, right when you need it."
+        title="Help & support"
         subtitle="Answers for parents and centres, and a safe place to raise a question or concern."
       />
 
       {/* Grid lg:grid-cols-[1.35fr_1fr] gap-6 */}
-      <div className="grid lg:grid-cols-[1.35fr_1fr] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-6 items-start">
         {/* LEFT COLUMN: FAQ Card + Requests Card */}
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           {/* Card 1: Frequently asked little questions */}
           <Card className="p-6 sm:p-7">
-            <h2 className="text-xl font-bold text-cq-ink mb-5">
+            <h2 className="text-xl font-extrabold text-brand mb-5">
               Frequently asked little questions
             </h2>
 
@@ -125,29 +119,29 @@ export const HelpTab: React.FC<HelpTabProps> = ({
                 return (
                   <div
                     key={faq.id}
-                    className={`py-5 border-t border-cq-line ${
+                    className={`py-2 border-t border-cq-line ${
                       index === 0 ? 'first:border-t-0' : ''
                     }`}
                   >
                     <button
                       type="button"
                       onClick={() => setExpandedFaqId(isExpanded ? null : faq.id)}
-                      className="w-full flex items-center justify-between text-left gap-4 group cursor-pointer"
+                      aria-expanded={isExpanded}
+                      className="w-full min-h-12 py-2 flex items-center justify-between text-left gap-4 group cursor-pointer"
                     >
-                      <span className="text-sm font-semibold text-cq-sky-ink group-hover:text-cq-ink transition-colors leading-snug">
+                      <span className="text-[15px] font-bold text-ink group-hover:text-brand transition-colors leading-snug">
                         {faq.question}
                       </span>
-                      <Plus
-                        className={`w-4 h-4 transition-transform duration-200 shrink-0 ${
-                          isExpanded
-                            ? 'rotate-45 text-cq-ink'
-                            : 'text-cq-soft group-hover:text-cq-ink'
+                      <ChevronDown
+                        aria-hidden="true"
+                        className={`w-5 h-5 transition-transform duration-200 shrink-0 ${
+                          isExpanded ? 'rotate-180 text-brand' : 'text-ink-muted group-hover:text-brand'
                         }`}
                       />
                     </button>
 
                     {isExpanded && (
-                      <div className="mt-3 text-sm text-cq-muted leading-relaxed animate-in fade-in-50 duration-150 space-y-1.5">
+                      <div className="pb-3 text-[15px] text-ink-muted leading-relaxed animate-fadeIn space-y-1.5">
                         <p>{faq.answer}</p>
                         {faq.source && (
                           <div className="text-xs text-cq-soft font-medium pt-1">
@@ -165,16 +159,14 @@ export const HelpTab: React.FC<HelpTabProps> = ({
           {/* Card 2: Your support requests */}
           <Card className="p-6 sm:p-7 space-y-5">
             <div className="flex items-center justify-between pb-4 border-b border-cq-line">
-              <h2 className="text-xl font-bold text-cq-ink">
+              <h2 className="text-xl font-extrabold text-brand">
                 Your support requests
               </h2>
               <Eyebrow>Local only</Eyebrow>
             </div>
 
             {myRequests.length === 0 ? (
-              <p className="text-sm text-cq-muted text-center py-8">
-                Your support requests will appear here.
-              </p>
+              <EmptyState title="Your support requests will appear here." spot={<SpotMessages />} className="py-4" />
             ) : (
               <div className="space-y-4">
                 {myRequests.map((req) => {
@@ -251,7 +243,7 @@ export const HelpTab: React.FC<HelpTabProps> = ({
                                 className="px-2.5 py-1 text-xs font-bold text-cq-brand bg-cq-sage hover:bg-cq-sage-line-2 rounded-lg border border-cq-sage-line transition-colors flex items-center gap-1 cursor-pointer"
                                 title="Demonstration button to advance the concern resolution status"
                               >
-                                <Sparkles className="w-3 h-3 text-cq-brand" />
+                                <ChevronsRight className="w-4 h-4" aria-hidden="true" />
                                 <span>Demo: advance status</span>
                               </button>
                             )}
@@ -281,7 +273,7 @@ export const HelpTab: React.FC<HelpTabProps> = ({
                                     {isCompleted ? (
                                       <CheckCircle2 className="w-3.5 h-3.5 text-cq-sage-ink" />
                                     ) : isCurrent ? (
-                                      <span className="w-2 h-2 rounded-full bg-cq-sun-deep animate-pulse" />
+                                      <span className="w-2 h-2 rounded-full bg-coral" />
                                     ) : (
                                       <span className="w-2 h-2 rounded-full bg-cq-sage-line" />
                                     )}
@@ -332,11 +324,11 @@ export const HelpTab: React.FC<HelpTabProps> = ({
         </div>
 
         {/* RIGHT COLUMN: Contact the CareQ team form (sticky top-6) */}
-        <div className="lg:sticky lg:top-6">
+        <div className="lg:sticky lg:top-6 min-w-0">
           <Card className="p-6 sm:p-7 space-y-5">
             <div>
               <IconTile icon={Heart} tone="peach" />
-              <h2 className="text-2xl font-bold text-cq-ink mt-4 leading-tight">
+              <h2 className="text-2xl font-extrabold text-brand mt-4 leading-tight">
                 Contact the CareQ team
               </h2>
               <p className="text-xs text-cq-muted mt-1 leading-relaxed">

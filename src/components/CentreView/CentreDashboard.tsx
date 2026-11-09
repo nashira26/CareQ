@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { EmptyState, SpotChecklist } from '../ui/Illustrations';
 import {
   Centre,
   Application,
@@ -22,23 +23,7 @@ import {
   AiNotice,
 } from '../ui/CareUI';
 import { AI_OFFLINE_STATUS, aiPost, isUserFacingAiError } from '../../lib/aiFetch';
-import {
-  Sparkles,
-  CheckCircle2,
-  Calendar,
-  User,
-  Plus,
-  Trash2,
-  Edit2,
-  Check,
-  Quote,
-  Loader2,
-  MessageSquare,
-  FileCheck2,
-  Eye,
-  Heart,
-  X,
-} from 'lucide-react';
+import { CheckCircle2, Calendar, User, Plus, Trash2, Edit2, Check, Quote, Loader2, MessageSquare, FileCheck2, Eye, Heart, X, PenLine, Gift, ArrowRight, ChevronDown } from 'lucide-react';
 
 interface ExtractedRequirement {
   requirement: string;
@@ -371,8 +356,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
         <div className="space-y-6">
           {/* 1. PageHeader */}
           <PageHeader
-            eyebrow="Applications & queue"
-            title="Every family, one clear next step."
+            title="Applications & queue"
             subtitle="Review applications, update statuses and record positions. Families see each update with your name and the date."
           />
 
@@ -395,7 +379,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                 value={appSubFilter}
                 onChange={(e) => setAppSubFilter(e.target.value as any)}
                 aria-label="Filter applications by status"
-                className="h-10 rounded-xl border border-cq-line bg-white px-3 text-xs text-cq-ink focus:outline-hidden cursor-pointer"
+                className="h-10 rounded-xl border border-line-strong bg-white px-3 text-sm text-ink cursor-pointer"
               >
                 <option value="all">All statuses</option>
                 <option value="review">Needs review</option>
@@ -407,14 +391,13 @@ A signed Photography & Media Consent Form is required for classroom developmenta
 
           {/* 4. Table in Card p-0 overflow-hidden */}
           {centreApplications.length === 0 ? (
-            <Card className="py-12 text-center space-y-1.5">
-              <p className="text-sm font-semibold text-cq-ink">No applications yet</p>
-              <p className="text-xs text-cq-soft max-w-sm mx-auto">
+            <Card>
+              <EmptyState title="No applications yet" spot={<SpotChecklist />}>
                 When families apply to {singleCentre.name} through CareQ, their applications will appear here.
-              </p>
+              </EmptyState>
             </Card>
           ) : filteredApps.length === 0 ? (
-            <Card className="py-12 text-center text-xs text-cq-soft">
+            <Card className="py-10 text-center text-sm text-ink-muted">
               No applications match this status filter.
             </Card>
           ) : (
@@ -423,12 +406,12 @@ A signed Photography & Media Consent Form is required for classroom developmenta
               <div className="hidden md:block">
                 <Card className="p-0 overflow-hidden shadow-2xs">
                   {/* Table Header Row */}
-                  <div className="grid grid-cols-[2fr_1.4fr_1fr_1fr_1fr] gap-4 items-center bg-cq-page border-b border-cq-line px-6 py-4">
-                    <Eyebrow className="text-xs">CHILD / FAMILY</Eyebrow>
-                    <Eyebrow className="text-xs">PROGRAM / START</Eyebrow>
-                    <Eyebrow className="text-xs">STATUS</Eyebrow>
-                    <Eyebrow className="text-xs">QUEUE</Eyebrow>
-                    <Eyebrow className="text-xs text-right">ACTIONS</Eyebrow>
+                  <div className="grid grid-cols-[2fr_1.4fr_1fr_1fr_1fr] gap-4 items-center bg-page border-b border-cq-line px-6 py-3">
+                    <Eyebrow className="text-xs">Child / family</Eyebrow>
+                    <Eyebrow className="text-xs">Program / start</Eyebrow>
+                    <Eyebrow className="text-xs">Status</Eyebrow>
+                    <Eyebrow className="text-xs">Queue</Eyebrow>
+                    <Eyebrow className="text-xs text-right">Actions</Eyebrow>
                   </div>
 
                   {/* Rows */}
@@ -447,10 +430,10 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                         <div key={app.id}>
                           {/* Main Row */}
                           <div
-                            className={`grid grid-cols-[2fr_1.4fr_1fr_1fr_1fr] gap-4 items-center px-6 py-6 transition-colors ${
+                            className={`grid grid-cols-[2fr_1.4fr_1fr_1fr_1fr] gap-4 items-center px-6 py-4 transition-colors ${
                               isExpanded
-                                ? 'bg-cq-page'
-                                : 'hover:bg-cq-page/60'
+                                ? 'bg-mint-50'
+                                : 'hover:bg-page'
                             }`}
                           >
                             {/* Child / Family */}
@@ -458,7 +441,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                               <div className="text-sm font-bold text-cq-ink truncate">
                                 {app.childName}
                               </div>
-                              <div className="text-xs text-cq-sage-ink font-medium mt-0.5 truncate">
+                              <div className="text-xs text-ink-muted mt-0.5 truncate">
                                 {app.parentName} · {app.id}
                               </div>
                               {app.submittedAt && (
@@ -509,7 +492,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                                 }
                                 className="h-9 px-4 text-xs"
                               >
-                                {isExpanded ? 'Close' : 'Review →'}
+                                <>{isExpanded ? 'Close' : 'Review'}<ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} aria-hidden="true" /></>
                               </GhostButton>
                             </div>
                           </div>
@@ -591,7 +574,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                                   }
                                   className="h-9 text-xs"
                                 >
-                                  {isUnderReview ? '✓ In review' : 'Move to review'}
+                                  {isUnderReview ? <><Check className="w-4 h-4" aria-hidden="true" /> In review</> : 'Move to review'}
                                 </GhostButton>
 
                                 <PrimaryButton
@@ -607,7 +590,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                                   className="h-9 text-xs"
                                 >
                                   {isWaitlisted
-                                    ? `Waitlisted (#${app.waitlistPosition})`
+                                    ? `Waitlisted · #${app.waitlistPosition}`
                                     : 'Set position / estimate…'}
                                 </PrimaryButton>
 
@@ -619,7 +602,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                                   }
                                   className="h-9 text-xs"
                                 >
-                                  <Sparkles className="w-3.5 h-3.5 mr-1" />
+                                  <Gift className="w-4 h-4" aria-hidden="true" />
                                   {isOffer ? 'Offer pending' : 'Make offer'}
                                 </PrimaryButton>
                               </div>
@@ -651,7 +634,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                           <div className="text-sm font-bold text-cq-ink">
                             {app.childName}
                           </div>
-                          <div className="text-xs text-cq-sage-ink font-medium mt-0.5">
+                          <div className="text-xs text-ink-muted mt-0.5">
                             {app.parentName} · {app.id}
                           </div>
                           {app.submittedAt && (
@@ -702,7 +685,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                           onClick={() => setExpandedAppId(isExpanded ? null : app.id)}
                           className="h-8 px-3 text-xs"
                         >
-                          {isExpanded ? 'Close' : 'Review →'}
+                          <>{isExpanded ? 'Close' : 'Review'}<ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} aria-hidden="true" /></>
                         </GhostButton>
                       </div>
 
@@ -795,8 +778,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
         <div className="space-y-6">
           {/* 1. PageHeader */}
           <PageHeader
-            eyebrow="Policy & requirements"
-            title="One policy. One checklist parents can trust."
+            title="Policy & requirements"
             subtitle="Load a published document or paste your admission policy. AI finds each requirement and quotes the sentence it came from. Nothing reaches parents until you confirm."
           />
 
@@ -839,7 +821,7 @@ A signed Photography & Media Consent Form is required for classroom developmenta
                     </label>
                   ))}
                   <PrimaryButton onClick={() => handleExtractFromDocument(selectedDocKey)} disabled={isExtracting || !selectedDocKey} className="h-11">
-                    <Sparkles className="w-4 h-4 mr-1.5" />
+                    <PenLine className="w-4 h-4" aria-hidden="true" />
                     <span>{isExtracting ? 'Reading the document…' : 'Find requirements in this document'}</span>
                   </PrimaryButton>
                 </div>
@@ -887,7 +869,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
                   disabled={isExtracting || !policyInputText.trim()}
                   className="h-11"
                 >
-                  <Sparkles className="w-4 h-4 mr-1.5" />
+                  <PenLine className="w-4 h-4" aria-hidden="true" />
                   <span>
                     {isExtracting
                       ? 'Reading your policy…'
@@ -1071,7 +1053,7 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
 
       {/* Modal for setting Waitlist position */}
       {activeWaitlistApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-cq-ink/40 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/45">
           <Card className="max-w-sm w-full p-6 shadow-xl space-y-4">
             <div>
               <h3 className="text-base font-bold text-cq-ink">

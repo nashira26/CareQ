@@ -27,7 +27,7 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-cq-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 bg-ink/45 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl max-w-md w-full border border-cq-stone-200 shadow-2xl overflow-hidden p-6 sm:p-7 space-y-5 my-auto">
         {/* Header */}
         <div className="text-center space-y-2">

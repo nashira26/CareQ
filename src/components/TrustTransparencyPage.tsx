@@ -1,4 +1,5 @@
 import React from 'react';
+import { SpotChecklist } from './ui/Illustrations';
 import { ArrowLeft, ShieldCheck, Scale, Bot, Lock, ExternalLink, FileText, CheckCircle2 } from 'lucide-react';
 import { Centre } from '../data/mockData';
 import ontarioMeta from '../data/ontarioCentres.meta.json';
@@ -24,7 +25,7 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-cq-brand hover:text-cq-secondary bg-white border border-cq-stone-200 rounded-xl shadow-2xs hover:bg-cq-stone-50 transition-all"
+          className="inline-flex items-center gap-2 h-10 px-4 text-sm font-bold text-brand bg-white border border-line-strong rounded-xl hover:bg-mint active:scale-[0.98] transition-[background-color,transform] cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Portal</span>
@@ -37,26 +38,25 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
       </div>
 
       {/* Hero Header */}
-      <div className="bg-white rounded-2xl border border-cq-stone-200 p-6 sm:p-8 shadow-xs">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cq-brand/10 text-cq-brand text-xs font-semibold mb-3">
-          <ShieldCheck className="w-3.5 h-3.5 text-cq-secondary" />
-          <span>Transparency & Ethical AI Policy</span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-cq-stone-900">
+      <div className="bg-butter rounded-3xl p-5 sm:p-8 flex items-center justify-between gap-6"><div>
+        <p className="text-sm font-bold text-coral-ink mb-1">Transparency & Ethical AI Policy</p>
+        <h1 className="text-2xl sm:text-[30px] sm:leading-[38px] font-extrabold text-brand">
           Trust and Transparency
         </h1>
         <p className="mt-2 text-sm sm:text-base text-cq-stone-600 leading-relaxed max-w-2xl">
           CareQ is committed to plain-language openness, verifiable privacy, and responsible AI assistance in Ontario licensed child care intake. Here is how our platform works and our commitments to families and centres.
         </p>
+        </div>
+        <SpotChecklist className="hidden sm:block w-40 shrink-0" />
       </div>
 
       {/* Section 1: Prototype Terms of Use */}
-      <section className="bg-white rounded-2xl border border-cq-stone-200 p-6 sm:p-8 shadow-xs space-y-4">
+      <section className="bg-white rounded-2xl border border-cq-line p-5 sm:p-8 space-y-4">
         <div className="flex items-center gap-3">
           <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-cq-brand text-white font-bold text-sm">
             1
           </span>
-          <h2 className="text-xl font-bold text-cq-stone-900">Prototype Terms of Use</h2>
+          <h2 className="text-xl font-extrabold text-brand">Prototype Terms of Use</h2>
         </div>
 
         {/* Mandatory callout banner */}
@@ -79,12 +79,12 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
       </section>
 
       {/* Section 2: How We Use Your Information */}
-      <section className="bg-white rounded-2xl border border-cq-stone-200 p-6 sm:p-8 shadow-xs space-y-4">
+      <section className="bg-white rounded-2xl border border-cq-line p-5 sm:p-8 space-y-4">
         <div className="flex items-center gap-3">
           <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-cq-brand text-white font-bold text-sm">
             2
           </span>
-          <h2 className="text-xl font-bold text-cq-stone-900">How We Use Your Information</h2>
+          <h2 className="text-xl font-extrabold text-brand">How We Use Your Information</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -129,12 +129,12 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
       </section>
 
       {/* Section 3: How the AI is Used */}
-      <section className="bg-white rounded-2xl border border-cq-stone-200 p-6 sm:p-8 shadow-xs space-y-4">
+      <section className="bg-white rounded-2xl border border-cq-line p-5 sm:p-8 space-y-4">
         <div className="flex items-center gap-3">
           <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-cq-brand text-white font-bold text-sm">
             3
           </span>
-          <h2 className="text-xl font-bold text-cq-stone-900">How the AI is Used</h2>
+          <h2 className="text-xl font-extrabold text-brand">How the AI is Used</h2>
         </div>
 
         <p className="text-sm text-cq-stone-600 leading-relaxed">
@@ -187,12 +187,12 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
       </section>
 
       {/* Section 4: Fairness */}
-      <section className="bg-white rounded-2xl border border-cq-stone-200 p-6 sm:p-8 shadow-xs space-y-4">
+      <section className="bg-white rounded-2xl border border-cq-line p-5 sm:p-8 space-y-4">
         <div className="flex items-center gap-3">
           <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-cq-brand text-white font-bold text-sm">
             4
           </span>
-          <h2 className="text-xl font-bold text-cq-stone-900">Fairness</h2>
+          <h2 className="text-xl font-extrabold text-brand">Fairness</h2>
         </div>
 
         <div className="space-y-3 text-sm text-cq-stone-700 leading-relaxed">
@@ -215,12 +215,12 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
       </section>
 
       {/* Section 5: Policies and Regulations */}
-      <section className="bg-white rounded-2xl border border-cq-stone-200 p-6 sm:p-8 shadow-xs space-y-5">
+      <section className="bg-white rounded-2xl border border-cq-line p-5 sm:p-8 space-y-5">
         <div className="flex items-center gap-3">
           <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-cq-brand text-white font-bold text-sm">
             5
           </span>
-          <h2 className="text-xl font-bold text-cq-stone-900">Policies and Regulations</h2>
+          <h2 className="text-xl font-extrabold text-brand">Policies and Regulations</h2>
         </div>
 
         <p className="text-xs sm:text-sm text-cq-stone-600">

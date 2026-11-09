@@ -37,7 +37,7 @@ Surfaces: page #FCF9F2, white, mint #E8F0EB, peach #FCEBE4, butter #F4EFD9, ston
 | 0 | Hard-coded colours and fonts → named tokens, no visual change (verified: computed styles of every element on 26 screens identical) | done |
 | 1 | Design system applied globally: tokens, Nunito Sans, type and radius scale, buttons, inputs, focus, status pills, navigation (phone tab bar), illustrations, centre avatar, progress strip, step confirmation | done |
 | 2 | Landing, login/sign-up, parent Overview (butter greeting band, progress per application), Find (avatar tiles, "More details"), Apply, Track (shorter repeated centre names); arrows back on buttons that go to another screen | done |
-| 3 | Centre portal, messaging, Help, Trust page, empty/loading/error states (if time runs short these keep the phase-1 styling) | to do |
+| 3 | Centre portal, messaging, companion, Help, Trust page, empty/loading/error/confirmation states | done |
 
 ## Must not change
 

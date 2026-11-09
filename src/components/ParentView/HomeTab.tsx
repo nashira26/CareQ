@@ -16,7 +16,6 @@ import {
   Plus,
   X,
   Calendar,
-  Sparkles,
   Search,
 } from 'lucide-react';
 

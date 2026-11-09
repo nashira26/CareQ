@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Building2, ImagePlus, Sparkles, CheckCircle2, X, FileUp, Loader2, ShieldCheck } from 'lucide-react';
+import { Building2, ImagePlus, CheckCircle2, X, FileUp, Loader2, ShieldCheck, PenLine } from 'lucide-react';
 import { aiPost } from '../../lib/aiFetch';
 import { refreshDocumentCentres } from '../../lib/documentCoverage';
 import { Card, PrimaryButton, GhostButton } from '../ui/CareUI';
@@ -202,12 +202,12 @@ export const CentreRegistration: React.FC<Props> = ({ staffEmail, areas, onRegis
           <div className="flex flex-wrap justify-center gap-2 pt-2">
             {uploaded.length > 0 && (
               <PrimaryButton noArrow onClick={() => onDone('policy', { docKey: uploaded[uploaded.length - 1].docKey })}>
-                <Sparkles className="w-4 h-4" /> Read my document with AI
+                <PenLine className="w-4 h-4" aria-hidden="true" /> Read my document with AI
               </PrimaryButton>
             )}
             {!uploaded.length && registered.registration!.policyText && (
               <PrimaryButton noArrow onClick={() => onDone('policy')}>
-                <Sparkles className="w-4 h-4" /> Read my policy with AI
+                <PenLine className="w-4 h-4" aria-hidden="true" /> Read my policy with AI
               </PrimaryButton>
             )}
             <GhostButton onClick={() => onDone('home')} className="h-11">

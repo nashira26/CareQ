@@ -13,20 +13,7 @@ import {
   IconTile,
 } from '../ui/CareUI';
 import { EmptyState, SpotChecklist } from '../ui/Illustrations';
-import {
-  CheckCircle2,
-  Circle,
-  Check,
-  ShieldCheck,
-  UploadCloud,
-  FileCheck2,
-  Trash2,
-  Eye,
-  X,
-  Sparkles,
-  Plus,
-  ArrowRight,
-} from 'lucide-react';
+import { CheckCircle2, Circle, Check, ShieldCheck, UploadCloud, FileCheck2, Trash2, Eye, X, Plus, ArrowRight, PenLine } from 'lucide-react';
 
 interface ApplyTabProps {
   centres: Centre[];
@@ -415,7 +402,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
 
       {/* Review and Approve Confirmation Modal */}
       {reviewingApp && reviewingCentre && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-cq-ink/40 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/45">
           <Card className="max-w-lg w-full p-6 shadow-xl space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
@@ -538,7 +525,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
             {reviewingDraft && (
               <div className="space-y-1.5 text-xs">
                 <p className="text-cq-muted flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-cq-sand-ink-2" />
+                  <PenLine className="w-4 h-4 text-brand" aria-hidden="true" />
                   Includes your reviewed AI draft: {reviewingDraft.fields.length} details, checklist statuses
                   {reviewingDraft.noteToCentre.trim() ? ' and a note' : ''}.
                 </p>

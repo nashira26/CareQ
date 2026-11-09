@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Loader2, Quote, FileCheck2, AlertTriangle } from 'lucide-react';
+import { Loader2, Quote, FileCheck2, AlertTriangle, PenLine } from 'lucide-react';
 import { Application, Centre, ParentProfile } from '../../data/mockData';
 import { AiFallbackNote, AiNotice } from '../ui/CareUI';
 import { aiPost, isUserFacingAiError } from '../../lib/aiFetch';
@@ -99,7 +99,7 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
           disabled={loading}
           className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-cq-brand text-cq-brand bg-white hover:bg-cq-brand/5 text-sm font-semibold disabled:opacity-50 cursor-pointer"
         >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <PenLine className="w-4 h-4" aria-hidden="true" />}
           {draft ? 'Prepare again with AI' : 'Prepare with AI'}
         </button>
         {loading ? (
@@ -117,7 +117,7 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
         <section aria-label="AI draft" className="rounded-2xl border border-cq-sand-line bg-cq-surface-cream p-5 space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h5 className="text-sm font-bold text-cq-ink flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-cq-sand-ink-2" /> AI draft — review before sending
+              <PenLine className="w-4 h-4 text-brand" aria-hidden="true" /> AI draft — review before sending
             </h5>
             <span className="rounded px-1.5 py-0.5 bg-cq-band text-cq-sand-ink text-xs font-semibold">
               {centre.demoKind === 'open-data' ? 'Simulated application' : 'Simulated centre'}

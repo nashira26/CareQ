@@ -118,7 +118,7 @@ export const ResetDemo: React.FC<ResetDemoProps> = ({ variant = 'sidebar', class
     <>
       {trigger}
       {dialog && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-cq-ink/40 backdrop-blur-xs" onClick={() => setDialog(null)}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-ink/45" onClick={() => setDialog(null)}>
           <div
             role="alertdialog"
             aria-modal="true"

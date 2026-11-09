@@ -109,7 +109,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ role, items, activeId, o
                 type="button"
                 onClick={() => onSelect(item.id)}
                 aria-current={isActive ? 'page' : undefined}
-                className={`relative h-11 w-full flex items-center gap-3 pl-4 pr-3 rounded-xl text-sm transition-colors cursor-pointer text-left ${
+                className={`relative min-h-11 py-2 w-full flex items-center gap-3 pl-4 pr-3 rounded-xl text-sm transition-colors cursor-pointer text-left ${
                   isActive ? 'bg-mint text-brand font-extrabold' : 'text-ink-muted font-semibold hover:bg-page hover:text-brand'
                 }`}
               >
@@ -118,7 +118,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ role, items, activeId, o
                   className={`absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full ${isActive ? 'bg-coral' : 'bg-transparent'}`}
                 />
                 <Icon className="w-[18px] h-[18px] shrink-0" />
-                <span className="truncate">{item.label}</span>
+                <span className="leading-tight">{item.label}</span>
                 {item.badge && (
                   <span
                     className={`ml-auto shrink-0 text-xs font-bold rounded-full px-2 py-0.5 ${

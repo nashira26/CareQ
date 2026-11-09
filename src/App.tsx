@@ -44,6 +44,7 @@ import { LogoFull } from './components/Logo';
 import { setAiOffline } from './lib/aiFetch';
 import { CentreDemoBanner } from './components/ui/CareUI';
 import { StepComplete, StepCompleteInfo } from './components/ui/StepComplete';
+import { SpotJourney } from './components/ui/Illustrations';
 import {
   Search,
   FileEdit,
@@ -59,6 +60,7 @@ import {
   WifiOff,
   X,
   Loader2,
+  AlertCircle,
 } from 'lucide-react';
 
 const AREAS = (torontoAreas as { areas: Area[] }).areas;
@@ -450,9 +452,10 @@ export default function App() {
         </div>
       )}
       {actionError && (
-        <div role="alert" className="fixed top-12 right-4 z-[70] max-w-sm rounded-xl bg-white border border-cq-sand-line shadow-lg p-3 pr-9 text-sm text-cq-sand-ink">
-          {actionError}
-          <button type="button" onClick={() => setActionError(null)} aria-label="Dismiss" className="absolute top-2 right-2 p-1 cursor-pointer">
+        <div role="alert" className="fixed top-12 right-4 left-4 sm:left-auto z-[70] sm:max-w-sm rounded-xl bg-white border border-cq-line border-l-4 border-l-error shadow-lg p-3 pr-10 text-sm text-ink flex items-start gap-2 animate-pop">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-error" aria-hidden="true" />
+          <span>{actionError}</span>
+          <button type="button" onClick={() => setActionError(null)} aria-label="Dismiss" className="absolute top-1.5 right-1.5 w-8 h-8 inline-flex items-center justify-center rounded-lg hover:bg-stone cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -464,21 +467,24 @@ export default function App() {
 
   if (!store) {
     return (
-      <div className="min-h-screen bg-cq-page flex flex-col items-center justify-center gap-4 p-6 text-center text-cq-ink">
-        <LogoFull size={44} />
+      <div className="min-h-screen bg-page flex flex-col items-center justify-center gap-5 p-6 text-center text-ink">
+        <LogoFull size={40} />
         {bootError ? (
           <>
-            <p role="alert" className="text-sm text-cq-rust flex items-center gap-2">
-              <WifiOff className="w-4 h-4" /> {bootError}
+            <p role="alert" className="max-w-sm rounded-xl bg-error-bg text-error text-sm font-semibold px-4 py-3 flex items-start gap-2 text-left">
+              <WifiOff className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" /> {bootError}
             </p>
-            <button type="button" onClick={boot} className="h-10 px-4 rounded-xl bg-cq-brand text-white text-sm font-semibold cursor-pointer">
+            <button type="button" onClick={boot} className="h-11 px-5 rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-bold active:scale-[0.98] transition-[background-color,transform] cursor-pointer">
               Try again
             </button>
           </>
         ) : (
-          <p className="text-sm text-cq-muted flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" /> Loading CareQ…
-          </p>
+          <>
+            <SpotJourney animate className="w-32" />
+            <p role="status" className="text-sm text-ink-muted flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Loading CareQ…
+            </p>
+          </>
         )}
       </div>
     );

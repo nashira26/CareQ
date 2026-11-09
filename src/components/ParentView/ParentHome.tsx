@@ -6,27 +6,17 @@ import {
   InAppNotification,
 } from '../../data/mockData';
 import { StatusBadge } from '../StatusBadge';
-import { estimateLine, reportedLine } from '../../lib/simulated';
+import { estimateLine, reportedLineOnCard } from '../../lib/simulated';
 import {
   PageHeader,
   GhostButton,
   Card,
   IconTile,
+  CentreAvatar,
   SimNote,
 } from '../ui/CareUI';
-import {
-  TrendingUp,
-  Gift,
-  FileText,
-  Bell,
-  Check,
-  CalendarDays,
-  Plus,
-  X,
-  ArrowRight,
-  Heart,
-  Sparkles,
-} from 'lucide-react';
+import { TrendingUp, Gift, FileText, Bell, Check, CalendarDays, Plus, X, ArrowRight, Heart } from 'lucide-react';
+import { SpotJourney, SpotMessages, EmptyState } from '../ui/Illustrations';
 
 interface ParentHomeProps {
   parentProfile: ParentProfile;
@@ -123,12 +113,11 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
     <div className="space-y-8">
       {/* 1. Header row with PageHeader and GhostButton */}
       <PageHeader
-        eyebrow="Parent companion"
-        title="A little more in the loop."
+        title="Parent companion"
         subtitle="Updates, conversations and gentle reminders for your care journey."
         action={
           <GhostButton onClick={onMarkAllAsRead}>
-            ✓ Mark all as read
+            <Check className="w-4 h-4" aria-hidden="true" /> Mark all as read
           </GhostButton>
         }
       />
@@ -155,7 +144,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
           {/* Latest updates feed card */}
           <Card className="space-y-6">
             <div className="flex items-center justify-between pb-3 border-b border-cq-line">
-              <h2 className="text-base font-bold text-cq-ink">Latest updates</h2>
+              <h2 className="text-lg font-extrabold text-brand">Latest updates</h2>
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-cq-page text-cq-soft border border-cq-line">
                 Simulated data
               </span>
@@ -211,9 +200,9 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
 
             {/* Notification items */}
             {filteredNotifications.length === 0 ? (
-              <div className="py-12 text-center text-sm text-cq-soft">
-                No updates yet. When a centre changes your status, it shows up here.
-              </div>
+              <EmptyState title="No updates yet." spot={<SpotMessages />}>
+                When a centre changes your status, it shows up here.
+              </EmptyState>
             ) : (
               <div className="space-y-3">
                 {filteredNotifications.map((notif) => {
@@ -241,11 +230,14 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
                       key={notif.id}
                       className={`p-4 rounded-xl border border-cq-line bg-white transition-all flex items-start gap-4 ${
                         isUnread
-                          ? 'border-l-[3px] border-l-cq-sage-ink bg-cq-sage/15'
-                          : 'hover:border-cq-stone-300'
+                          ? 'border-l-4 border-l-coral shadow-sm'
+                          : 'hover:bg-page'
                       }`}
                     >
-                      <IconTile icon={itemIcon} tone="sage" />
+                      <IconTile
+                        icon={itemIcon}
+                        tone={notif.type === 'offer' ? 'sand' : notif.type === 'position' ? 'lilac' : notif.type === 'application' ? 'sage' : 'peach'}
+                      />
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -270,7 +262,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
                           onClick={() => onMarkAsRead(notif.id)}
                           className="shrink-0 text-xs font-semibold text-cq-sage-ink hover:underline transition-colors cursor-pointer self-start mt-1"
                         >
-                          Mark as read ✓
+                          Mark as read <Check className="w-4 h-4 inline-block" aria-hidden="true" />
                         </button>
                       )}
                     </div>
@@ -283,7 +275,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
           {/* Where you stand */}
           <Card className="space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-cq-line">
-              <h2 className="text-base font-bold text-cq-ink">Where you stand</h2>
+              <h2 className="text-lg font-extrabold text-brand">Where you stand</h2>
               <button
                 type="button"
                 onClick={() => onNavigate('track')}
@@ -306,8 +298,10 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
                   return (
                     <div
                       key={app.id}
-                      className="p-4 rounded-xl border border-cq-line bg-cq-input flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                      className="p-4 rounded-xl border border-cq-line bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                     >
+                      <div className="flex items-start gap-3 min-w-0">
+                      <CentreAvatar centreId={app.centreId} size="sm" />
                       <div className="space-y-1 min-w-0">
                         <div className="flex items-center gap-2.5 flex-wrap">
                           <h3 className="text-sm font-bold text-cq-ink">{centreName}</h3>
@@ -322,7 +316,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
                         <div className="text-xs text-cq-muted space-y-0.5">
                           {app.waitlistPosition ? (
                             <p className="font-medium text-cq-ink">
-                              #{app.waitlistPosition} · {reportedLine(app.waitlistReportedBy || centreName, app.waitlistReportedDate || 'recently')}
+                              #{app.waitlistPosition} · {reportedLineOnCard(app.waitlistReportedBy, centreName, app.waitlistReportedDate || 'recently')}
                             </p>
                           ) : (
                             <p className="text-cq-soft">
@@ -337,13 +331,14 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
                           ) : null}
                         </div>
                       </div>
+                      </div>
 
                       <button
                         type="button"
                         onClick={() => onNavigate('track')}
                         className="self-start sm:self-auto text-xs font-semibold text-cq-brand hover:underline transition-colors cursor-pointer shrink-0"
                       >
-                        Open in Track →
+                        Open in Track <ArrowRight className="w-4 h-4 inline-block" aria-hidden="true" />
                       </button>
                     </div>
                   );
@@ -358,14 +353,14 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
           {/* Card: Your next little steps */}
           <Card className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-cq-ink">Your next little steps</h2>
+              <h2 className="text-lg font-extrabold text-brand">Your next little steps</h2>
               <span className="text-xs font-semibold text-cq-muted">{stepsDoneCount}/4</span>
             </div>
 
             {/* Thin progress bar */}
             <div className="w-full bg-cq-line rounded-full h-1.5 overflow-hidden">
               <div
-                className="bg-cq-brand h-1.5 rounded-full transition-all duration-300"
+                className="bg-leaf h-1.5 rounded-full transition-[width] duration-500"
                 style={{ width: `${(stepsDoneCount / 4) * 100}%` }}
               />
             </div>
@@ -377,14 +372,14 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div
                     className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                      step1Done ? 'bg-cq-sage-ink text-white' : 'border border-cq-line'
+                      step1Done ? 'bg-leaf-ink text-white' : 'border-2 border-line-strong'
                     }`}
                   >
                     {step1Done && <Check className="w-3 h-3 stroke-[2.5]" />}
                   </div>
                   <span
-                    className={`text-xs ${
-                      step1Done ? 'line-through text-cq-faint' : 'text-cq-ink font-medium'
+                    className={`text-sm ${
+                      step1Done ? 'line-through text-ink-faint' : 'text-ink font-semibold'
                     }`}
                   >
                     Find a few places you love
@@ -404,14 +399,14 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div
                     className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                      step2Done ? 'bg-cq-sage-ink text-white' : 'border border-cq-line'
+                      step2Done ? 'bg-leaf-ink text-white' : 'border-2 border-line-strong'
                     }`}
                   >
                     {step2Done && <Check className="w-3 h-3 stroke-[2.5]" />}
                   </div>
                   <span
-                    className={`text-xs ${
-                      step2Done ? 'line-through text-cq-faint' : 'text-cq-ink font-medium'
+                    className={`text-sm ${
+                      step2Done ? 'line-through text-ink-faint' : 'text-ink font-semibold'
                     }`}
                   >
                     Finish your drafts
@@ -431,14 +426,14 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div
                     className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                      step3Done ? 'bg-cq-sage-ink text-white' : 'border border-cq-line'
+                      step3Done ? 'bg-leaf-ink text-white' : 'border-2 border-line-strong'
                     }`}
                   >
                     {step3Done && <Check className="w-3 h-3 stroke-[2.5]" />}
                   </div>
                   <span
-                    className={`text-xs ${
-                      step3Done ? 'line-through text-cq-faint' : 'text-cq-ink font-medium'
+                    className={`text-sm ${
+                      step3Done ? 'line-through text-ink-faint' : 'text-ink font-semibold'
                     }`}
                   >
                     Send your first application
@@ -458,14 +453,14 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div
                     className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                      step4Done ? 'bg-cq-sage-ink text-white' : 'border border-cq-line'
+                      step4Done ? 'bg-leaf-ink text-white' : 'border-2 border-line-strong'
                     }`}
                   >
                     {step4Done && <Check className="w-3 h-3 stroke-[2.5]" />}
                   </div>
                   <span
-                    className={`text-xs ${
-                      step4Done ? 'line-through text-cq-faint' : 'text-cq-ink font-medium'
+                    className={`text-sm ${
+                      step4Done ? 'line-through text-ink-faint' : 'text-ink font-semibold'
                     }`}
                   >
                     Answer your offers
@@ -488,7 +483,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
           <Card className="space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-cq-line">
               <CalendarDays className="w-4 h-4 text-cq-sage-ink" />
-              <h2 className="text-base font-bold text-cq-ink">Gentle reminders</h2>
+              <h2 className="text-lg font-extrabold text-brand">Gentle reminders</h2>
             </div>
 
             {/* Input + optional date + button */}
@@ -571,9 +566,9 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
             <p className="text-xs text-cq-soft pt-1">Only on this page · No notifications sent</p>
           </Card>
 
-          {/* Centred quote under right column: Sparkles (#C9B98A) then "One little step / at your family's pace." */}
+          {/* Centred quote under right column: journey illustration then "One little step / at your family's pace." */}
           <div className="pt-6 text-center space-y-2 select-none">
-            <Sparkles className="w-5 h-5 text-cq-sand-400 mx-auto" />
+            <SpotJourney className="w-24 mx-auto" />
             <p className="text-xl text-cq-faint font-medium leading-relaxed">
               One little step
               <br />
