@@ -27,6 +27,7 @@ import { geminiDocEmbedder, ingestUpload } from './server/ingest';
 import { EXTRACT_SCHEMA, extractPrompt, fallbackCandidates, gatherRequirementChunks, verifyCandidates } from './server/requirementsFromDocs';
 import { POLICY_CHUNKS, PolicyChunk } from './server/policyIndexConfig';
 import { sessionAccount } from './server/auth';
+import { verifyLicence } from './server/licence';
 import { rateLimit, AI_LIMIT_PER_SESSION, AI_LIMIT_ANON_ASK, RATE_LIMIT_MESSAGE } from './server/rateLimit';
 import torontoAreas from './src/data/torontoAreas.json';
 import fsaCentroids from './src/data/fsaCentroids.json';
@@ -141,6 +142,13 @@ async function startServer() {
   });
   app.get('/api/mode', (_req, res) => {
     res.json(modeInfo());
+  });
+  // Licence check against the Ontario open data, for local mode (whose data lives in the browser).
+  // Mongo mode never uses this: the data API runs the same check itself on registration and on profile saves.
+  app.post('/api/verify-licence', (req: Request, res: Response) => {
+    const b = req.body ?? {};
+    const s = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, max) : '');
+    res.json({ licenceVerified: verifyLicence({ licenceNumber: s(b.licenceNumber, 20), postalCode: s(b.postalCode, 10), name: s(b.name, 120) }) ?? null });
   });
 
   // Health for Render: MongoDB reachable (mongo mode) and a Gemini key configured (never the key itself)

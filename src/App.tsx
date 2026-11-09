@@ -27,6 +27,7 @@ import { TrustTransparencyPage } from './components/TrustTransparencyPage';
 import { AuthPage } from './components/AuthPage';
 import { LandingPage } from './components/LandingPage';
 import { HelpTab } from './components/HelpTab';
+import { ProfilePage, ProfileActions } from './components/ProfilePage';
 import { AskCareQAssistant } from './components/AskCareQAssistant';
 import type { SupportRequest } from './data/helpData';
 import type { PreparedDraft } from './lib/prepareApplication';
@@ -68,8 +69,9 @@ const FSA = fsaCentroids as FsaCentroids;
 const POLL_MS = 10_000; // mongo mode: pick up changes made on other devices
 const TYPING_SAVE_MS = 600; // notes and AI drafts are saved shortly after typing stops
 
-type ParentTab = 'home' | 'find' | 'apply' | 'track' | 'companion' | 'help';
-type CentreTab = 'home' | 'applications' | 'messages' | 'policy' | 'help';
+// 'profile' is opened from the avatar menu (not a sidebar item)
+type ParentTab = 'home' | 'find' | 'apply' | 'track' | 'companion' | 'help' | 'profile';
+type CentreTab = 'home' | 'applications' | 'messages' | 'policy' | 'help' | 'profile';
 
 export default function App() {
   // ---------------- Data store (MongoDB via the API, or this browser in local mode) ----------------
@@ -375,6 +377,36 @@ export default function App() {
     }
   };
 
+  // ---------------- Profile ----------------
+  /** Profile saves: show the fresh snapshot, or hand a plain-language error back to the form. */
+  const profileSave = async (p: () => Promise<Snapshot>): Promise<string | null> => {
+    if (!store) return "Can't reach the CareQ server.";
+    try {
+      commit(await p());
+      setOutage(null);
+      return null;
+    } catch (e) {
+      if (isOutage(e)) setOutage((e as StoreError).message);
+      else if (e instanceof StoreError && e.status === 401) commit(await store.load().catch(() => EMPTY_SNAPSHOT));
+      return e instanceof Error ? e.message : 'Something went wrong. Please try again.';
+    }
+  };
+  const profileActions: ProfileActions = {
+    saveName: (name) => profileSave(() => store!.updateAccountName(name)),
+    changePassword: (current, next) => profileSave(() => store!.changePassword(current, next)),
+    addChild: (child) => profileSave(() => store!.addChild(child)),
+    updateChild: (id, child) => profileSave(() => store!.updateChild(id, child)),
+    removeChild: (id) => profileSave(() => store!.removeChild(id)),
+    updateCentreDetails: (form, photo) => profileSave(() => store!.updateCentreDetails(activeSingleCentre.id, form, photo)),
+    updateSimulatedContact: (input) => profileSave(() => store!.updateSimulatedContact(activeSingleCentre.id, input)),
+  };
+  const openProfile = () => {
+    setIsTrustPageOpen(false);
+    if (currentRole === 'parent') setParentTab('profile');
+    else setCentreTab('profile');
+    window.scrollTo(0, 0);
+  };
+
   // ---------------- Conversations ----------------
   const [activeChatModal, setActiveChatModal] = useState<{ isOpen: boolean; centreId: string; applicationId: string } | null>(null);
 
@@ -643,6 +675,7 @@ export default function App() {
             onMarkAsRead={handleMarkNotificationAsRead}
             onMarkAllAsRead={handleMarkAllNotificationsAsRead}
             onLogout={handleLogout}
+            onOpenProfile={openProfile}
           />
 
           {/* Main Container: Strictly one role view visible or Trust & Transparency page */}
@@ -716,6 +749,16 @@ export default function App() {
                   />
                 )}
 
+                {parentTab === 'profile' && currentAccount && (
+                  <ProfilePage
+                    account={currentAccount}
+                    applications={myApplications}
+                    areas={AREAS}
+                    actions={profileActions}
+                    onOpenFind={() => setParentTab('find')}
+                  />
+                )}
+
                 {parentTab === 'help' && (
                   <HelpTab
                     role="parent"
@@ -739,6 +782,17 @@ export default function App() {
                     applications={centreApplications}
                     notifications={notifications}
                     onNavigate={setCentreTab}
+                  />
+                )}
+
+                {centreTab === 'profile' && currentAccount && (
+                  <ProfilePage
+                    account={currentAccount}
+                    centre={activeSingleCentre.id ? activeSingleCentre : undefined}
+                    applications={[]}
+                    areas={AREAS}
+                    actions={profileActions}
+                    onOpenPolicy={() => setCentreTab('policy')}
                   />
                 )}
 

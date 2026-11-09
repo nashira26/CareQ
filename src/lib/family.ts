@@ -220,3 +220,84 @@ export function buildRegisteredCentre(
     },
   };
 }
+
+// ---------- Profile editing ----------
+
+const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+
+/** "March 2027" -> "2027-03" (for <input type="month">); "" when it can't be read. */
+export function startMonthFromLabel(label: string): string {
+  const m = label.trim().match(/^([A-Za-z]+)\s+(\d{4})$/);
+  if (m) {
+    const i = MONTHS.indexOf(m[1].toLowerCase());
+    if (i >= 0) return `${m[2]}-${String(i + 1).padStart(2, '0')}`;
+  }
+  return /^\d{4}-\d{2}$/.test(label.trim()) ? label.trim() : '';
+}
+
+/** A stored child -> the form fields used by onboarding and the profile page. */
+export const childToForm = (c: Child): ChildFormInput => ({
+  firstName: c.firstName,
+  dateOfBirth: c.dateOfBirth,
+  careType: c.careType,
+  startMonth: startMonthFromLabel(c.preferredStartDate),
+  homeArea: c.homeArea,
+  notes: c.notes ?? '',
+});
+
+/**
+ * Server-side check of a child sent by the browser (onboarding rules): first name, a date of birth in
+ * the past and under 6 years, a known care type and home area, a start date, notes under 500 characters.
+ * Returns the first problem in plain language, or null.
+ */
+export function childRecordError(c: Omit<Child, 'id'>, areas: Area[], today: Date = new Date()): string | null {
+  if (!c.firstName?.trim()) return "Please enter your child's first name.";
+  if (c.firstName.trim().length > 40) return 'Please use 40 characters or fewer for the first name.';
+  const months = ageInMonths(c.dateOfBirth ?? '', today);
+  if (Number.isNaN(months)) return 'Please enter a valid date of birth.';
+  if (new Date(`${c.dateOfBirth}T00:00:00`).getTime() > today.getTime() || months < 0) return "The date of birth can't be in the future.";
+  if (months >= MAX_CHILD_AGE_MONTHS) return 'CareQ is for children under 6 years old.';
+  if (!CHILD_CARE_TYPES.includes(c.careType)) return 'Please choose a type of care.';
+  if (!c.preferredStartDate?.trim() || c.preferredStartDate.length > 40) return 'Please choose a preferred start month.';
+  if (!findArea(c.homeArea ?? '', areas)) return 'Please choose your area from the list.';
+  if ((c.notes ?? '').length > 500) return 'Please keep notes under 500 characters.';
+  return null;
+}
+
+/** "12 Example Ave, Toronto, ON M4K 3S3" -> street and postal code (as entered at registration). */
+export function splitAddress(address: string | undefined): { street: string; postalCode: string } {
+  const a = (address ?? '').trim();
+  const m = a.match(/^(.*?),\s*Toronto,\s*ON\s+([A-Z]\d[A-Z] ?\d[A-Z]\d)$/i);
+  return m ? { street: m[1].trim(), postalCode: m[2].toUpperCase() } : { street: a, postalCode: '' };
+}
+
+/** Self-registered centre -> the registration form fields (policy text is edited on the Policy page). */
+export function centreToForm(c: import('../data/mockData').Centre): CentreFormInput {
+  const { street, postalCode } = splitAddress(c.address);
+  return {
+    name: c.name,
+    street,
+    postalCode,
+    neighbourhood: c.neighbourhood,
+    licenceNumber: c.registration?.licenceNumber ?? '',
+    ageGroups: [...c.ageGroups],
+    programOptions: [...(c.programOptions ?? [])],
+    languages: [...(c.languages ?? [])],
+    hours: c.hours,
+    capacity: c.registration?.capacity != null ? String(c.registration.capacity) : '',
+    contactEmail: c.registration?.contactEmail ?? '',
+    policyText: '',
+  };
+}
+
+/** Demo centres: simulated hours and contact email (both optional). */
+export function simulatedContactErrors(input: { hours: string; contactEmail: string }): FieldErrors<'hours' | 'contactEmail'> {
+  const e: FieldErrors<'hours' | 'contactEmail'> = {};
+  if (input.hours.trim().length > 80) e.hours = 'Please keep the hours under 80 characters.';
+  if (input.contactEmail.trim() && !isValidEmail(input.contactEmail)) e.contactEmail = 'Please enter a valid contact email.';
+  return e;
+}
+
+/** Hours to show families: a demo centre's simulated hours (when set) win over the listed hours. */
+export const shownHours = (c: import('../data/mockData').Centre): { text: string; simulated: boolean } =>
+  c.simulatedContact?.hours ? { text: c.simulatedContact.hours, simulated: true } : { text: c.hours, simulated: false };

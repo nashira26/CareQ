@@ -28,7 +28,7 @@ const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 const PHOTO_MAX_SIDE = 800;
 
 /** Image only, resized in the browser (kept small for localStorage); never uploaded anywhere. */
-async function resizePhoto(file: File): Promise<string> {
+export async function resizePhoto(file: File): Promise<string> {
   if (!file.type.startsWith('image/')) throw new Error('Please choose an image file (JPG, PNG or WebP).');
   if (file.size > MAX_PHOTO_BYTES) throw new Error('Please choose an image under 10 MB.');
   const url = URL.createObjectURL(file);

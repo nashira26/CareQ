@@ -64,6 +64,11 @@ export interface Centre {
   languages?: string[];
   /** Present only for centres registered by their own staff in this browser (demo, not verified). */
   registration?: CentreRegistration;
+  /**
+   * Demo centres only: hours and contact email entered by the SIMULATED demo account on its profile.
+   * Never replaces open-data details; always shown with a "Simulated" tag.
+   */
+  simulatedContact?: { hours?: string; contactEmail?: string; updatedAt: string };
 }
 
 export interface CentreRegistration {

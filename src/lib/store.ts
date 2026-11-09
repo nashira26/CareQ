@@ -4,10 +4,10 @@
  *  - LocalStore (DATA_MODE=local): the same service layer running in the browser over localStorage.
  * Every call returns the signed-in user's scoped Snapshot, so components only ever see their own data.
  */
-import type { ApplicationStatus } from '../data/mockData';
+import type { ApplicationStatus, LicenceVerification } from '../data/mockData';
 import type { SupportRequest } from '../data/helpData';
 import type { CentreFormInput, Child } from './family';
-import type { DraftChange, ExtractedFromInput, RequirementCitationInput } from './service';
+import type { ChildInput, DraftChange, ExtractedFromInput, RequirementCitationInput } from './service';
 import * as svc from './service';
 import { MemoryRepo } from './repo';
 import { AccountRecord, Snapshot, actorOf, buildSeedWorld } from './world';
@@ -53,6 +53,16 @@ export interface DemoStore {
   markRead(ids: string[] | 'all'): Promise<Snapshot>;
   createSupportRequest(input: SupportInput): Promise<Snapshot>;
   advanceConcern(id: string): Promise<Snapshot>;
+  // Profile
+  updateAccountName(name: string): Promise<Snapshot>;
+  changePassword(currentPassword: string, newPassword: string): Promise<Snapshot>;
+  addChild(child: ChildInput): Promise<Snapshot>;
+  updateChild(id: string, child: ChildInput): Promise<Snapshot>;
+  removeChild(id: string): Promise<Snapshot>;
+  /** Self-registered centres. photoDataUrl: undefined keeps the photo, null removes it. */
+  updateCentreDetails(centreId: string, form: Omit<CentreFormInput, 'policyText'>, photoDataUrl?: string | null): Promise<Snapshot>;
+  /** Demo centres: simulated hours and contact email. */
+  updateSimulatedContact(centreId: string, input: { hours: string; contactEmail: string }): Promise<Snapshot>;
 }
 
 // ---------------- MongoDB mode: REST API ----------------
@@ -101,6 +111,34 @@ export class ApiStore implements DemoStore {
   markRead = (ids: string[] | 'all') => call<Snapshot>('POST', '/notifications/read', { ids });
   createSupportRequest = (input: SupportInput) => call<Snapshot>('POST', '/support-requests', input);
   advanceConcern = (id: string) => call<Snapshot>('POST', `/support-requests/${encodeURIComponent(id)}/advance`);
+  updateAccountName = (name: string) => call<Snapshot>('PATCH', '/account', { name });
+  changePassword = (currentPassword: string, newPassword: string) => call<Snapshot>('PATCH', '/account/password', { currentPassword, newPassword });
+  addChild = (child: ChildInput) => call<Snapshot>('POST', '/children', child);
+  updateChild = (id: string, child: ChildInput) => call<Snapshot>('PATCH', `/children/${encodeURIComponent(id)}`, child);
+  removeChild = (id: string) => call<Snapshot>('DELETE', `/children/${encodeURIComponent(id)}`);
+  updateCentreDetails = (centreId: string, form: Omit<CentreFormInput, 'policyText'>, photoDataUrl?: string | null) =>
+    call<Snapshot>('PATCH', `/centres/${encodeURIComponent(centreId)}`, { form, photoDataUrl });
+  updateSimulatedContact = (centreId: string, input: { hours: string; contactEmail: string }) =>
+    call<Snapshot>('PATCH', `/centres/${encodeURIComponent(centreId)}/contact`, input);
+}
+
+/**
+ * Local mode: the open-data licence check runs on the server (the open data isn't in the browser).
+ * Server unreachable (offline demo): not verified.
+ */
+async function checkLicence(form: Pick<CentreFormInput, 'licenceNumber' | 'postalCode' | 'name'>): Promise<LicenceVerification | undefined> {
+  if (!form.licenceNumber.trim()) return undefined;
+  try {
+    const res = await fetch('/api/verify-licence', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ licenceNumber: form.licenceNumber, postalCode: form.postalCode, name: form.name }),
+    });
+    const data = (await res.json()) as { licenceVerified?: LicenceVerification | null };
+    return res.ok && data.licenceVerified ? data.licenceVerified : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** Mongo mode admin reset (needs ALLOW_RESET=true on the server and the secret token). */
@@ -190,8 +228,10 @@ export class LocalStore implements DemoStore {
     return svc.getSnapshot(repo, null);
   }
   completeOnboarding = (children: Child[]) => this.run((r, a) => svc.completeOnboarding(r, actorOf(a), children));
-  registerCentre = (form: CentreFormInput, photoDataUrl?: string) =>
-    this.run((r, a) => svc.registerCentre(r, actorOf(a), form, photoDataUrl, AREAS, FSA));
+  registerCentre = async (form: CentreFormInput, photoDataUrl?: string) => {
+    const licenceVerified = await checkLicence(form);
+    return this.run((r, a) => svc.registerCentre(r, actorOf(a), form, photoDataUrl, AREAS, FSA, licenceVerified));
+  };
   updateRequirements = (
     centreId: string,
     requirements: string[],
@@ -217,6 +257,19 @@ export class LocalStore implements DemoStore {
   markRead = (ids: string[] | 'all') => this.run((r, a) => svc.markNotificationsRead(r, actorOf(a), ids));
   createSupportRequest = (input: SupportInput) => this.run((r, a) => svc.createSupportRequest(r, actorOf(a), input));
   advanceConcern = (id: string) => this.run((r, a) => svc.advanceConcern(r, actorOf(a), id));
+  updateAccountName = (name: string) => this.run((r, a) => svc.updateAccountName(r, actorOf(a), name));
+  changePassword = (currentPassword: string, newPassword: string) =>
+    this.run((r, a) => svc.changePassword(r, browserHasher, actorOf(a), currentPassword, newPassword));
+  addChild = (child: ChildInput) => this.run((r, a) => svc.addChild(r, actorOf(a), child, AREAS));
+  updateChild = (id: string, child: ChildInput) => this.run((r, a) => svc.updateChild(r, actorOf(a), id, child, AREAS));
+  removeChild = (id: string) => this.run((r, a) => svc.removeChild(r, actorOf(a), id));
+  updateCentreDetails = async (centreId: string, form: Omit<CentreFormInput, 'policyText'>, photoDataUrl?: string | null) => {
+    const full = { ...form, policyText: '' };
+    const licenceVerified = await checkLicence(full);
+    return this.run((r, a) => svc.updateCentreDetails(r, actorOf(a), centreId, full, photoDataUrl, AREAS, FSA, licenceVerified));
+  };
+  updateSimulatedContact = (centreId: string, input: { hours: string; contactEmail: string }) =>
+    this.run((r, a) => svc.updateSimulatedContact(r, actorOf(a), centreId, input));
 }
 
 /** Asks the server which data mode it runs in, and why (defaults to mongo if the answer is missing). */

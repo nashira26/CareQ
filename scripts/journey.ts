@@ -6,7 +6,8 @@
  *   npm run journey -- --width=390                   # one viewport width only
  *   npm run journey -- --headed                      # watch it run
  *
- * It changes demo data (accepts Priya's Macaulay offer, sets Maya's waitlist position to #2).
+ * It changes demo data (edits Anya's notes and home area, accepts Priya's Macaulay offer, sets Maya's waitlist
+ * position to #2, sets the demo centre's simulated hours).
  * In local mode each run uses fresh browser storage, so nothing is shared. Against a MongoDB-backed
  * server it would change the shared demo, so it refuses unless you pass --allow-mongo (then run
  * `npm run reset` afterwards).
@@ -79,6 +80,33 @@ async function parentJourney(b: Browser, width: number, errors: string[]) {
     await login(p, 'Test Parent: Priya Patel');
     await visible(p, 'Priya').waitFor({ timeout: 10000 });
   });
+  await step('avatar menu opens with the keyboard; "Your profile" opens the Profile page', async () => {
+    const avatar = p.getByRole('button', { name: /^Account menu for/ });
+    await avatar.focus();
+    await p.keyboard.press('ArrowDown');
+    const item = p.getByRole('menuitem', { name: 'Your profile' });
+    await item.waitFor({ timeout: 5000 });
+    if (!(await item.evaluate((el) => el === document.activeElement))) throw new Error('first menu item not focused');
+    await p.keyboard.press('Enter');
+    await p.getByRole('heading', { name: 'Account and family' }).waitFor({ timeout: 8000 });
+    await visible(p, "Demo account:").waitFor({ timeout: 5000 });
+  });
+  await step('profile: removing Anya explains why it is blocked', async () => {
+    await p.getByRole('button', { name: 'Remove Anya' }).click();
+    await visible(p, /can't be removed/).waitFor({ timeout: 5000 });
+  });
+  await step("profile: edit Anya's notes and home area", async () => {
+    await p.getByRole('button', { name: 'Edit Anya' }).click();
+    await p.locator('#edit-child-anya-notes').fill('Naps after lunch. Journey check.');
+    await p.locator('#edit-child-anya-homeArea').fill('Leslieville');
+    await p.getByRole('button', { name: 'Save changes' }).click();
+    await visible(p, 'Saved. Find now starts from Leslieville.').waitFor({ timeout: 8000 });
+    await visible(p, 'Naps after lunch. Journey check.').waitFor({ timeout: 5000 });
+  });
+  await step('Find starts from the new home area', async () => {
+    await p.getByRole('button', { name: 'Go to Find' }).click();
+    await visible(p, /Near Leslieville/).waitFor({ timeout: 10000 });
+  });
   await step('Find: a described search returns centres', async () => {
     await openTab(p, 'Find Centres');
     const input = p.locator('input[type="text"]:visible, input:not([type]):visible, input[type="search"]:visible').first();
@@ -132,6 +160,15 @@ async function centreJourney(b: Browser, width: number, errors: string[]) {
     await p.locator('button:visible', { hasText: 'Save waitlist position' }).click();
     await p.locator('#waitlist-pos-input').waitFor({ state: 'detached', timeout: 5000 });
     await visible(p, '#2').waitFor({ timeout: 8000 });
+  });
+  await step('centre profile: details read-only, simulated hours saved', async () => {
+    await p.getByRole('button', { name: /^Account menu for/ }).click();
+    await p.getByRole('menuitem', { name: 'Your profile' }).click();
+    await p.getByRole('heading', { name: 'Account and centre' }).waitFor({ timeout: 8000 });
+    await visible(p, "can't be edited here").waitFor({ timeout: 5000 });
+    await p.locator('#sim-hours').fill('8:00 AM – 5:30 PM');
+    await p.getByRole('button', { name: /^Save$/ }).click();
+    await visible(p, /Families see these with a “Simulated” tag/).waitFor({ timeout: 8000 });
   });
   await step('Review opens an application', async () => {
     await openTab(p, 'Applications & queue');

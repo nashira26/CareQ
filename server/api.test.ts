@@ -127,3 +127,51 @@ test('scoping over HTTP: parents and centres only reach their own data', { skip 
   assert.equal((await client()('POST', '/reset', undefined, { 'X-Reset-Token': 'test-token' })).status, 200);
   assert.equal((await alex('GET', '/state')).json.account, null, 'reset signs everyone out');
 });
+
+test('profile over HTTP: PATCH endpoints are scoped to the signed-in user and validate bodies', { skip }, async () => {
+  const priya = client();
+  const alex = client();
+  const jk = client();
+  const sunny = client();
+  assert.equal((await priya('POST', '/auth/login', { role: 'parent', email: 'priya@example.ca', password: 'password' })).status, 200);
+  assert.equal((await jk('POST', '/auth/login', { role: 'centre', email: 'jesse-ketchum.demo@careq.example', password: 'password' })).status, 200);
+  assert.equal((await alex('POST', '/auth/signup', { role: 'parent', name: 'Alex Morgan', email: 'alex2@example.ca', password: 'alexpass1', termsAccepted: true })).status, 201);
+  assert.equal((await alex('POST', '/onboarding', { children: [child] })).status, 200);
+  assert.equal((await sunny('POST', '/auth/signup', { role: 'centre', name: 'Jordan Lee', email: 'jordan2@sunny.example', password: 'sunnysteps1', termsAccepted: true })).status, 201);
+  const sunnyId = (await sunny('POST', '/centres/register', { form: centreForm })).json.account.centreId as string;
+  const { id: _id, ...childBody } = child;
+
+  // Signed out: 401
+  assert.equal((await client()('PATCH', '/account', { name: 'X' })).status, 401);
+  // Another parent's child: 403, and unchanged
+  assert.equal((await alex('PATCH', '/children/child-anya', { ...childBody, firstName: 'Hijack' })).status, 403);
+  assert.equal((await alex('DELETE', '/children/child-anya')).status, 403);
+  assert.equal((await priya('GET', '/state')).json.account.children[0].firstName, 'Anya');
+  // Body validation: unknown keys (e.g. trying to move the child to another account) and bad values are 400
+  assert.equal((await priya('PATCH', '/children/child-anya', { ...childBody, parentAccountId: 'acc-x' })).status, 400);
+  assert.equal((await priya('PATCH', '/children/child-anya', { ...childBody, dateOfBirth: '2099-01-01' })).status, 400);
+  assert.equal((await priya('PATCH', '/account', { name: 'x'.repeat(81) })).status, 400);
+  // Own child: OK, and the home area comes back in the snapshot
+  const edited = await priya('PATCH', '/children/child-anya', { ...childBody, firstName: 'Anya', homeArea: 'Leslieville', notes: 'Naps at 1 pm' });
+  assert.equal(edited.status, 200);
+  assert.equal(edited.json.account.children[0].homeArea, 'Leslieville');
+  // Anya has applications: can't be removed
+  assert.equal((await priya('DELETE', '/children/child-anya')).status, 400);
+  // Demo accounts can't change their password
+  assert.equal((await priya('PATCH', '/account/password', { currentPassword: 'password', newPassword: 'newpassword1' })).status, 403);
+  assert.equal((await alex('PATCH', '/account/password', { currentPassword: 'alexpass1', newPassword: 'newpassword1' })).status, 200);
+
+  // Centres: only their own; open-data details read-only; licence label recomputed by the server
+  const { policyText: _p, ...formBody } = centreForm;
+  assert.equal((await jk('PATCH', `/centres/${sunnyId}`, { form: { ...formBody, name: 'Taken' } })).status, 403);
+  assert.equal((await jk('PATCH', '/centres/on-00576', { form: formBody })).status, 403);
+  assert.equal((await jk('PATCH', '/centres/on-00576/contact', { hours: '8 – 6', contactEmail: '' })).status, 200);
+  assert.equal((await sunny('PATCH', '/centres/on-00576/contact', { hours: '8 – 6', contactEmail: '' })).status, 403);
+  // A browser can't send its own licence verification
+  assert.equal((await sunny('PATCH', `/centres/${sunnyId}`, { form: formBody, licenceVerified: { source: 'Ontario open data' } })).status, 400);
+  const saved = await sunny('PATCH', `/centres/${sunnyId}`, { form: { ...formBody, neighbourhood: 'The Annex' } });
+  assert.equal(saved.status, 200);
+  const c = saved.json.centres.find((x: any) => x.id === sunnyId);
+  assert.equal(c.neighbourhood, 'The Annex');
+  assert.equal(c.registration.licenceVerified, undefined);
+});

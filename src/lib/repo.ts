@@ -23,6 +23,8 @@ export interface Repo {
   listChildren(parentAccountId: string): Promise<ChildRecord[]>;
   getChild(id: string): Promise<ChildRecord | null>;
   insertChildren(children: ChildRecord[]): Promise<void>;
+  updateChild(id: string, patch: Partial<ChildRecord>): Promise<void>;
+  deleteChild(id: string): Promise<void>;
 
   listCentres(): Promise<Centre[]>;
   getCentre(id: string): Promise<Centre | null>;
@@ -89,6 +91,13 @@ export class MemoryRepo implements Repo {
   }
   async insertChildren(children: ChildRecord[]) {
     this.world.children.push(...copy(children));
+    this.onChange();
+  }
+  async updateChild(id: string, patch: Partial<ChildRecord>) {
+    this.patch(this.world.children, id, patch);
+  }
+  async deleteChild(id: string) {
+    this.world.children = this.world.children.filter((c) => c.id !== id);
     this.onChange();
   }
 

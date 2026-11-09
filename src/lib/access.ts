@@ -91,6 +91,9 @@ export const canReadNotification = (actor: Actor, n: InAppNotification) => n.rec
 
 export const canReadChild = (actor: Actor, c: ChildRecord) => isParent(actor) && c.parentAccountId === actor.accountId;
 
+/** A parent edits or removes only their own children. */
+export const canEditChild = canReadChild;
+
 export const canReadSupportRequest = (actor: Actor, r: SupportRequestRecord) => r.submittedByAccountId === actor.accountId;
 
 /** Throws a 403 unless allowed. */

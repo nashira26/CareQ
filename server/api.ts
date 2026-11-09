@@ -19,15 +19,17 @@ import { verifyLicence } from './licence';
 const str = (max: number) => z.string().max(max);
 const role = z.enum(['parent', 'centre']);
 
-const childSchema = z.object({
-  id: str(80),
+const childFields = {
   firstName: str(40).min(1),
   dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   careType: z.enum(CHILD_CARE_TYPES as [string, ...string[]]),
   preferredStartDate: str(40).min(1),
   homeArea: str(80).min(1),
   notes: str(500),
-});
+};
+const childSchema = z.object({ id: str(80), ...childFields });
+/** Profile edits: no id in the body (it's in the URL); unknown keys such as parentAccountId are rejected. */
+const childInputSchema = z.object(childFields).strict();
 
 const centreFormSchema = z.object({
   name: str(120),
@@ -90,6 +92,17 @@ export const schemas = {
       .object({ docTitle: str(200), sourceUrl: str(500).nullable().optional(), sourceNote: str(300).nullable().optional(), retrieved: str(20).nullable().optional() })
       .optional(),
   }),
+  accountName: z.object({ name: str(80) }).strict(),
+  password: z.object({ currentPassword: str(200).min(1), newPassword: str(200) }).strict(),
+  child: childInputSchema,
+  centreDetails: z
+    .object({
+      form: centreFormSchema.omit({ policyText: true }).strict(),
+      // undefined keeps the photo, null removes it
+      photoDataUrl: z.string().max(1_500_000).nullable().optional(),
+    })
+    .strict(),
+  simulatedContact: z.object({ hours: str(80), contactEmail: str(200) }).strict(),
   createDraft: z.object({ centreId: str(80) }),
   draftChange: z.object({ change: draftChangeSchema }),
   accept: z.object({ withdrawOthers: z.boolean() }),
@@ -150,7 +163,7 @@ function handle(fn: (req: AuthedRequest, res: Response) => Promise<unknown>) {
 }
 
 /** Paths served by this router (its middleware must not touch other /api routes, e.g. the AI endpoints). */
-const DATA_PATHS = ['/auth', '/state', '/onboarding', '/centres', '/applications', '/messages', '/notifications', '/support-requests', '/reset'];
+const DATA_PATHS = ['/auth', '/state', '/account', '/children', '/onboarding', '/centres', '/applications', '/messages', '/notifications', '/support-requests', '/reset'];
 
 export function createDataApi(ctx: Ctx): Router {
   const r = Router();
@@ -226,6 +239,50 @@ export function createDataApi(ctx: Ctx): Router {
     const b = body(schemas.requirements, req, res);
     if (!b) return;
     await svc.updateRequirements(repo(), req.actor!, req.params.id, b.requirements, b.sources, b.citations ?? {}, b.extractedFrom);
+    res.json(await snapshotFor(req));
+  }));
+
+  // ---- profile: always the signed-in user's own account, children and centre (the service checks scoping)
+  r.patch('/account', ...act(async (req, res) => {
+    const b = body(schemas.accountName, req, res);
+    if (!b) return;
+    await svc.updateAccountName(repo(), req.actor!, b.name);
+    res.json(await snapshotFor(req));
+  }));
+  r.patch('/account/password', ...act(async (req, res) => {
+    const b = body(schemas.password, req, res);
+    if (!b) return;
+    await svc.changePassword(repo(), bcryptHasher, req.actor!, b.currentPassword, b.newPassword);
+    res.json(await snapshotFor(req));
+  }));
+  r.post('/children', ...act(async (req, res) => {
+    const b = body(schemas.child, req, res);
+    if (!b) return;
+    await svc.addChild(repo(), req.actor!, b as svc.ChildInput, ctx.areas);
+    res.status(201).json(await snapshotFor(req));
+  }));
+  r.patch('/children/:id', ...act(async (req, res) => {
+    const b = body(schemas.child, req, res);
+    if (!b) return;
+    await svc.updateChild(repo(), req.actor!, req.params.id, b as svc.ChildInput, ctx.areas);
+    res.json(await snapshotFor(req));
+  }));
+  r.delete('/children/:id', ...act(async (req, res) => {
+    await svc.removeChild(repo(), req.actor!, req.params.id);
+    res.json(await snapshotFor(req));
+  }));
+  r.patch('/centres/:id', ...act(async (req, res) => {
+    const b = body(schemas.centreDetails, req, res);
+    if (!b) return;
+    const form = { ...b.form, policyText: '' };
+    const licenceVerified = verifyLicence({ licenceNumber: form.licenceNumber, postalCode: form.postalCode, name: form.name });
+    await svc.updateCentreDetails(repo(), req.actor!, req.params.id, form, b.photoDataUrl, ctx.areas, ctx.fsa, licenceVerified);
+    res.json(await snapshotFor(req));
+  }));
+  r.patch('/centres/:id/contact', ...act(async (req, res) => {
+    const b = body(schemas.simulatedContact, req, res);
+    if (!b) return;
+    await svc.updateSimulatedContact(repo(), req.actor!, req.params.id, b);
     res.json(await snapshotFor(req));
   }));
 

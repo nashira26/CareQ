@@ -188,6 +188,12 @@ export class MongoRepo implements Repo {
   async insertChildren(children: ChildRecord[]) {
     if (children.length) await this.c('children').insertMany(children.map((c) => ({ ...c })));
   }
+  updateChild(id: string, patch: Partial<ChildRecord>) {
+    return this.patch('children', { id }, patch);
+  }
+  async deleteChild(id: string) {
+    await this.c('children').deleteOne({ id });
+  }
 
   listCentres() {
     // Newest self-registered centres first, then the demo partner centres in their usual order

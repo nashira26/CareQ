@@ -15,7 +15,7 @@ import { DaycareMap } from './DaycareMap';
 import { useOntarioData, useShortlist, OntarioCentreCard, HeartButton, Chip, ResultInfo, MoreDetails, AvailabilityBox, LanguageStatus } from './OntarioCentres';
 import { SearchChips } from './SearchChips';
 import { reportedLineOnCard } from '../../lib/simulated';
-import { licenceLabel } from '../../lib/family';
+import { licenceLabel, shownHours } from '../../lib/family';
 import { doesntServeLabel } from '../../lib/searchCriteria';
 import {
   PageHeader,
@@ -27,6 +27,7 @@ import {
   AiFallbackNote,
   AiMode,
   AiNotice,
+  SimTag,
 } from '../ui/CareUI';
 import { aiPost, isUserFacingAiError } from '../../lib/aiFetch';
 import { EMPTY_CRITERIA, SearchCriteria, hasAnyCriteria, sanitizeCriteria, parseSearchFallback } from '../../lib/searchCriteria';
@@ -372,10 +373,16 @@ export const FindTab: React.FC<FindTabProps> = ({
           <AvailabilityBox title="Availability reported by centre only" />
 
           <MoreDetails>
-            {centre.hours && (
-              <p className="flex items-center gap-1.5">
+            {shownHours(centre).text && (
+              <p className="flex flex-wrap items-center gap-1.5">
                 <Clock className="w-4 h-4 shrink-0" aria-hidden="true" />
-                {centre.hours}
+                {shownHours(centre).text}
+                {shownHours(centre).simulated && <SimTag />}
+              </p>
+            )}
+            {centre.simulatedContact?.contactEmail && (
+              <p className="flex flex-wrap items-center gap-1.5">
+                <span className="font-bold text-ink">Contact:</span> {centre.simulatedContact.contactEmail} <SimTag />
               </p>
             )}
             {centre.programOptions && centre.programOptions.length > 0 && (

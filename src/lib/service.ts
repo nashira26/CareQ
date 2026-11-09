@@ -25,6 +25,7 @@ import {
   canReadSupportRequest,
   canSetStatus,
   canSubmit,
+  canEditChild,
   canUpdateCentre,
   canWithdraw,
   isCentreStaff,
@@ -49,7 +50,10 @@ import {
   MIN_PASSWORD_LENGTH,
   ageInMonths,
   buildRegisteredCentre,
+  childRecordError,
+  findArea,
   isValidEmail,
+  simulatedContactErrors,
   validateCentre,
 } from './family';
 import type { Area, FsaCentroids } from './rankCentres';
@@ -546,5 +550,184 @@ export async function advanceConcern(repo: Repo, actor: Actor, id: string, now =
     concernStep: next,
     concernStepsHistory: history.some((h) => h.step === next) ? history : [...history, { step: next, date: longDate(now) }],
     status: next === 'Resolved' ? 'Resolved' : 'In progress',
+  });
+}
+
+// ---------------- Profile (both roles) ----------------
+
+export const DEMO_PASSWORD_MESSAGE = "Demo account: password can't be changed.";
+export const OPEN_DATA_READ_ONLY_MESSAGE = "These details come from Ontario open data and can't be edited here.";
+
+/** Drops undefined keys, so nested objects are stored the same way in MongoDB and in local mode. */
+const withoutUndefined = <T extends object>(o: T): T => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as T;
+
+/** Name shown on the account (and on the parent's unsent drafts). Always the signed-in user's own account. */
+export async function updateAccountName(repo: Repo, actor: Actor, name: string) {
+  const clean = name.trim();
+  if (!clean) throw new InputError('Please enter your name.');
+  if (clean.length > 80) throw new InputError('Please use 80 characters or fewer for your name.');
+  await repo.updateAccount(actor.accountId, { name: clean });
+  if (isParent(actor)) {
+    const drafts = (await repo.listApplications({ parentAccountId: actor.accountId })).filter((a) => a.status === 'Draft');
+    for (const d of drafts) await repo.updateApplication(d.id, { parentName: clean });
+  }
+}
+
+/** Needs the current password; demo accounts can't change theirs (everyone shares "password"). */
+export async function changePassword(repo: Repo, hasher: PasswordHasher, actor: Actor, currentPassword: string, newPassword: string) {
+  assertAllowed(!DEMO_ACCOUNT_IDS.includes(actor.accountId), DEMO_PASSWORD_MESSAGE);
+  const account = await repo.getAccount(actor.accountId);
+  if (!account) throw new NotFoundError('Account not found.');
+  if (!(await hasher.verify(currentPassword, account.passwordHash))) throw new InputError("Your current password isn't right.");
+  if (newPassword.length < MIN_PASSWORD_LENGTH) throw new InputError(`Please use a new password with at least ${MIN_PASSWORD_LENGTH} characters.`);
+  if (newPassword === currentPassword) throw new InputError('Please choose a new password that is different from your current one.');
+  await repo.updateAccount(actor.accountId, { passwordHash: await hasher.hash(newPassword) });
+}
+
+export type ChildInput = Omit<Child, 'id'>;
+
+function checkChild(c: ChildInput, areas: Area[]): ChildInput {
+  const error = childRecordError(c, areas);
+  if (error) throw new InputError(error);
+  return {
+    firstName: c.firstName.trim(),
+    dateOfBirth: c.dateOfBirth,
+    careType: c.careType,
+    preferredStartDate: c.preferredStartDate.trim(),
+    homeArea: findArea(c.homeArea, areas)!.name,
+    notes: (c.notes ?? '').trim(),
+  };
+}
+
+async function ownChild(repo: Repo, actor: Actor, id: string) {
+  assertAllowed(isParent(actor));
+  const child = await repo.getChild(id);
+  if (!child) throw new NotFoundError('Child not found.');
+  assertAllowed(canEditChild(actor, child), 'You can only change your own children.');
+  return child;
+}
+
+/**
+ * Edits a child. Unsent drafts for this child pick up the new details; applications already sent
+ * keep what the centre received.
+ */
+export async function updateChild(repo: Repo, actor: Actor, id: string, input: ChildInput, areas: Area[]) {
+  await ownChild(repo, actor, id);
+  const c = checkChild(input, areas);
+  await repo.updateChild(id, c);
+  const drafts = (await repo.listApplications({ parentAccountId: actor.accountId, childId: id })).filter((a) => a.status === 'Draft');
+  for (const d of drafts) {
+    await repo.updateApplication(d.id, {
+      childName: c.firstName,
+      childAgeMonths: ageInMonths(c.dateOfBirth),
+      careType: c.careType,
+      preferredStartDate: c.preferredStartDate,
+      parentNotes: c.notes || undefined,
+    });
+  }
+}
+
+/** Adds a child after the existing ones (the first child stays the active child). Returns its id. */
+export async function addChild(repo: Repo, actor: Actor, input: ChildInput, areas: Area[]): Promise<string> {
+  assertAllowed(isParent(actor));
+  const existing = await repo.listChildren(actor.accountId);
+  if (existing.length >= 8) throw new InputError('You can add up to 8 children.');
+  const c = checkChild(input, areas);
+  const id = rid(`child-${actor.accountId}`);
+  await repo.insertChildren([{ ...c, id, parentAccountId: actor.accountId }]);
+  return id;
+}
+
+/** Why a child can't be removed, or null. Any application other than Withdrawn keeps a child on the account. */
+export function childRemovalBlocker(childId: string, childCount: number, applications: Pick<Application, 'childId' | 'status'>[]): string | null {
+  const open = applications.filter((a) => a.childId === childId && a.status !== 'Withdrawn');
+  if (open.length) {
+    const statuses = [...new Set(open.map((a) => a.status))].join(', ');
+    return open.length === 1
+      ? `This child has an application (${statuses}), so they can't be removed. A child can be removed only when all of their applications are withdrawn.`
+      : `This child has ${open.length} applications (${statuses}), so they can't be removed. A child can be removed only when all of their applications are withdrawn.`;
+  }
+  if (childCount <= 1) return 'Your account needs at least one child. Add another child before removing this one.';
+  return null;
+}
+
+export async function removeChild(repo: Repo, actor: Actor, id: string) {
+  await ownChild(repo, actor, id);
+  const [children, apps] = await Promise.all([
+    repo.listChildren(actor.accountId),
+    repo.listApplications({ parentAccountId: actor.accountId, childId: id }),
+  ]);
+  const blocker = childRemovalBlocker(id, children.length, apps);
+  if (blocker) throw new InputError(blocker);
+  await repo.deleteChild(id);
+}
+
+/**
+ * Self-registered centre details, with the same rules as registration: location recomputed from the
+ * neighbourhood or postal-code area, licence check result from the server. photoDataUrl: undefined
+ * keeps the photo, null removes it. Policy text and documents are not touched here.
+ */
+export async function updateCentreDetails(
+  repo: Repo,
+  actor: Actor,
+  centreId: string,
+  input: CentreFormInput,
+  photoDataUrl: string | null | undefined,
+  areas: Area[],
+  fsa: FsaCentroids,
+  /** From the open-data check (server/licence.ts); never from the browser in mongo mode. */
+  licenceVerified?: LicenceVerification
+) {
+  assertAllowed(canUpdateCentre(actor, centreId), 'You can only change your own centre.');
+  const centre = await repo.getCentre(centreId);
+  if (!centre) throw new NotFoundError('Centre not found.');
+  assertAllowed(Boolean(centre.registration) && !centre.demoKind, OPEN_DATA_READ_ONLY_MESSAGE);
+  const errors = validateCentre(input, areas);
+  const first = Object.values(errors)[0];
+  if (first) throw new InputError(first);
+  if (photoDataUrl && !/^data:image\/(jpeg|png|webp);base64,/.test(photoDataUrl)) throw new InputError('The photo must be an image.');
+  const built = buildRegisteredCentre({ ...input, policyText: '' }, undefined, areas, fsa, centre.id);
+  const old = centre.registration!;
+  await repo.updateCentre(centreId, {
+    name: built.name,
+    neighbourhood: built.neighbourhood,
+    address: built.address,
+    ageGroups: built.ageGroups,
+    programOptions: built.programOptions,
+    languages: built.languages,
+    hours: built.hours,
+    lat: built.lat,
+    lng: built.lng,
+    registration: withoutUndefined({
+      ...old,
+      licenceNumber: built.registration!.licenceNumber,
+      contactEmail: built.registration!.contactEmail,
+      capacity: built.registration!.capacity,
+      locationSource: built.registration!.locationSource,
+      photoDataUrl: photoDataUrl === undefined ? old.photoDataUrl : photoDataUrl ?? undefined,
+      licenceVerified,
+    }),
+  });
+  await repo.updateAccount(actor.accountId, { centreName: built.name });
+}
+
+/** Demo centres (open data or fictional): only simulated hours and contact email can change. */
+export async function updateSimulatedContact(
+  repo: Repo,
+  actor: Actor,
+  centreId: string,
+  input: { hours: string; contactEmail: string },
+  now = new Date()
+) {
+  assertAllowed(canUpdateCentre(actor, centreId), 'You can only change your own centre.');
+  const centre = await repo.getCentre(centreId);
+  if (!centre) throw new NotFoundError('Centre not found.');
+  assertAllowed(Boolean(centre.demoKind), 'Use the centre details form for a self-registered centre.');
+  const first = Object.values(simulatedContactErrors(input))[0];
+  if (first) throw new InputError(first);
+  const hours = input.hours.trim();
+  const contactEmail = input.contactEmail.trim();
+  await repo.updateCentre(centreId, {
+    simulatedContact: hours || contactEmail ? withoutUndefined({ hours: hours || undefined, contactEmail: contactEmail || undefined, updatedAt: now.toISOString() }) : undefined,
   });
 }
