@@ -1,13 +1,15 @@
 /**
  * npm run seed            Fill an EMPTY database (MONGODB_URI / MONGODB_DB) with the demo data.
  * npm run seed -- --force Replace all demo data, even if the database is not empty.
+ * App data only: the policy index (policyChunks, queryEmbeddings in MONGODB_POLICY_DB) is never touched.
  */
 import 'dotenv/config';
 import { MongoClient } from 'mongodb';
 import { ensureIndexes, isEmpty, reseed } from '../server/db';
+import { appDbName } from '../server/dbNames';
 
 const uri = process.env.MONGODB_URI;
-const dbName = process.env.MONGODB_DB;
+const dbName = appDbName();
 if (!uri || !dbName) {
   console.error('MONGODB_URI and MONGODB_DB must be set (see .env.example).');
   process.exit(1);

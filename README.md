@@ -20,7 +20,8 @@ Copy `.env.example` to `.env` and fill in at least:
 ```
 GEMINI_API_KEY=your_own_key_here
 MONGODB_URI=mongodb+srv://USER:PASSWORD@YOUR-CLUSTER.mongodb.net/?retryWrites=true&w=majority
-MONGODB_DB=careq_dev
+MONGODB_DB=careq_local
+MONGODB_POLICY_DB=careq_dev
 ```
 
 `.env` is in `.gitignore`; never commit it. Every variable is listed and explained in `.env.example`.
@@ -32,6 +33,8 @@ npm run dev
 ```
 
 Open http://localhost:3000 (or the port in your `PORT` variable). If the database is empty, the server fills it with the demo data on start (or run `npm run seed`).
+
+**Two databases.** `MONGODB_DB` holds the app data (accounts, children, centres, applications, waitlist updates, offers, messages, notifications, sessions, and a centre's own uploaded documents). `MONGODB_POLICY_DB` (default: `MONGODB_DB`) holds the published policy index: `policyChunks`, its vector index and the query-embedding cache. Locally, use `MONGODB_DB=careq_local` and `MONGODB_POLICY_DB=careq_dev`: your local work never changes the live demo's data, yet Ask CareQ searches the same handbooks. When the policy database isn't the app database, the server only reads it (uploads go to `careq_local`, new query embeddings stay in memory). The live demo on Render uses `careq_dev` for both. `GET /api/health` shows `"db"` (app data) and `"policyDb"`, so you can always tell local (`careq_local`) from live (`careq_dev`).
 
 **No database?** Set `DATA_MODE=local`: each browser keeps its own demo data in localStorage, exactly like before (nothing is shared between devices). If `MONGODB_URI` is not set at all, the server starts in local mode by itself, logs why, and the app shows a small "Demo mode" notice. If `MONGODB_URI` is set but Atlas can't be reached, it stays in mongo mode, keeps retrying, and the app shows the offline banner. `GET /api/mode` (also in `/api/config` and `/api/health`) reports `dataMode`, `dataModeReason` and the MongoDB status. If the browser can't reach the server at all, the app opens an offline demo in that browser instead of failing ("Offline demo: saved in this browser only; AI features unavailable"); every AI button then uses its basic mode with a grey note, not an error.
 
@@ -70,7 +73,7 @@ You can also create your own parent or centre account.
 
 ### Resetting the demo (mongo mode)
 
-Resetting replaces the shared database with the original demo data and signs everyone out. It needs **both** `ALLOW_RESET=true` on the server **and** the secret `RESET_TOKEN`:
+Resetting replaces the app data in `MONGODB_DB` with the original demo data and signs everyone out. It never touches the policy index. It needs **both** `ALLOW_RESET=true` on the server **and** the secret `RESET_TOKEN`:
 
 ```bash
 npm run reset                                  # local server (http://localhost:$PORT)
@@ -87,7 +90,7 @@ The published handbooks and the Ontario licensing manual are split into passages
 2. Run:
 
 ```bash
-npm run build:index                              # all documents, into MONGODB_DB
+npm run build:index -- --allow-policy-db        # all documents, into MONGODB_POLICY_DB
 npm run build:index -- --dry-run                 # extract and chunk only (no Gemini calls, no database writes)
 npm run build:index -- --only=rolph-road-day-care  # one folder
 ```
@@ -96,8 +99,9 @@ What it does: extracts text (PDF with page numbers; HTML without menus/scripts/f
 
 - Files with too little extractable text (e.g. scanned PDFs) are reported and skipped, not indexed.
 - **Quota:** the Gemini free tier allows a limited number of embedding requests per day (each passage counts). If the quota runs out, that document is reported as skipped and the run still finishes; embeddings already made are cached in `data/index/.cache/`, so running `npm run build:index` again later resumes where it stopped.
-- `npm run reset` and `npm run seed` never touch `policyChunks`: the index survives a demo reset.
-- The deployed app uses the MongoDB index (the JSON file isn't deployed). Build the index into each database you use (e.g. `careq_dev`, then `careq_demo` before deploying).
+- The index is written to `MONGODB_POLICY_DB`, the one the live demo searches, so the script refuses to write without `--allow-policy-db`.
+- `npm run reset`, `npm run seed` and `npm run eval:docs` only write app data to `MONGODB_DB` and refuse to write to `MONGODB_POLICY_DB`'s `policyChunks` / `queryEmbeddings`: the index survives a demo reset.
+- The deployed app uses the MongoDB index (the JSON file isn't deployed). One index serves both: local reads it from `careq_dev` via `MONGODB_POLICY_DB`.
 
 ## What it does
 
@@ -167,11 +171,11 @@ React 19 · Vite · Tailwind CSS 4 · Express · Google Gemini API (`@google/gen
    - `NODE_ENV=production`
    - `DATA_MODE=mongo`
    - `MONGODB_URI` = your Atlas connection string
-   - `MONGODB_DB=careq_demo`
+   - `MONGODB_DB=careq_dev` (leave `MONGODB_POLICY_DB` unset: the policy index is in the same database)
    - `GEMINI_API_KEY` = your key (optional: `GEMINI_MODEL`, `GEMINI_FALLBACK_MODEL`)
    - `ALLOW_RESET=true` and `RESET_TOKEN` = a long random secret (generate one with `node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"`). Put the same `RESET_TOKEN` in your local `.env` so `npm run reset -- https://your-app.onrender.com` works.
    - Render sets `PORT` itself.
-4. Deploy. On first start the server seeds the empty `careq_demo` database automatically.
+4. Deploy. On first start the server seeds an empty app database automatically.
 5. Before presenting: `npm run reset -- https://your-app.onrender.com`.
 
 In production the server serves the built frontend from `dist/` (no Vite), uses secure cookies, and trusts Render's HTTPS proxy.

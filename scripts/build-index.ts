@@ -6,6 +6,9 @@
  * npm run build:index -- --dry-run    Extract and chunk only (no Gemini calls, no database writes).
  * npm run build:index -- --only=<folder>  Just one folder (e.g. --only=rolph-road-day-care).
  *
+ * Writes to MONGODB_POLICY_DB (default MONGODB_DB), the index the live demo searches. Scripts refuse to
+ * write there, so a real rebuild needs --allow-policy-db: npm run build:index -- --allow-policy-db
+ *
  * The PDFs/HTML are third-party documents kept out of git: get them from the team shared drive.
  * Re-running replaces each document's chunks (chunkId = "<operatorId>/<file>#<n>"), so there are no duplicates.
  */
@@ -18,6 +21,7 @@ import { GoogleGenAI } from '@google/genai';
 import { PageText, chunkPages, cleanPages, selectSections, tooLittleText } from '../server/policyText';
 import { embedInput, extractPages } from '../server/ingest';
 import { EMBED_DIMENSIONS, EMBED_MODEL, POLICY_CHUNKS, PolicyChunk, VECTOR_INDEX_NAME, normalise } from '../server/policyIndexConfig';
+import { policyDbName } from '../server/dbNames';
 
 const ROOT = process.cwd();
 const DATA = path.join(ROOT, 'data');
@@ -238,10 +242,18 @@ function printSummary(rows: SummaryRow[]) {
 
 async function main() {
   const uri = process.env.MONGODB_URI;
-  const dbName = process.env.MONGODB_DB;
+  const dbName = policyDbName();
   const apiKey = process.env.GEMINI_API_KEY;
   if (!DRY_RUN && (!uri || !dbName || !apiKey)) {
     console.error('MONGODB_URI, MONGODB_DB and GEMINI_API_KEY must be set (see .env.example). Use --dry-run to only extract and chunk.');
+    process.exit(1);
+  }
+  if (!DRY_RUN && !args.includes('--allow-policy-db')) {
+    console.error(
+      `Refusing to write to ${dbName}.${POLICY_CHUNKS}: it is the policy index the demo searches (MONGODB_POLICY_DB).
+` +
+        'To rebuild it on purpose: npm run build:index -- --allow-policy-db   (or --dry-run to only extract and chunk)'
+    );
     process.exit(1);
   }
   const ai = DRY_RUN ? null : new GoogleGenAI({ apiKey });

@@ -17,7 +17,8 @@ import type { Area, FsaCentroids } from './src/lib/rankCentres';
 import { createDataApi } from './server/api';
 import { connectMongo, ensureIndexes, isEmpty, reseed, mongo, pingMongo, MongoRepo } from './server/db';
 import { AskCache, AskModelCall, AskUser, AppFact, askCacheKey, runAskAgent } from './server/askAgent';
-import { MemoryQueryStore, MongoQueryStore, RetrieverDeps, StoredChunk, documentCentreIds, geminiQueryEmbedder, memoryChunkSource, mongoChunkSource } from './server/retrieval';
+import { MemoryQueryStore, MongoQueryStore, RetrieverDeps, StoredChunk, documentCentreIds, geminiQueryEmbedder, memoryChunkSource, mongoChunkSource, withUploads, UPLOADED_CHUNKS } from './server/retrieval';
+import { appDbName, policyDbName } from './server/dbNames';
 import { actorOf, type AccountRecord } from './src/lib/world';
 import type { Centre } from './src/data/mockData';
 import { canReadApplication } from './src/lib/access';
@@ -161,6 +162,9 @@ async function startServer() {
       dataMode: DATA_MODE,
       dataModeReason: DATA_MODE_REASON,
       mongo: DATA_MODE === 'mongo' ? (mongoUp ? 'up' : 'down') : 'not used',
+      // Which databases this server uses (names only, never the connection string)
+      db: DATA_MODE === 'mongo' ? (appDbName() ?? null) : null,
+      policyDb: DATA_MODE === 'mongo' ? (policyDbName() ?? null) : null,
       geminiKeyConfigured,
     });
   });
@@ -176,13 +180,18 @@ async function startServer() {
       })
     );
     // Connect once at startup (reused for every request); seed automatically if the database is empty
-    connectMongo(process.env.MONGODB_URI, process.env.MONGODB_DB, async (db) => {
-      await ensureIndexes(db);
-      if (await isEmpty(db)) {
-        console.log('[mongo] database is empty: seeding demo data');
-        await reseed(db);
-      }
-    });
+    connectMongo(
+      process.env.MONGODB_URI,
+      appDbName(),
+      async (db) => {
+        await ensureIndexes(db);
+        if (await isEmpty(db)) {
+          console.log('[mongo] database is empty: seeding demo data');
+          await reseed(db);
+        }
+      },
+      policyDbName()
+    );
   }
 
   // ---------------- AI endpoints: sign-in (mongo mode) + rate limits ----------------
@@ -783,6 +792,7 @@ ${JSON.stringify(input)}`,
           title: typeof title === 'string' ? title : '',
           data: Buffer.from(dataBase64, 'base64'),
         },
+        // The app database (MONGODB_DB), never MONGODB_POLICY_DB when they differ: dev uploads stay out of the demo index
         mongo.db!.collection<PolicyChunk>(POLICY_CHUNKS),
         process.env.GEMINI_API_KEY ? geminiDocEmbedder(ai) : undefined
       );
@@ -953,7 +963,10 @@ If it is respectful, calm, neutral, professional, or standard:
     if (retrieverDeps && retrieverDeps.db === db) return retrieverDeps.deps;
     let deps: RetrieverDeps;
     if (db) {
-      deps = { source: mongoChunkSource(db), embed, queryStore: new MongoQueryStore(db), log: console.warn };
+      // Published index and query cache from MONGODB_POLICY_DB; a centre's own uploads live in MONGODB_DB
+      const policyDb = mongo.policyDb ?? db;
+      const source = policyDb === db ? mongoChunkSource(db) : withUploads(mongoChunkSource(policyDb), mongoChunkSource(db, undefined, UPLOADED_CHUNKS));
+      deps = { source, embed, queryStore: new MongoQueryStore(policyDb, policyDb !== db), log: console.warn };
     } else {
       // Local mode (or MongoDB not connected yet): the index file written by npm run build:index, if present
       const file = path.resolve(__dirname, 'data', 'index', 'policyChunks.json');
@@ -1048,8 +1061,11 @@ If it is respectful, calm, neutral, professional, or standard:
   app.get('/api/document-centres', async (_req: Request, res: Response) => {
     try {
       const db = DATA_MODE === 'mongo' ? mongo.db : null;
+      const distinctIds = async (d: NonNullable<typeof db>, query: object = {}) =>
+        (await d.collection<PolicyChunk>(POLICY_CHUNKS).distinct('appliesToCentreIds', { scope: 'operator', ...query })) as string[];
+      const policyDb = mongo.policyDb ?? db;
       const centreIds = db
-        ? ((await db.collection<PolicyChunk>(POLICY_CHUNKS).distinct('appliesToCentreIds', { scope: 'operator' })) as string[]).sort()
+        ? [...new Set([...(await distinctIds(policyDb!)), ...(policyDb === db ? [] : await distinctIds(db, UPLOADED_CHUNKS))])].sort()
         : documentCentreIds(await getRetrieverDeps().source.all());
       res.json({ centreIds });
     } catch (e) {

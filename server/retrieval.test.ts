@@ -11,7 +11,11 @@ import {
   retrieve,
   stem,
   vectorFilter,
+  matchesVectorFilter,
+  memoryChunkSource,
+  withUploads,
 } from './retrieval';
+import { assertNotPolicyWrite, isProtectedPolicyCollection } from './dbNames';
 
 const D = 768;
 /** Unit vector pointing mostly along axis i. */
@@ -210,4 +214,36 @@ test('once provincial chunks have embeddings they are found by vector search (au
   const prov = r.passages.find((p) => p.chunkId === 'manual#1');
   assert.equal(prov?.matchedBy, 'vector');
   assert.equal(prov?.label, 'General Ontario rule; check with the centre.');
+});
+
+// ---------------- Separate policy database (MONGODB_POLICY_DB) ----------------
+
+test('matchesVectorFilter mirrors the filters vectorFilter builds', () => {
+  const [jk, , harmony, manual] = CHUNKS;
+  const f = vectorFilter({ centreId: 'on-00576' });
+  assert.equal(matchesVectorFilter(jk, f), true);
+  assert.equal(matchesVectorFilter(manual, f), true);
+  assert.equal(matchesVectorFilter(harmony, f), false);
+  assert.equal(matchesVectorFilter(manual, vectorFilter({ scope: 'operator' })), false);
+  assert.equal(matchesVectorFilter(harmony, undefined), true);
+});
+
+test('withUploads: a centre upload in the app database is found next to the published index, on the Atlas score scale', async () => {
+  const upload = chunk('self#1', { operatorId: 'self-c1', appliesToCentreIds: ['c1'], heading: 'OUR FEES', text: 'Fees are due on the first.', embedding: axis(5) });
+  const merged = withUploads(source(), memoryChunkSource([upload]));
+  assert.equal((await merged.all()).length, CHUNKS.length + 1);
+  const hits = await merged.vectorSearch!(axis(5), vectorFilter({ centreId: 'c1', scope: 'operator' }), 3);
+  assert.equal(hits[0].chunkId, 'self#1');
+  assert.equal(hits[0].score, 1); // (1 + cos 1) / 2
+  // Another centre's question never sees the upload
+  const other = await merged.vectorSearch!(axis(5), vectorFilter({ centreId: 'on-00576', scope: 'operator' }), 3);
+  assert.ok(other.every((h) => h.chunkId !== 'self#1'));
+});
+
+test('scripts may not write to the policy collections of MONGODB_POLICY_DB', () => {
+  assert.throws(() => assertNotPolicyWrite('careq_dev', 'policyChunks', 'careq_dev'), /Refusing to write to careq_dev.policyChunks/);
+  assert.throws(() => assertNotPolicyWrite('careq_dev', 'queryEmbeddings', 'careq_dev'));
+  assert.doesNotThrow(() => assertNotPolicyWrite('careq_local', 'policyChunks', 'careq_dev'));
+  assert.doesNotThrow(() => assertNotPolicyWrite('careq_dev', 'accounts', 'careq_dev'));
+  assert.equal(isProtectedPolicyCollection('careq_local', 'policyChunks', 'careq_dev'), false);
 });

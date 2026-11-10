@@ -30,6 +30,7 @@ import path from 'node:path';
 import { MongoClient } from 'mongodb';
 import { GoogleGenAI } from '@google/genai';
 import { EMBED_MODEL } from '../server/policyIndexConfig';
+import { policyDbName } from '../server/dbNames';
 import { NO_INFO } from '../server/askAgent';
 import { demoCentreEmail } from '../src/lib/world';
 import type { Snapshot } from '../src/lib/world';
@@ -138,7 +139,7 @@ async function chunksById(ids: string[]): Promise<Map<string, Chunk>> {
     await mongo.connect();
   }
   const docs = await mongo
-    .db(process.env.MONGODB_DB)
+    .db(policyDbName())
     .collection('policyChunks')
     .find({ chunkId: { $in: [...new Set(ids)] } }, { projection: { _id: 0, chunkId: 1, operatorId: 1, page: 1, heading: 1, docTitle: 1, text: 1 } })
     .toArray();

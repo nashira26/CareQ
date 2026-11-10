@@ -13,6 +13,7 @@
  */
 import 'dotenv/config';
 import { MongoClient } from 'mongodb';
+import { appDbName, isProtectedPolicyCollection } from '../server/dbNames';
 import { samplePdf, SAMPLE_CENTRE_NAME } from './fixtures/samplePdf';
 import type { Snapshot } from '../src/lib/world';
 
@@ -180,12 +181,16 @@ async function main() {
     const denied = await jk.call('POST', '/centres/on-00576/documents', { fileName: 'x.pdf', dataBase64: samplePdf().toString('base64') });
     row('Upload rule', 'Jesse Ketchum (simulated demo account) tries to upload', '403: self-registered centres only', `${denied.status} ${denied.data.error ?? ''}`, '-', { aiMode: 'rule' }, denied.ms, denied.status === 403);
   } finally {
-    if (!KEEP && process.env.MONGODB_URI && process.env.MONGODB_DB) {
+    if (!KEEP && process.env.MONGODB_URI && appDbName()) {
       const client = new MongoClient(process.env.MONGODB_URI);
       await client.connect();
-      const db = client.db(process.env.MONGODB_DB);
+      const db = client.db(appDbName());
+      // The test centre's uploaded chunks live in the app database; never delete from MONGODB_POLICY_DB's index
+      const chunksProtected = isProtectedPolicyCollection(db.databaseName, 'policyChunks');
+      if (chunksProtected) console.log(`
+(left the test centre's uploaded chunks in ${db.databaseName}.policyChunks: that is the policy index, MONGODB_POLICY_DB)`);
       await Promise.all([
-        db.collection('policyChunks').deleteMany({ operatorId: `self-${centreId}` }),
+        chunksProtected ? Promise.resolve() : db.collection('policyChunks').deleteMany({ operatorId: `self-${centreId}` }),
         db.collection('centres').deleteOne({ id: centreId }),
         db.collection('accounts').deleteOne({ emailLower: email.toLowerCase() }),
         db.collection('sessions').deleteMany({ accountId: (signup.data as Snapshot).account?.id }),

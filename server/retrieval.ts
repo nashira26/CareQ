@@ -12,7 +12,7 @@
  * documents; without a centre, all documents.
  */
 import { createHash } from 'node:crypto';
-import type { Collection, Db } from 'mongodb';
+import type { Collection, Db, Document } from 'mongodb';
 import {
   EMBED_DIMENSIONS,
   EMBED_MODEL,
@@ -101,12 +101,15 @@ export class MemoryQueryStore implements QueryEmbeddingStore {
   }
 }
 
-/** MongoDB store: shared by all server instances and kept across restarts; memory in front. */
+/**
+ * MongoDB store: shared by all server instances and kept across restarts; memory in front.
+ * readOnly (MONGODB_POLICY_DB is another server's database): read its cache, keep new embeddings in memory only.
+ */
 export class MongoQueryStore implements QueryEmbeddingStore {
   private memory = new MemoryQueryStore();
   private coll: Collection<{ key: string; question: string; embedding: number[]; model: string; dimensions: number; createdAt: Date }>;
   private indexed = false;
-  constructor(db: Db) {
+  constructor(db: Db, private readOnly = false) {
     this.coll = db.collection(QUERY_EMBEDDINGS);
   }
   async get(key: string) {
@@ -121,6 +124,7 @@ export class MongoQueryStore implements QueryEmbeddingStore {
   }
   async set(key: string, question: string, embedding: number[]) {
     await this.memory.set(key, question, embedding);
+    if (this.readOnly) return;
     if (!this.indexed) {
       await this.coll.createIndex({ key: 1 }, { unique: true }).catch(() => {});
       this.indexed = true;
@@ -181,13 +185,13 @@ export interface ChunkSource {
 }
 
 /** Chunks from MongoDB, cached in memory for a few minutes; Atlas Vector Search when the index exists. */
-export function mongoChunkSource(db: Db, ttlMs = 10 * 60_000): ChunkSource {
+export function mongoChunkSource(db: Db, ttlMs = 10 * 60_000, query: Document = {}): ChunkSource {
   const coll = db.collection<PolicyChunk>(POLICY_CHUNKS);
   let cache: { at: number; chunks: StoredChunk[] } | null = null;
   return {
     async all() {
       if (cache && Date.now() - cache.at < ttlMs) return cache.chunks;
-      const chunks = (await coll.find({}, { projection: { _id: 0 } }).toArray()) as StoredChunk[];
+      const chunks = (await coll.find(query, { projection: { _id: 0 } }).toArray()) as StoredChunk[];
       cache = { at: Date.now(), chunks };
       return chunks;
     },
@@ -213,6 +217,48 @@ export function mongoChunkSource(db: Db, ttlMs = 10 * 60_000): ChunkSource {
     },
   };
 }
+
+/** Does a chunk match a filter built by vectorFilter ({scope}, {appliesToCentreIds}, {$or: [...]})? */
+export function matchesVectorFilter(c: Pick<StoredChunk, 'scope' | 'appliesToCentreIds'>, filter: object | undefined): boolean {
+  if (!filter) return true;
+  return Object.entries(filter).every(([k, v]) => {
+    if (k === '$or') return (v as object[]).some((f) => matchesVectorFilter(c, f));
+    if (k === 'appliesToCentreIds') return (c.appliesToCentreIds ?? []).includes(v as string);
+    return (c as Record<string, unknown>)[k] === v;
+  });
+}
+
+/**
+ * The published index (MONGODB_POLICY_DB) plus centres' own uploads kept in the app database
+ * (MONGODB_DB), when the two are different databases. Uploads are few, so they are searched in
+ * memory; their cosine scores are put on the Atlas scale ((1 + cos) / 2) before merging.
+ */
+export function withUploads(published: ChunkSource, uploads: ChunkSource): ChunkSource {
+  return {
+    async all() {
+      const [a, b] = await Promise.all([published.all(), uploads.all().catch(() => [] as StoredChunk[])]);
+      return [...a, ...b];
+    },
+    invalidate() {
+      published.invalidate?.();
+      uploads.invalidate?.();
+    },
+    ...(published.vectorSearch
+      ? {
+          async vectorSearch(queryVector: number[], filter: object | undefined, limit: number) {
+            const hits = await published.vectorSearch!(queryVector, filter, limit);
+            const own = (await uploads.all().catch(() => [] as StoredChunk[])).filter((c) => matchesVectorFilter(c, filter));
+            if (!own.length) return hits;
+            const ownHits = cosineSearch(queryVector, own, limit).map(({ embedding: _e, ...c }) => ({ ...c, embedding: null, score: (1 + c.score) / 2 }));
+            return [...hits, ...ownHits].sort((a, b) => b.score - a.score).slice(0, limit);
+          },
+        }
+      : {}),
+  };
+}
+
+/** A centre's own uploads (operatorId "self-<centreId>"), as opposed to published handbooks. */
+export const UPLOADED_CHUNKS = { operatorId: { $regex: '^self-' } };
 
 /** Chunks from a list already in memory (data/index/policyChunks.json in local mode, tests). */
 /** Centres with operator documents (published handbooks or a centre's own uploads), sorted. */

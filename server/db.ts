@@ -16,6 +16,7 @@ import {
   World,
   buildSeedWorld,
 } from '../src/lib/world';
+import { assertNotPolicyWrite } from './dbNames';
 
 export const bcryptHasher: PasswordHasher = {
   hash: (p) => bcrypt.hash(p, 10),
@@ -37,14 +38,22 @@ export const COLLECTIONS = [
 
 export interface MongoState {
   status: 'not used' | 'connecting' | 'up' | 'down';
+  /** App data (MONGODB_DB). */
   db: Db | null;
+  /** Published policy index and query-embedding cache (MONGODB_POLICY_DB; the same Db when they match). */
+  policyDb: Db | null;
   client: MongoClient | null;
   error?: string;
 }
-export const mongo: MongoState = { status: 'not used', db: null, client: null };
+export const mongo: MongoState = { status: 'not used', db: null, policyDb: null, client: null };
 
 /** Connect once; if Atlas is unreachable, keep retrying in the background (the server still starts). */
-export async function connectMongo(uri: string | undefined, dbName: string | undefined, onReady: (db: Db) => Promise<void>) {
+export async function connectMongo(
+  uri: string | undefined,
+  dbName: string | undefined,
+  onReady: (db: Db) => Promise<void>,
+  policyDbName: string | undefined = dbName
+) {
   if (!uri || !dbName) {
     mongo.status = 'down';
     mongo.error = 'MONGODB_URI and MONGODB_DB must be set.';
@@ -60,10 +69,11 @@ export async function connectMongo(uri: string | undefined, dbName: string | und
       await db.command({ ping: 1 });
       mongo.client = client;
       mongo.db = db;
+      mongo.policyDb = policyDbName && policyDbName !== dbName ? client.db(policyDbName) : db;
       await onReady(db);
       mongo.status = 'up';
       mongo.error = undefined;
-      console.log(`[mongo] connected to database "${dbName}"`);
+      console.log(`[mongo] connected: app data in "${dbName}", policy index in "${mongo.policyDb.databaseName}"`);
     } catch (e) {
       mongo.status = 'down';
       mongo.error = (e as Error).message;
@@ -121,6 +131,8 @@ export async function isEmpty(db: Db) {
 
 /** Replace all demo data (and sessions) with the seed data. */
 export async function reseed(db: Db) {
+  // Never the policy index: COLLECTIONS holds app data only, and this guard keeps it that way
+  COLLECTIONS.forEach((c) => assertNotPolicyWrite(db.databaseName, c));
   const world: World = await buildSeedWorld(bcryptHasher);
   await Promise.all(COLLECTIONS.map((c) => db.collection(c).deleteMany({})));
   const ins = async (name: string, docs: object[]) => {
