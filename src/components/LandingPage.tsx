@@ -7,6 +7,9 @@ import {
 	CheckCheck,
 	Lock,
 	Check,
+	CalendarClock,
+	ClipboardList,
+	MessagesSquare,
 } from "lucide-react";
 import {
 	SpotNeighbourhood,
@@ -57,44 +60,44 @@ const STEPS: Record<
 	parents: [
 		{
 			title: "Find centres",
-			text: "Describe what you need in one sentence. CareQ shows centres near you that match, and says whether each one is licensed.",
+			text: "Describe what you need and see nearby centres that match.",
 			Spot: SpotNeighbourhood,
 		},
 		{
 			title: "Prepare your application",
-			text: "CareQ makes a checklist from the centre's own handbook and shows the exact quote for each item.",
+			text: "Get a checklist from the centre's own handbook.",
 			Spot: SpotChecklist,
 		},
 		{
-			title: "Track every application",
-			text: "See each status and waitlist position as the centre reported it, with the date.",
+			title: "Get updates",
+			text: "See your status and position as the centre reports them.",
 			Spot: SpotJourney,
 		},
 		{
 			title: "Accept a spot",
-			text: "Accept an offer and, if you choose, withdraw your other applications in the same step. Nothing is withdrawn until you confirm.",
+			text: "Accept an offer and leave your other waitlists in one step.",
 			Spot: SpotCentre,
 		},
 	],
 	centres: [
 		{
 			title: "Add your handbook",
-			text: "Upload or paste your handbook. CareQ reads your registration requirements. You check and confirm the checklist.",
+			text: "CareQ turns it into a checklist. You confirm it.",
 			Spot: SpotChecklist,
 		},
 		{
 			title: "Review applications",
-			text: "Each application shows the information and documents submitted by the family, including any items that may be missing.",
+			text: "See what each family sent and what is missing.",
 			Spot: SpotNeighbourhood,
 		},
 		{
-			title: "Update positions and make offers",
-			text: "Families see each update with the date. Your centre makes every admission decision.",
+			title: "Update positions and offers",
+			text: "Families see each update with the date.",
 			Spot: SpotCentre,
 		},
 		{
-			title: "Message families",
-			text: "AI can draft a reply. You review and send it.",
+			title: "Keep families informed",
+			text: "Answer questions and request documents. AI can draft replies.",
 			Spot: SpotMessages,
 		},
 	],
@@ -172,6 +175,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 		"h-12 px-6 rounded-xl bg-cq-brand hover:bg-cq-brand-hover text-white font-bold text-base active:scale-[0.98] transition-[background-color,transform] inline-flex items-center gap-2 cursor-pointer";
 	const secondaryBtn =
 		"h-12 px-6 rounded-xl border border-line-strong bg-white text-base font-bold text-brand hover:bg-mint active:scale-[0.98] transition-[background-color,transform] inline-flex items-center gap-2 cursor-pointer";
+	const cardBtn =
+		"h-11 px-5 rounded-xl bg-cq-brand hover:bg-cq-brand-hover text-white font-semibold text-sm shadow-xs transition-colors inline-flex items-center gap-2 cursor-pointer";
+	const h2Class =
+		"text-[28px] sm:text-4xl font-extrabold text-brand leading-tight";
 
 	return (
 		<div className="min-h-screen bg-cq-page text-cq-ink-body font-brand-page flex flex-col antialiased selection:bg-cq-sage selection:text-cq-ink">
@@ -220,22 +227,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
 			{/* ---------------- Main Content ---------------- */}
 			<main className="flex-1 flex flex-col">
-				{/* 1. HERO SECTION */}
+				{/* 1. HERO */}
 				<section className="max-w-6xl w-full mx-auto px-6 pt-12 pb-16 lg:pt-20 lg:pb-24 grid lg:grid-cols-2 gap-12 lg:gap-14 items-center">
 					<div>
 						<p className="text-sm font-bold text-coral-ink mb-4">
-							For Ontario parents and child-care centres
+							Ontario child care
 						</p>
 
 						<h1 className="text-[34px] sm:text-5xl lg:text-[52px] font-extrabold text-brand leading-[1.1]">
-							Child-care applications in one place, for parents and centres
+							Child-care applications and waitlist updates, in one place
 						</h1>
 
 						<p className="mt-5 text-lg leading-relaxed text-ink-muted max-w-xl">
-							Parents use CareQ to find centres, prepare applications and track
-							updates. Child-care centres use it to review applications, manage
-							waitlists and communicate with families. AI helps with application
-							tasks, while parents and centres remain in control of decisions.
+							Parents apply to centres and see every update. Centres manage
+							applications and keep families informed. Both work from the same
+							record.
 						</p>
 
 						<div className="mt-8 flex flex-wrap items-center gap-4">
@@ -259,8 +265,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 						<ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-muted">
 							{[
 								"Free for parents",
-								"You approve everything before it is sent",
-								"Centres make all admission decisions",
+								"Dated updates from each centre",
+								"Nothing is sent without your approval",
 							].map((t) => (
 								<li key={t} className="flex items-center gap-1.5">
 									<Check
@@ -282,31 +288,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 					/>
 				</section>
 
-				{/* 2. PROBLEM & STATS SECTION */}
+				{/* 2. THE PROBLEM (with sourced stats) */}
 				<section className="bg-white border-y border-cq-line py-16 lg:py-24">
 					<div className="max-w-6xl w-full mx-auto px-6">
 						<div className="max-w-2xl mb-10 sm:mb-12">
 							<p className="text-sm font-bold text-coral-ink mb-2">
 								The problem
 							</p>
-							<h2 className="text-[28px] sm:text-4xl font-extrabold text-brand leading-tight">
+							<h2 className={h2Class}>
 								Applying for child care is hard for parents and for centres
 							</h2>
 						</div>
 
-						{/* 3 Problem Cards */}
 						<div className="grid md:grid-cols-3 gap-6 mb-12">
 							{[
 								{
-									text: "Every centre has its own waitlist and forms.",
+									text: "Parents rarely hear when their waitlist position changes.",
 									tone: "bg-cq-peach text-cq-peach-ink",
 								},
 								{
-									text: "Parents rarely know their position or when a spot may open.",
+									text: "Without updates, families wait too long to consider other centres.",
 									tone: "bg-cq-lilac text-cq-lilac-ink",
 								},
 								{
-									text: "Centres spend time answering the same questions and chasing missing documents.",
+									text: "Centres juggle calls, emails and separate records.",
 									tone: "bg-cq-sand text-cq-sand-ink-2",
 								},
 							].map((p, i) => (
@@ -324,7 +329,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 							))}
 						</div>
 
-						{/* 3 Stat Cards with Sources */}
 						<div className="grid md:grid-cols-3 gap-6 pt-4 border-t border-cq-line">
 							<div className="rounded-2xl border border-cq-line bg-white p-6">
 								<p className="text-2xl sm:text-3xl font-extrabold text-cq-brand">
@@ -361,24 +365,66 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 					</div>
 				</section>
 
-				{/* 3. HOW CAREQ WORKS SECTION (parents / centres tabs) */}
-				<section id="how-it-works" className="py-16 lg:py-24 scroll-mt-24">
+				{/* 3. WHAT YOU GET */}
+				<section className="py-16 lg:py-24">
 					<div className="max-w-6xl w-full mx-auto px-6">
-						<div className="max-w-2xl mb-8">
-							<p className="text-sm font-bold text-coral-ink mb-2">
-								Step by step
-							</p>
-							<h2
-								id="how-it-works-heading"
-								className="text-[28px] sm:text-4xl font-extrabold text-brand leading-tight">
-								How CareQ works
-							</h2>
+						<h2 className={`${h2Class} max-w-2xl mb-10 sm:mb-12`}>
+							Every update in one place
+						</h2>
+
+						<div className="grid md:grid-cols-3 gap-6">
+							{[
+								{
+									title: "Dated waitlist updates",
+									text: "See the latest position and when the centre reported it.",
+									Icon: CalendarClock,
+									tone: "bg-cq-sage text-cq-sage-ink",
+								},
+								{
+									title: "Every application on one page",
+									text: "See each application's status, position and any offer.",
+									Icon: ClipboardList,
+									tone: "bg-cq-sand text-cq-sand-ink-2",
+								},
+								{
+									title: "Messages kept together",
+									text: "No more searching through calls and emails.",
+									Icon: MessagesSquare,
+									tone: "bg-cq-lilac text-cq-lilac-ink",
+								},
+							].map(({ title, text, Icon, tone }) => (
+								<div
+									key={title}
+									className="rounded-2xl border border-cq-line bg-white p-6">
+									<div
+										className={`w-10 h-10 rounded-xl ${tone} flex items-center justify-center mb-4`}>
+										<Icon className="w-5 h-5" aria-hidden="true" />
+									</div>
+									<h3 className="text-lg font-bold text-cq-ink leading-snug">
+										{title}
+									</h3>
+									<p className="mt-2 text-sm text-cq-muted leading-relaxed">
+										{text}
+									</p>
+								</div>
+							))}
 						</div>
+					</div>
+				</section>
+
+				{/* 4. HOW CAREQ WORKS (parents / centres tabs) */}
+				<section
+					id="how-it-works"
+					className="bg-white border-y border-cq-line py-16 lg:py-24 scroll-mt-24">
+					<div className="max-w-6xl w-full mx-auto px-6">
+						<h2 id="how-it-works-heading" className={`${h2Class} mb-8`}>
+							How CareQ works
+						</h2>
 
 						<div
 							role="tablist"
 							aria-labelledby="how-it-works-heading"
-							className="inline-flex w-full sm:w-auto rounded-xl border border-cq-line bg-white p-1 mb-8">
+							className="inline-flex w-full sm:w-auto rounded-xl border border-cq-line bg-cq-page p-1 mb-8">
 							{TABS.map((t) => {
 								const selected = audience === t.id;
 								return (
@@ -418,7 +464,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 									{STEPS[t.id].map(({ title, text, Spot }, i) => (
 										<li
 											key={title}
-											className="rounded-2xl border border-cq-line bg-white p-6">
+											className="rounded-2xl border border-cq-line bg-cq-page p-6">
 											<Spot className="w-28 mb-4" />
 											<p className="text-sm font-bold text-coral-ink mb-1">
 												Step {i + 1}
@@ -437,21 +483,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 					</div>
 				</section>
 
-				{/* WHO CAREQ IS FOR SECTION */}
-				<section className="bg-white border-y border-cq-line py-16 lg:py-24">
+				{/* 5. WHO CAREQ IS FOR */}
+				<section className="py-16 lg:py-24">
 					<div className="max-w-6xl w-full mx-auto px-6">
-						<div className="max-w-2xl mb-10 sm:mb-12">
-							<p className="text-sm font-bold text-coral-ink mb-2">
-								Who it is for
-							</p>
-							<h2 className="text-[28px] sm:text-4xl font-extrabold text-brand leading-tight">
-								Who CareQ is for
-							</h2>
-						</div>
+						<h2 className={`${h2Class} max-w-2xl mb-10 sm:mb-12`}>
+							Who CareQ is for
+						</h2>
 
 						<div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-							{/* Card 1: For parents (photo on top, lazy; the card's corners round it) */}
-							<div className="rounded-2xl border border-cq-line bg-cq-page overflow-hidden flex flex-col">
+							{/* For parents (photo on top, lazy; the card's corners round it) */}
+							<div className="rounded-2xl border border-cq-line bg-white overflow-hidden flex flex-col">
 								<HeroPhoto
 									photo={PHOTOS.parent}
 									caption={false}
@@ -467,15 +508,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 											For parents
 										</h3>
 										<p className="text-base text-cq-muted leading-relaxed">
-											Apply to several centres without repeating the same work,
-											and see where each application stands.
+											All your applications, updates and messages in one place.
 										</p>
 									</div>
 									<div>
 										<button
 											type="button"
 											onClick={onGetStarted}
-											className="h-11 px-5 rounded-xl bg-cq-brand hover:bg-cq-brand-hover text-white font-semibold text-sm shadow-xs transition-colors inline-flex items-center gap-2 cursor-pointer">
+											className={cardBtn}>
 											<span>Get started as a parent</span>
 											<ArrowRight className="w-4 h-4 shrink-0" aria-hidden="true" />
 										</button>
@@ -483,8 +523,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 								</div>
 							</div>
 
-							{/* Card 2: For centres */}
-							<div className="rounded-2xl border border-cq-line bg-cq-page overflow-hidden flex flex-col">
+							{/* For centres */}
+							<div className="rounded-2xl border border-cq-line bg-white overflow-hidden flex flex-col">
 								<HeroPhoto
 									photo={PHOTOS.centre}
 									caption={false}
@@ -500,16 +540,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 											For centres
 										</h3>
 										<p className="text-base text-cq-muted leading-relaxed">
-											Upload or paste your handbook, receive applications, and
-											keep families informed.
+											Applications, waitlists and family messages in one place.
 										</p>
 									</div>
-									<div>
-										{centreButton(
-											"h-11 px-5 rounded-xl bg-cq-brand hover:bg-cq-brand-hover text-white font-semibold text-sm shadow-xs transition-colors inline-flex items-center gap-2 cursor-pointer",
-											"Register your centre",
-										)}
-									</div>
+									<div>{centreButton(cardBtn, "Register your centre")}</div>
 								</div>
 							</div>
 						</div>
@@ -517,48 +551,46 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 					</div>
 				</section>
 
-				{/* 4. HOW WE USE AI SECTION */}
-				<section className="py-16 lg:py-24">
+				{/* 6. HOW WE USE AI */}
+				<section className="bg-white border-y border-cq-line py-16 lg:py-24">
 					<div className="max-w-6xl w-full mx-auto px-6">
 						<div className="max-w-2xl mb-10">
 							<p className="text-sm font-bold text-coral-ink mb-2">
 								How we use AI
 							</p>
-							<h2 className="text-[28px] sm:text-4xl font-extrabold text-brand leading-tight">
-								The AI helps; people decide
-							</h2>
+							<h2 className={h2Class}>The AI helps; people decide</h2>
 						</div>
 
 						<div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
 							{[
 								{
-									title: "You approve everything before it is sent",
-									text: "Applications, messages and withdrawals go out only when you confirm them.",
+									title: "You approve everything",
+									text: "Applications, messages and withdrawals go out only when you confirm.",
 									Icon: CheckCheck,
 									tone: "bg-cq-sage text-cq-sage-ink",
 								},
 								{
-									title: "Positions come only from the centre; CareQ never estimates them",
-									text: "Each position shows which centre reported it and the date.",
+									title: "No estimated positions",
+									text: "Positions come only from the centre, with the date.",
 									Icon: FileText,
 									tone: "bg-cq-sand text-cq-sand-ink-2",
 								},
 								{
-									title: "Centres decide admissions; CareQ does not rank families",
-									text: "Centres see applications in the order they were sent.",
+									title: "No ranking of families",
+									text: "CareQ never scores families or suggests who gets a spot.",
 									Icon: ShieldCheck,
 									tone: "bg-cq-lilac text-cq-lilac-ink",
 								},
 								{
-									title: "Only the information needed is sent to the AI",
-									text: "For example, a message draft uses your child's first name, not the full name.",
+									title: "Minimal data to the AI",
+									text: "For example, drafts use your child's first name only.",
 									Icon: Lock,
 									tone: "bg-cq-peach text-cq-peach-ink",
 								},
 							].map(({ title, text, Icon, tone }) => (
 								<div
 									key={title}
-									className="rounded-2xl border border-cq-line bg-white p-6 text-center sm:text-left flex flex-col items-center sm:items-start">
+									className="rounded-2xl border border-cq-line bg-cq-page p-6 text-center sm:text-left flex flex-col items-center sm:items-start">
 									<div
 										className={`w-10 h-10 rounded-xl ${tone} flex items-center justify-center mb-4`}>
 										<Icon className="w-5 h-5" aria-hidden="true" />
@@ -585,44 +617,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 					</div>
 				</section>
 
-				{/* QUESTIONS SECTION */}
-				<section className="bg-white border-y border-cq-line py-16 lg:py-24">
+				{/* 7. COMMON QUESTIONS */}
+				<section className="py-16 lg:py-24">
 					<div className="max-w-4xl w-full mx-auto px-6">
-						<div className="mb-10">
-							<p className="text-sm font-bold text-coral-ink mb-2">
-								Questions
-							</p>
-							<h2 className="text-[28px] sm:text-4xl font-extrabold text-brand leading-tight">
-								Common questions
-							</h2>
-						</div>
+						<h2 className={`${h2Class} mb-10`}>Common questions</h2>
 
 						<div className="space-y-4">
 							{[
 								{
 									q: "Does CareQ guarantee a spot?",
-									a: "No. Centres make all admission decisions.",
+									a: "No. Each centre makes its own admission decisions.",
 								},
 								{
-									q: "Does the AI apply for me automatically?",
-									a: "No. Nothing is sent until you approve it.",
+									q: "Will I see when my position changes?",
+									a: "Yes. Each update from the centre appears with its date.",
 								},
 								{
-									q: "Where does waitlist information come from?",
-									a: "From the centres, with the date of every update. We never estimate positions.",
+									q: "Can I see past messages with a centre?",
+									a: "Yes. They stay with the application.",
 								},
 								{
-									q: "Does my centre need to change its systems?",
-									a: "No. You upload or paste your handbook and use CareQ in a web browser.",
+									q: "Where does centre information come from?",
+									a: "Ontario and City of Toronto open data, and each centre's own handbook.",
 								},
 								{
-									q: "Who decides which family gets a spot?",
-									a: "Your centre does. CareQ does not rank or choose families.",
+									q: "Does my centre need new systems?",
+									a: "No. Upload or paste your handbook and use CareQ in a web browser.",
 								},
 							].map(({ q, a }) => (
 								<div
 									key={q}
-									className="rounded-2xl border border-cq-line bg-cq-page p-6 sm:p-7">
+									className="rounded-2xl border border-cq-line bg-white p-6 sm:p-7">
 									<h3 className="text-base sm:text-lg font-bold text-cq-ink">
 										{q}
 									</h3>
@@ -635,8 +660,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 					</div>
 				</section>
 
-				{/* WHO WE ARE BLOCK */}
-				<section className="py-16 lg:py-20">
+				{/* 8. WHO WE ARE */}
+				<section className="bg-white border-y border-cq-line py-16 lg:py-20">
 					<div className="max-w-4xl w-full mx-auto px-6">
 						<p className="text-sm font-bold text-coral-ink mb-2">
 							About the project
@@ -645,22 +670,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 							Who we are
 						</h2>
 						<p className="text-base sm:text-lg text-ink-muted leading-relaxed max-w-2xl">
-							CareQ is a women-led prototype that helps Ontario families find,
-							apply for and track licensed child care in one place: helpful AI,
-							with people in control.
+							CareQ is a prototype by a women-led team. It makes child-care
+							applications and waitlists easier for Ontario families and
+							centres.
 						</p>
-						<div className="mt-6 inline-flex flex-col rounded-2xl bg-white border border-cq-line px-5 py-4">
+						<div className="mt-6 inline-flex flex-col rounded-2xl bg-cq-page border border-cq-line px-5 py-4">
 							<span className="text-xs font-bold text-cq-brand">
 								Team 38 – Coalesce
 							</span>
 							<span className="text-sm text-cq-soft mt-1">
-								our names: Nashira, Indhu, Fiza
+								Team: Nashira, Indhu, Fiza
 							</span>
 						</div>
 					</div>
 				</section>
 
-				{/* 5. FINAL CALL TO ACTION */}
+				{/* 9. FINAL CALL TO ACTION */}
 				<section className="py-12 lg:py-20">
 					<div className="max-w-4xl w-full mx-auto px-6">
 						{/* Photo beside the text from md up, above it on phones */}
