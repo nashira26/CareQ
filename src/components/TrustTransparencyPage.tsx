@@ -1,5 +1,5 @@
 import React from 'react';
-import { SpotChecklist } from './ui/Illustrations';
+import { HeroPhoto, PHOTOS } from './ui/HeroPhoto';
 import { ArrowLeft, ShieldCheck, Scale, Bot, Lock, ExternalLink, FileText, CheckCircle2 } from 'lucide-react';
 import { Centre } from '../data/mockData';
 import ontarioMeta from '../data/ontarioCentres.meta.json';
@@ -38,7 +38,8 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
       </div>
 
       {/* Hero Header */}
-      <div className="bg-butter rounded-3xl p-5 sm:p-8 flex items-center justify-between gap-6"><div>
+      {/* Photo beside the text from md up, above it on phones */}
+      <div className="bg-butter rounded-3xl p-5 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-5 md:gap-8"><div className="order-2 md:order-1 min-w-0">
         <p className="text-sm font-bold text-coral-ink mb-1">Transparency & Ethical AI Policy</p>
         <h1 className="text-2xl sm:text-[30px] sm:leading-[38px] font-extrabold text-brand">
           Trust and Transparency
@@ -47,7 +48,7 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
           CareQ is committed to plain-language openness, verifiable privacy, and responsible AI assistance in Ontario licensed child care intake. Here is how our platform works and our commitments to families and centres.
         </p>
         </div>
-        <SpotChecklist className="hidden sm:block w-40 shrink-0" />
+        <HeroPhoto photo={PHOTOS.sensory} className="order-1 md:order-2 md:w-[300px] shrink-0" frameClassName="h-[180px] sm:h-[220px] md:h-[200px]" />
       </div>
 
       {/* Section 1: Prototype Terms of Use */}

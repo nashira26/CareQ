@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { LogoFull } from './Logo';
 import { ResetDemo } from './ResetDemo';
-import { HeroPhoto } from './ui/HeroPhoto';
+import { HeroPhoto, PHOTOS } from './ui/HeroPhoto';
 import { CentreCounts } from './CentreCounts';
 import { isValidEmail, MIN_PASSWORD_LENGTH, Child } from '../lib/family';
 
@@ -184,8 +184,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             One shared place to find child care, follow applications, and keep the conversation going.
           </p>
 
-          {/* 4. Hero photo (lazy here; preloaded on the landing page). Above the text on phones. */}
-          <HeroPhoto className="mb-6 sm:mb-0 sm:mt-8 w-full lg:max-w-[520px] order-first sm:order-none">
+          {/* 4. Welcome photo (lazy). Above the text on phones. */}
+          <HeroPhoto photo={PHOTOS.login} className="mb-6 sm:mb-0 sm:mt-8 w-full lg:max-w-[520px] order-first sm:order-none">
             <div className="absolute left-4 bottom-4 bg-white rounded-xl shadow-md px-4 py-2.5 text-sm text-ink items-center gap-2 -rotate-2 hidden sm:flex">
               <Check className="w-4 h-4 text-leaf-ink shrink-0" aria-hidden="true" />
               <span className="font-semibold">Parents &amp; centres, on the same page.</span>

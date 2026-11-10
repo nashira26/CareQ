@@ -421,7 +421,7 @@ export const HouseIllustration: React.FC<HouseIllustrationProps> = ({ scene = 'h
 
 export interface GreetingBandProps {
   tone: 'butter' | 'mint';
-  /** AI-generated photo on the right (parent: mother and toddler; centre: educator with a tablet). */
+  /** AI-generated photo on the right (parent: mother and toddler; centre: two staff at a laptop). */
   photo: 'parent' | 'centre';
   note: { title: string; detail: string };
   children: React.ReactNode;
@@ -438,7 +438,7 @@ export const GreetingBand: React.FC<GreetingBandProps> = ({ tone, photo, note, c
       {children}
     </div>
     <div className="order-1 sm:order-2 relative shrink-0 sm:w-[46%] px-4 pt-4 sm:pt-5 sm:pb-4 sm:pr-5 sm:pl-7 flex flex-col">
-      <HeroPhoto photo={PHOTOS[photo]} load="eager" className="sm:flex-1" frameClassName="h-[160px] sm:h-auto sm:flex-1 sm:min-h-[210px]" />
+      <HeroPhoto photo={PHOTOS[photo]} className="sm:flex-1" frameClassName="h-[160px] sm:h-auto sm:flex-1 sm:min-h-[210px]" />
       <div className="hidden sm:flex absolute left-0 bottom-12 -rotate-3 items-center gap-2.5 rounded-xl bg-white shadow-md px-3.5 py-2.5 max-w-[240px]">
         <span className="w-7 h-7 rounded-full bg-mint text-leaf-ink flex items-center justify-center shrink-0">
           <Check className="w-4 h-4" strokeWidth={2.5} aria-hidden="true" />
