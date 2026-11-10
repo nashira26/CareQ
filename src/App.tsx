@@ -228,12 +228,37 @@ export default function App() {
 
   const currentRole = currentAccount ? currentAccount.role : 'parent';
 
-  // Signing in or out swaps the whole page: start the new one at the top, so on
-  // phones the Overview greeting isn't left below the fold of the login page's scroll.
+  // Moving to another page or view (landing, sign-up, trust page, registration, a portal section,
+  // signing in or out) starts the new one at the top, instead of where the last page was scrolled.
+  // Scrolling within a page (e.g. the landing page's "See how it works") is untouched.
   const accountKey = currentAccount ? `${currentAccount.role}:${currentAccount.email}` : '';
+  const onLanding = !currentAccount && !isTrustPageOpen && loggedOutView === 'landing';
+  const viewKey = [
+    accountKey,
+    isTrustPageOpen ? 'trust' : '',
+    currentAccount ? '' : loggedOutView,
+    registrationScreenOpen ? 'registration' : '',
+    currentAccount ? (currentAccount.role === 'parent' ? parentTab : centreTab) : '',
+  ].join('|');
+  const lastViewKey = useRef(viewKey);
   useEffect(() => {
+    if (lastViewKey.current === viewKey) return; // first render: a ?view=centres link scrolls itself
+    lastViewKey.current = viewKey;
     window.scrollTo(0, 0);
-  }, [accountKey]);
+  }, [viewKey]);
+
+  // ?view=centres only means something on the landing page: drop it once the visitor moves on
+  useEffect(() => {
+    if (onLanding) return;
+    try {
+      const url = new URL(window.location.href);
+      if (!url.searchParams.has('view')) return;
+      url.searchParams.delete('view');
+      window.history.replaceState(window.history.state, '', url.toString());
+    } catch {
+      /* the address is cosmetic here */
+    }
+  }, [onLanding]);
 
   // The signed-in parent and their active child (the first child for now)
   const myChildren: Child[] = currentAccount?.role === 'parent' ? currentAccount?.children ?? [] : [];
