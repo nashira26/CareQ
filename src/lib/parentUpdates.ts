@@ -129,6 +129,15 @@ export function buildParentUpdates(input: {
   return out.sort((a, b) => b.sortKey - a.sortKey);
 }
 
+/**
+ * The parent's bell: the same updates and unread flag as the Updates tab. `count` is the number both
+ * badges show; `items` are the newest unread ones (at most `max`).
+ */
+export function bellPreview(updates: ParentUpdate[], max = 5) {
+  const unread = updates.filter((u) => u.unread).sort((a, b) => b.sortKey - a.sortKey);
+  return { count: unread.length, items: unread.slice(0, max) };
+}
+
 export interface AttentionItem {
   id: string;
   title: string;

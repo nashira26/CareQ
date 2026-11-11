@@ -174,6 +174,53 @@ async function parentJourney(b: Browser, width: number, errors: string[]) {
     const queues = await p.locator('dd', { hasText: /^#\d+/ }).locator('visible=true').count();
     if (n > queues + 1) throw new Error(`${n} "Simulated" tags for ${queues} positions + 1 offer`);
   });
+  // The parent bell previews Updates: same unread items, same number on both badges
+  const bell = () => p.getByRole('button', { name: /^Notifications \(\d+ unread\)$/ }).locator('visible=true').first();
+  const bellCount = async () => Number(((await bell().getAttribute('aria-label')) ?? '').match(/\((\d+) unread\)/)?.[1] ?? -1);
+  const bellPanel = () => p.getByRole('dialog', { name: 'Latest updates' });
+  await step('bell: same count as the Updates badge; up to 5 unread items with label and headline', async () => {
+    const [n, tab] = [await bellCount(), await updatesBadge()];
+    if (n !== tab) throw new Error(`bell ${n} vs Updates badge ${tab}`);
+    if (n < 1) throw new Error('no unread updates to preview');
+    await bell().click();
+    const items = bellPanel().getByRole('listitem');
+    const k = await items.count();
+    if (k !== Math.min(n, 5)) throw new Error(`${k} items for ${n} unread`);
+    const first = await items.first().innerText();
+    if (!/ · /.test(first)) throw new Error(`no readable label: ${first}`);
+    for (const t of ['Mark all as read', 'See all updates']) await bellPanel().getByRole('button', { name: t }).waitFor({ timeout: 3000 });
+    // Updates' filter tabs and Reply buttons (item buttons start with a label like "Waitlist · …")
+    if (await bellPanel().getByRole('button', { name: /^(Reply to .*|All|Waitlist|Offers|Applications|Messages)$/ }).count()) throw new Error('filters or Reply in the bell');
+  });
+  await step('bell: opening an item reads it (both badges drop) and opens it', async () => {
+    const before = await bellCount();
+    const item = bellPanel().getByRole('listitem').first();
+    const isMessage = /^Message ·/.test(await item.innerText());
+    await item.getByRole('button').click();
+    if (isMessage) {
+      await visible(p, /Child: Anya/).waitFor({ timeout: 8000 });
+      await p.getByRole('button', { name: 'Close conversation' }).click();
+    } else {
+      await p.getByRole('heading', { name: 'My applications', exact: true }).waitFor({ timeout: 8000 });
+    }
+    await p.waitForTimeout(500);
+    const [n, tab] = [await bellCount(), await updatesBadge()];
+    // A message opens its conversation, which reads every centre message in it: at least one fewer
+    if (n >= before || tab !== n) throw new Error(`bell ${before} -> ${n}, Updates badge ${tab}`);
+  });
+  await step('bell: See all updates opens Updates; Mark all as read empties both badges; "You\'re up to date."', async () => {
+    await bell().click();
+    await bellPanel().getByRole('button', { name: 'See all updates' }).click();
+    await p.getByRole('heading', { name: 'Updates', exact: true }).waitFor({ timeout: 8000 });
+    await bell().click();
+    await bellPanel().getByRole('button', { name: 'Mark all as read' }).click();
+    await bellPanel().getByText("You're up to date.").waitFor({ timeout: 5000 });
+    await bellPanel().getByRole('button', { name: 'See all updates' }).waitFor({ timeout: 3000 });
+    const [n, tab] = [await bellCount(), await updatesBadge()];
+    if (n !== 0 || tab !== 0) throw new Error(`after Mark all: bell ${n}, Updates badge ${tab}`);
+    await p.keyboard.press('Escape');
+    await bellPanel().waitFor({ state: 'detached', timeout: 3000 });
+  });
   await step('Ask CareQ opens', async () => {
     const close = p.getByRole('button', { name: 'Close' }).locator('visible=true');
     if (await close.count()) await close.first().click();

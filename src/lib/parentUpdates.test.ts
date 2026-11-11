@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { INITIAL_APPLICATIONS, INITIAL_NOTIFICATIONS, INITIAL_CONVERSATIONS, INITIAL_CENTRES, PRIYA_ACCOUNT_ID, conversationKey } from '../data/mockData';
-import { applicationCounts, attentionItems, buildParentUpdates, messageDate, shortCentreName } from './parentUpdates';
+import { applicationCounts, attentionItems, bellPreview, buildParentUpdates, messageDate, shortCentreName } from './parentUpdates';
 
 const priyaApps = INITIAL_APPLICATIONS.filter((a) => a.parentAccountId === PRIYA_ACCOUNT_ID);
 const conversations = Object.fromEntries(INITIAL_CONVERSATIONS.map((c) => [conversationKey(c.centreId, c.childId), c.messages]));
@@ -112,4 +112,30 @@ test('helpers: short centre names and message dates', () => {
   assert.equal(shortCentreName('CareQ Demo Centre (fictional)'), 'CareQ Demo Centre');
   assert.equal(messageDate('Nov 4, 2026 • 11:20 AM').day, 'Nov 4');
   assert.ok(messageDate('Nov 4, 2026 • 11:20 AM').key > messageDate('Oct 29, 2026 • 3:45 PM').key);
+});
+
+test('Bell: same unread items and count as Updates, newest first, at most 5; reading one drops it from both', () => {
+  const build = (read: Set<string>, notifs = INITIAL_NOTIFICATIONS.filter((n) => n.recipientId === PRIYA_ACCOUNT_ID)) =>
+    buildParentUpdates({ notifications: notifs, conversations, applications: priyaApps, centres: INITIAL_CENTRES, childIds: ['child-anya'], readMessageIds: read });
+  const all = build(new Set());
+  const bell = bellPreview(all);
+  assert.equal(bell.count, all.filter((u) => u.unread).length, 'bell badge = Updates badge');
+  assert.ok(bell.items.every((u) => u.unread));
+  assert.deepEqual(bell.items.map((u) => u.sortKey), [...bell.items.map((u) => u.sortKey)].sort((a, b) => b - a));
+  assert.ok(bell.items.every((u) => u.label && u.headline));
+  // The "replied later = read" rule carries over: Priya answered Jesse Ketchum's Nov 2 message
+  assert.ok(!bell.items.some((u) => u.messageId === 'm-jk-2'));
+  // Reading a message in either place drops it from both
+  const msg = bell.items.find((u) => u.messageId)!;
+  assert.ok(msg, 'a seeded unread centre message');
+  const after = bellPreview(build(new Set([msg.messageId!])));
+  assert.equal(after.count, bell.count - 1);
+  assert.ok(!after.items.some((u) => u.id === msg.id));
+  // Never more than 5, but the count is every unread item
+  const many = Array.from({ length: 8 }, (_, i) => ({ ...all[0], id: `x${i}`, unread: true, sortKey: i }));
+  const capped = bellPreview(many);
+  assert.equal(capped.items.length, 5);
+  assert.equal(capped.count, 8);
+  assert.deepEqual(capped.items.map((u) => u.id), ['x7', 'x6', 'x5', 'x4', 'x3']);
+  assert.deepEqual(bellPreview(all.map((u) => ({ ...u, unread: false }))), { count: 0, items: [] });
 });

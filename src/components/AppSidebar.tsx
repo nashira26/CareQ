@@ -67,14 +67,23 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ role, items, activeId, o
                   }`}
                 >
                   <Icon className="w-5 h-5" />
-                  {item.badge && (
-                    <span
-                      aria-hidden="true"
-                      className={`absolute -top-0.5 right-1.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
-                        item.badge === 'Offer' ? 'bg-sun' : 'bg-coral'
-                      }`}
-                    />
-                  )}
+                  {item.badge &&
+                    (/^\d+$/.test(item.badge) ? (
+                      // A count (e.g. unread updates): the same number as the desktop sidebar and the bell
+                      <span
+                        aria-hidden="true"
+                        className="absolute -top-1 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-coral text-white text-[11px] font-bold leading-none inline-flex items-center justify-center ring-2 ring-white"
+                      >
+                        {item.badge}
+                      </span>
+                    ) : (
+                      <span
+                        aria-hidden="true"
+                        className={`absolute -top-0.5 right-1.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
+                          item.badge === 'Offer' ? 'bg-sun' : 'bg-coral'
+                        }`}
+                      />
+                    ))}
                 </span>
                 <span className={`text-[12px] leading-tight truncate max-w-full ${isActive ? 'font-extrabold' : 'font-semibold'}`}>
                   {item.shortLabel ?? item.label}

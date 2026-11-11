@@ -3,6 +3,7 @@ import { ChevronDown, LogOut, UserRound } from "lucide-react";
 import { ParentProfile, Centre, InAppNotification } from "../data/mockData";
 import { LogoFull, LogoMark } from "./Logo";
 import { NotificationBell } from "./NotificationBell";
+import { ParentUpdatesBell } from "./ParentUpdatesBell";
 
 interface NavbarProps {
 	currentRole: "parent" | "centre";
@@ -13,6 +14,8 @@ interface NavbarProps {
 	onMarkAllAsRead: (role: "parent" | "centre") => void;
 	onLogout: () => void;
 	onOpenProfile: () => void;
+	/** Parents: the bell previews the Updates tab (same list, same unread count). */
+	parentBell?: React.ComponentProps<typeof ParentUpdatesBell>;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -24,6 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 	onMarkAllAsRead,
 	onLogout,
 	onOpenProfile,
+	parentBell,
 }) => {
 	// Avatar menu: "Your profile" and "Log out" (menu button pattern: arrows, Home/End, Escape, Tab)
 	const [menuOpen, setMenuOpen] = useState(false);
@@ -127,12 +131,16 @@ export const Navbar: React.FC<NavbarProps> = ({
 				<div className="flex items-center gap-2 sm:gap-4">
 					{/* "Prototype" is already stated in the band above the header */}
 					{/* Notification Bell */}
-					<NotificationBell
-						notifications={notifications}
-						currentRole={currentRole}
-						onMarkAsRead={onMarkAsRead}
-						onMarkAllAsRead={onMarkAllAsRead}
-					/>
+					{currentRole === "parent" && parentBell ? (
+						<ParentUpdatesBell {...parentBell} />
+					) : (
+						<NotificationBell
+							notifications={notifications}
+							currentRole={currentRole}
+							onMarkAsRead={onMarkAsRead}
+							onMarkAllAsRead={onMarkAllAsRead}
+						/>
+					)}
 
 					<div className="hidden sm:block h-8 w-px bg-cq-line" />
 

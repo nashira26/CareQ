@@ -16,7 +16,7 @@ import { Navbar } from "./components/Navbar";
 import { AppSidebar, SidebarItem } from "./components/AppSidebar";
 import { ParentHome } from "./components/ParentView/ParentHome";
 import { ParentOverview } from "./components/ParentView/ParentOverview";
-import { buildParentUpdates, type ParentUpdate } from "./lib/parentUpdates";
+import { bellPreview, buildParentUpdates, type ParentUpdate } from "./lib/parentUpdates";
 import { loadMessageReads, saveMessageReads } from "./lib/messageReads";
 import { FindTab } from "./components/ParentView/FindTab";
 import { ApplyTab } from "./components/ParentView/ApplyTab";
@@ -740,7 +740,7 @@ export default function App() {
 		readMessageIds: currentRole === "parent" ? messageReads.ids : undefined,
 	});
 	// Unread notifications and unread centre messages
-	const unreadUpdateCount = parentUpdates.filter((u) => u.unread).length;
+	const unreadUpdateCount = bellPreview(parentUpdates).count; // the bell shows the same number
 	const handleMarkUpdateRead = (u: ParentUpdate) => {
 		if (u.notificationId) handleMarkNotificationAsRead(u.notificationId);
 		if (u.messageId) markMessagesRead([u.messageId]);
@@ -750,6 +750,16 @@ export default function App() {
 		markMessagesRead(
 			parentUpdates.flatMap((u) => (u.messageId ? [u.messageId] : []))
 		);
+	};
+	/** Bell: reading an item marks it read and opens it (a message opens its conversation). */
+	const handleOpenUpdateFromBell = (u: ParentUpdate) => {
+		handleMarkUpdateRead(u);
+		if (u.kind === "message" && u.centreId) handleReplyToUpdate(u);
+		else if (u.applicationId) openApplication(u.applicationId);
+		else {
+			setFocusApplicationId(null);
+			setParentTab("updates");
+		}
 	};
 	/** Reply from Updates: the same conversation My applications opens, for that application's child. */
 	const handleReplyToUpdate = (u: ParentUpdate) => {
@@ -1093,6 +1103,19 @@ export default function App() {
 						onMarkAllAsRead={handleMarkAllNotificationsAsRead}
 						onLogout={handleLogout}
 						onOpenProfile={openProfile}
+						parentBell={
+							currentRole === "parent"
+								? {
+										updates: parentUpdates,
+										onOpenUpdate: handleOpenUpdateFromBell,
+										onMarkAllAsRead: handleMarkAllUpdatesRead,
+										onSeeAll: () => {
+											setFocusApplicationId(null);
+											setParentTab("updates");
+										},
+								  }
+								: undefined
+						}
 					/>
 
 					{/* Main Container: Strictly one role view visible or Trust & Transparency page */}
