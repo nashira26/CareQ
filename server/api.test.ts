@@ -109,7 +109,7 @@ test('scoping over HTTP: parents and centres only reach their own data', { skip 
   assert.equal((await sunny('POST', `/applications/${appId}/status`, { status: 'Waitlisted', waitlistPosition: 4 })).status, 200);
   const alexState = (await alex('GET', '/state')).json;
   assert.equal(alexState.applications.find((a: any) => a.id === appId).waitlistPosition, 4);
-  assert.ok(alexState.notifications.some((n: any) => /Sunny Steps updated your position to 4/.test(n.message)));
+  assert.ok(alexState.notifications.some((n: any) => /^Sunny Steps set \S+'s waitlist position to #4 on /.test(n.message)));
   assert.ok(!(await priya('GET', '/state')).json.notifications.some((n: any) => /Sunny Steps/.test(n.message)));
 
   // Messages are scoped too

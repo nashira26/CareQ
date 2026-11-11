@@ -107,9 +107,41 @@ test('end to end: submit -> centre waitlists -> parent sees position; notificati
   const app = alexSnap.applications.find((a) => a.id === id)!;
   assert.equal(app.waitlistPosition, 3);
   assert.equal(app.waitlistReportedBy, 'Sunny Steps');
-  assert.ok(alexSnap.notifications.some((n) => /Sunny Steps updated your position to 3/.test(n.message)));
+  // First position: "set"
+  assert.ok(alexSnap.notifications.some((n) => /^Sunny Steps set \S+'s waitlist position to #3 on \w{3} \d{1,2}$/.test(n.message)), 'set wording');
   const priyaSnap = await svc.getSnapshot(repo, (await repo.getAccount('parent-priya'))!);
   assert.ok(!priyaSnap.notifications.some((n) => /Sunny Steps/.test(n.message)));
+});
+
+test('live position updates use the seed wording: "moved … to #new (from #old) on date", or "set" with no earlier position', async () => {
+  const { repo, alex, sunny, sunnyId } = await setup();
+  const id = await svc.createDraft(repo, alex, sunnyId);
+  await svc.submitApplication(repo, alex, id);
+  const child = (await svc.getSnapshot(repo, (await repo.getAccount(alex.accountId))!)).applications.find((a) => a.id === id)!.childName;
+  const nov2 = new Date('2026-11-02T15:00:00Z');
+  const nov9 = new Date('2026-11-09T15:00:00Z');
+  await svc.setStatus(repo, sunny, id, 'Waitlisted', 6, undefined, nov2);
+  await svc.setStatus(repo, sunny, id, 'Waitlisted', 4, undefined, nov9);
+  await svc.setStatus(repo, sunny, id, 'Waitlisted', 4, undefined, new Date(nov9.getTime() + 60_000)); // same number again: "set"
+  const messages = (await svc.getSnapshot(repo, (await repo.getAccount(alex.accountId))!)).notifications
+    .filter((n) => n.type === 'position')
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .map((n) => n.message);
+  assert.deepEqual(messages, [
+    `Sunny Steps set ${child}'s waitlist position to #6 on Nov 2`,
+    `Sunny Steps moved ${child}'s waitlist position to #4 (from #6) on Nov 9`,
+    `Sunny Steps set ${child}'s waitlist position to #4 on Nov 9`,
+  ]);
+});
+
+test('live position update for seeded Anya at Jesse Ketchum: moved to #3 (from #4)', async () => {
+  const { repo, jesseKetchum } = await setup();
+  await svc.setStatus(repo, jesseKetchum,'app-jesse-ketchum-anya', 'Waitlisted', 3, undefined, new Date('2026-11-10T15:00:00Z'));
+  const priya = await svc.getSnapshot(repo, (await repo.getAccount('parent-priya'))!);
+  assert.ok(
+    priya.notifications.some((n) => n.message === "Jesse Ketchum Early Learning & Child Care Centre moved Anya's waitlist position to #3 (from #4) on Nov 10"),
+    priya.notifications.map((n) => n.message).join('\n')
+  );
 });
 
 test('messages: parents only about their own child; centres only with connected families', async () => {

@@ -426,9 +426,16 @@ export async function setStatus(
       : {}),
   });
 
+  // Same wording as the seeded notifications: "… moved Anya's waitlist position to #4 (from #6) on Nov 2".
+  // No earlier position (or the same one again): "… set Anya's waitlist position to #4 on Nov 2".
+  const oldPosition = Number.isInteger(app.waitlistPosition) && app.waitlistPosition! > 0 ? app.waitlistPosition : undefined;
+  const positionMessage =
+    oldPosition !== undefined && oldPosition !== waitlistPosition
+      ? `${centreName} moved ${app.childName}'s waitlist position to #${waitlistPosition} (from #${oldPosition}) on ${date}`
+      : `${centreName} set ${app.childName}'s waitlist position to #${waitlistPosition} on ${date}`;
   const [parentMessage, centreMessage, type] =
     isWaitlisted
-      ? [`${centreName} updated your position to ${waitlistPosition} on ${date}`, `Updated ${app.childName}'s position to ${waitlistPosition} on ${date}`, 'position' as const]
+      ? [positionMessage, `Updated ${app.childName}'s position to ${waitlistPosition} on ${date}`, 'position' as const]
       : status === 'Offer'
       ? [`${centreName} made an offer for ${app.childName} on ${date}`, `Made an offer to ${app.parentName} for ${app.childName} on ${date}`, 'offer' as const]
       : [`${centreName} updated your application status to ${status} on ${date}`, `Updated ${app.childName}'s status to ${status} on ${date}`, 'status' as const];
