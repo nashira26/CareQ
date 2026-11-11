@@ -13,7 +13,6 @@ import {
 	GhostButton,
 	TertiaryButton,
 	SimNote,
-	SimTag,
 	CentreAvatar,
 	ProgressStrip,
 	GreetingBand,
@@ -111,7 +110,6 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
 					<div className="rounded-2xl bg-white border border-cq-line border-l-4 border-l-coral shadow-sm p-5">
 						<div className="flex items-center justify-between gap-2">
 							<p className="text-sm font-extrabold text-coral-ink">Needs you</p>
-							{offerApp && <SimTag />}
 						</div>
 						{offerApp ? (
 							<>

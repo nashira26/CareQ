@@ -6,7 +6,6 @@ import {
   Card,
   GhostButton,
   IconTile,
-  DemoBanner,
   SimNote,
 } from '../ui/CareUI';
 import { Heart, PenLine, MessageCircle } from 'lucide-react';
@@ -44,12 +43,8 @@ export const CentreMessages: React.FC<CentreMessagesProps> = ({
     <div className="space-y-6 animate-fadeIn">
       <PageHeader
         title="Family messages"
-        subtitle="Read and reply to simulated family messages. AI can help you draft; you approve every message. Nothing leaves this browser."
+        subtitle="Read and reply to family messages. AI can help you draft; you approve every message."
       />
-
-      <DemoBanner title="Demo workspace.">
-        Every application, queue position, offer and message here is simulated. No real family is contacted.
-      </DemoBanner>
 
       <Card>
         {centreApps.length === 0 ? (

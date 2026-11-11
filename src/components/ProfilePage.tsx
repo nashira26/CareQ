@@ -37,7 +37,7 @@ import {
 } from '../lib/family';
 import { childRemovalBlocker, type ChildInput } from '../lib/service';
 import type { Area } from '../lib/rankCentres';
-import { Card, DangerButton, GhostButton, PageHeader, PrimaryButton, SimTag, TertiaryButton } from './ui/CareUI';
+import { Card, DangerButton, GhostButton, PageHeader, PrimaryButton, TertiaryButton } from './ui/CareUI';
 import { CheckboxGroup, Field, focusFirstError, inputClass } from './Onboarding/FormBits';
 import { resizePhoto } from './Onboarding/CentreRegistration';
 
@@ -802,7 +802,7 @@ const DemoCentreDetails: React.FC<{ centre: Centre; actions: ProfileActions }> =
     setErrors(errs);
     const bad = (['hours', 'contactEmail'] as const).filter((k) => errs[k]);
     if (bad.length) return focusFirstError(bad.map((k) => `sim-${k}`));
-    await save.run(() => actions.updateSimulatedContact(input), 'Saved. Families see these with a “Simulated” tag.');
+    await save.run(() => actions.updateSimulatedContact(input), 'Saved. Families using demo accounts see these on your centre.');
   };
 
   return (
@@ -833,18 +833,18 @@ const DemoCentreDetails: React.FC<{ centre: Centre; actions: ProfileActions }> =
       <form onSubmit={submit} noValidate className="rounded-2xl border border-butter-line bg-butter-50 p-4 sm:p-5 space-y-4">
         <div>
           <h3 className="text-lg font-extrabold text-ink flex flex-wrap items-center gap-2">
-            Hours and contact email <SimTag />
+            Hours and contact email
           </h3>
           <p className="text-sm text-ink-muted mt-1">
-            Entered by this simulated demo account. Families see them with a “Simulated” tag; they never replace
+            Entered by this demo account and shown to demo families only. They never replace
             {realCentre ? ' the open-data details above.' : ' the sample details above.'}
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field id="sim-hours" label="Hours (simulated)" optional error={errors.hours} hint="e.g. 7:30 AM – 6:00 PM">
+          <Field id="sim-hours" label="Hours" optional error={errors.hours} hint="e.g. 7:30 AM – 6:00 PM">
             {(a) => <input {...a} type="text" value={input.hours} onChange={set('hours')} className={inputClass(!!errors.hours)} />}
           </Field>
-          <Field id="sim-contactEmail" label="Contact email (simulated)" optional error={errors.contactEmail}>
+          <Field id="sim-contactEmail" label="Contact email" optional error={errors.contactEmail}>
             {(a) => <input {...a} type="email" value={input.contactEmail} onChange={set('contactEmail')} className={inputClass(!!errors.contactEmail)} />}
           </Field>
         </div>

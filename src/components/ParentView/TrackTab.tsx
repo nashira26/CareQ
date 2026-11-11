@@ -9,7 +9,6 @@ import {
   PrimaryButton,
   GhostButton,
   TertiaryButton,
-  DemoBanner,
   SimNote,
   SimTag,
   CentreAvatar,
@@ -28,12 +27,15 @@ interface TrackTabProps {
   onNavigateToApply: () => void;
   onNavigateToFind: () => void;
   onOpenConversation: (centreId: string) => void;
+  /** Demo accounts: one small "Simulated" tag next to each waitlist position and the offer (nowhere else). */
+  isDemoAccount?: boolean;
 }
 
 export const TrackTab: React.FC<TrackTabProps> = ({
   centres,
   applications,
   parentProfile,
+  isDemoAccount = false,
   onAcceptOffer,
   onWithdrawApplication,
   onNavigateToApply,
@@ -77,11 +79,6 @@ export const TrackTab: React.FC<TrackTabProps> = ({
         }
       />
 
-      {/* Demo Banner */}
-      <DemoBanner title="Demo workspace.">
-        Every application, queue position, offer and message here is simulated. No real centre is contacted.
-      </DemoBanner>
-
       {/* Offer Received Spotlight Card (if any active offer) */}
       {applications.some((a) => a.status === 'Offer') && (
         <div className="rounded-2xl bg-white border border-cq-line border-l-4 border-l-coral shadow-sm p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -91,7 +88,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-extrabold text-ink flex flex-wrap items-center gap-2">
-                Placement offer received! <SimTag />
+                Placement offer received! {isDemoAccount && <SimTag />}
               </h2>
               <p className="text-[15px] text-ink-muted mt-0.5">
                 A spot is available for {parentProfile.childName}. Review and accept below to secure enrolment.
@@ -168,7 +165,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
                       <>
                         <dd className="text-2xl font-extrabold text-brand leading-tight inline-flex items-center gap-1.5">
                           #{app.waitlistPosition}
-                          <SimTag />
+                          {isDemoAccount && <SimTag />}
                         </dd>
                         <dd className="text-xs text-ink-muted mt-0.5">
                           {reportedLineOnCard(app.waitlistReportedBy, centre?.name, app.waitlistReportedDate || 'recently')}
@@ -262,7 +259,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 
             <div className="bg-cq-sage/60 border border-cq-sage-line rounded-xl p-3.5 text-xs text-cq-ink space-y-1">
               <p className="font-semibold flex flex-wrap items-center gap-2">
-                Simulated offer: a licensed spot has been offered for {parentProfile.childName}. <SimTag />
+                A licensed spot has been offered for {parentProfile.childName}.
               </p>
               <p className="text-cq-muted">
                 Target Start Date: {selectedOfferApp.preferredStartDate || parentProfile.preferredStartDate}

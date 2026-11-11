@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, Check, CheckCheck, X } from 'lucide-react';
 import { InAppNotification } from '../data/mockData';
-import { SimTag } from './ui/CareUI';
 
 interface NotificationBellProps {
   notifications: InAppNotification[];
@@ -144,10 +143,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
                       {notif.message}
                     </p>
                     <div className="flex items-center justify-between mt-1.5 text-xs text-cq-stone-400">
-                      <span className="inline-flex items-center gap-1.5">
-                        <SimTag />
-                        {notif.timestamp}
-                      </span>
+                      <span>{notif.timestamp}</span>
                       {!notif.read && (
                         <button
                           type="button"

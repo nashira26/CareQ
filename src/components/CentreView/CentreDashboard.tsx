@@ -17,7 +17,6 @@ import {
   GhostButton,
   IconTile,
   Eyebrow,
-  DemoBanner,
   SimNote,
   AiFallbackNote,
   AiMode,
@@ -360,11 +359,6 @@ A signed Photography & Media Consent Form is required for classroom developmenta
             title="Applications & queue"
             subtitle="Review applications, update statuses and record positions. Families see each update with your name and the date."
           />
-
-          {/* 2. DemoBanner */}
-          <DemoBanner title="Demo workspace.">
-            Every application, queue position, offer and message here is simulated. No real centre or family is contacted.
-          </DemoBanner>
 
           {/* 3. Toolbar Row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-2">

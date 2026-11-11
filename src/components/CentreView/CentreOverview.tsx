@@ -7,8 +7,6 @@ import {
   GhostButton,
   IconTile,
   Eyebrow,
-  DemoBanner,
-  SimNote,
   TertiaryButton,
   GreetingBand,
 } from '../ui/CareUI';
@@ -70,7 +68,6 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
         <h1 className="mt-0.5 text-2xl sm:text-[30px] sm:leading-[38px] font-extrabold text-brand">{singleCentre.name}</h1>
         <p className="mt-1 text-base text-ink">Here’s what needs your attention today.</p>
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          <span className="text-xs font-bold text-sim">Simulated centre workspace</span>
           <span className="inline-flex rounded-md bg-white px-2 py-0.5 text-xs text-brand font-bold">
             {singleCentre.demoKind === 'open-data'
               ? `Licensed centre · Ontario open data${singleCentre.licenceNumber ? ` (licence #${singleCentre.licenceNumber})` : ''}`
@@ -117,11 +114,6 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
           ))}
         </div>
       </section>
-
-      {/* 4. DemoBanner */}
-      <DemoBanner title="Demo workspace.">
-        You are not signed in as real centre staff. These fictional families and actions show the centre side of CareQ.
-      </DemoBanner>
 
       {/* 5. Section: Applications at a glance */}
       <div className="space-y-4">
@@ -345,9 +337,6 @@ export const CentreOverview: React.FC<CentreOverviewProps> = ({
             )}
           </div>
 
-          <div className="pt-4 border-t border-cq-line">
-            <SimNote>All families and positions are simulated.</SimNote>
-          </div>
         </Card>
 
         {/* Card 2: What parents see */}

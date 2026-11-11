@@ -13,7 +13,6 @@ import {
   Card,
   IconTile,
   CentreAvatar,
-  SimNote,
 } from '../ui/CareUI';
 import { TrendingUp, Gift, FileText, Bell, Check, CalendarDays, Plus, X, ArrowRight, Heart } from 'lucide-react';
 import { SpotJourney, SpotMessages, EmptyState } from '../ui/Illustrations';
@@ -145,9 +144,6 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
           <Card className="space-y-6">
             <div className="flex items-center justify-between pb-3 border-b border-cq-line">
               <h2 className="text-lg font-extrabold text-brand">Latest updates</h2>
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-cq-page text-cq-soft border border-cq-line">
-                Simulated data
-              </span>
             </div>
 
             {/* Feed filters as underline text tabs */}
@@ -242,7 +238,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-cq-soft">
-                            {notif.type} · Simulated · {notif.timestamp}
+                            {notif.type} · {notif.timestamp}
                           </span>
                           {isUnread && (
                             <span className="w-1.5 h-1.5 rounded-full bg-cq-sage-ink inline-block shrink-0" />
@@ -578,12 +574,6 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
         </div>
       </div>
 
-      {/* Footer SimNote */}
-      <div className="pt-4 border-t border-cq-line">
-        <SimNote>
-          No live centre feed is connected. These updates come from sample data and your actions.
-        </SimNote>
-      </div>
     </div>
   );
 };

@@ -27,7 +27,6 @@ import {
   AiFallbackNote,
   AiMode,
   AiNotice,
-  SimTag,
 } from '../ui/CareUI';
 import { aiPost, isUserFacingAiError } from '../../lib/aiFetch';
 import { EMPTY_CRITERIA, SearchCriteria, hasAnyCriteria, sanitizeCriteria, parseSearchFallback } from '../../lib/searchCriteria';
@@ -61,6 +60,8 @@ interface FindTabProps {
   onOpenConversation: (centreId: string) => void;
   /** Active child's home area: the first search is "near {area}". */
   homeArea?: string;
+  /** Demo accounts also see a demo centre's own (simulated) hours and contact email; others see the listed details only. */
+  isDemoAccount?: boolean;
 }
 
 type Entry =
@@ -95,9 +96,8 @@ const openDataToRankable = (c: OntarioCentre): RankableCentre => ({
 /** Key for an AI explanation: reused only while the centre's facts are unchanged. */
 const explainKey = (r: RankedCentre) => `${r.id}|${r.matchedFacts.join(';')}|${r.unknownFacts.join(';')}`;
 
-/** Real centre (open data, simulated applications) or the fictional demo centre. */
-const demoCentreLabel = (c: Centre) =>
-  c.demoKind === 'open-data' ? 'Ontario open data · Simulated applications' : 'Fictional demo centre · Simulated';
+/** Real centre (open data) or the fictional demo centre. */
+const demoCentreLabel = (c: Centre) => (c.demoKind === 'open-data' ? 'Ontario open data' : 'Fictional demo centre');
 
 const appliedLabel = (status: ApplicationStatus) => (status === 'Draft' ? 'Draft application' : `Applied · ${status}`);
 
@@ -112,6 +112,7 @@ export const FindTab: React.FC<FindTabProps> = ({
   applications,
   parentProfile,
   homeArea,
+  isDemoAccount = false,
   onSelectCentre,
   onNavigateToApply,
   onOpenConversation,
@@ -373,16 +374,15 @@ export const FindTab: React.FC<FindTabProps> = ({
           <AvailabilityBox title="Availability reported by centre only" />
 
           <MoreDetails>
-            {shownHours(centre).text && (
+            {(isDemoAccount ? shownHours(centre).text : centre.hours) && (
               <p className="flex flex-wrap items-center gap-1.5">
                 <Clock className="w-4 h-4 shrink-0" aria-hidden="true" />
-                {shownHours(centre).text}
-                {shownHours(centre).simulated && <SimTag />}
+                {isDemoAccount ? shownHours(centre).text : centre.hours}
               </p>
             )}
-            {centre.simulatedContact?.contactEmail && (
+            {isDemoAccount && centre.simulatedContact?.contactEmail && (
               <p className="flex flex-wrap items-center gap-1.5">
-                <span className="font-bold text-ink">Contact:</span> {centre.simulatedContact.contactEmail} <SimTag />
+                <span className="font-bold text-ink">Contact:</span> {centre.simulatedContact.contactEmail}
               </p>
             )}
             {centre.programOptions && centre.programOptions.length > 0 && (

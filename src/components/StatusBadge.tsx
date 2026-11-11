@@ -1,27 +1,17 @@
 import React from 'react';
 import { ApplicationStatus } from '../data/mockData';
 import { FileText, Send, Search, ListOrdered, Gift, Check, Ban } from 'lucide-react';
-import { SimTag } from './ui/CareUI';
 
 interface StatusBadgeProps {
   status: ApplicationStatus;
   waitlistPosition?: number;
   size?: 'sm' | 'md';
-  /** Every non-draft status in the demo is simulated; set false only where a tag is already shown next to it. */
-  simulated?: boolean;
 }
 
-export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, waitlistPosition, size, simulated = true }) => {
-  const badge = <Badge status={status} waitlistPosition={waitlistPosition} size={size} />;
-  // A draft is the parent's own unsent work, not a simulated centre status
-  if (!simulated || status === 'Draft' || !badge) return badge;
-  return (
-    <span className="inline-flex items-center gap-1.5 flex-wrap">
-      {badge}
-      <SimTag />
-    </span>
-  );
-};
+/** No "Simulated" tag here: demo accounts see one banner at the top of every portal screen instead. */
+export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, waitlistPosition, size }) => (
+  <Badge status={status} waitlistPosition={waitlistPosition} size={size} />
+);
 
 /**
  * One colour and one icon per status, so colour is never the only cue.
@@ -47,7 +37,7 @@ const LABEL: Record<ApplicationStatus, string> = {
   Withdrawn: 'Withdrawn',
 };
 
-const Badge: React.FC<Omit<StatusBadgeProps, 'simulated'>> = ({ status, waitlistPosition }) => {
+const Badge: React.FC<StatusBadgeProps> = ({ status, waitlistPosition }) => {
   const s = STYLES[status];
   if (!s) return null;
   const { cls, Icon } = s;

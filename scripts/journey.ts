@@ -119,11 +119,15 @@ async function parentJourney(b: Browser, width: number, errors: string[]) {
   await step('Apply opens', async () => {
     await openTab(p, 'Apply');
   });
-  await step('Track lists the applications with "Simulated" tags', async () => {
+  await step('Track: one demo banner; "Simulated" tags only next to positions and the offer', async () => {
     await openTab(p, 'Track Status');
     await visible(p, 'Macaulay').waitFor({ timeout: 10000 });
+    const banners = await p.getByText('Demo account:', { exact: true }).locator('visible=true').count();
+    if (banners !== 1) throw new Error(`${banners} demo banners visible (want 1)`);
     const n = await p.getByText('Simulated', { exact: true }).locator('visible=true').count();
-    if (n < 5) throw new Error(`only ${n} "Simulated" tags visible`);
+    if (n < 2) throw new Error(`only ${n} "Simulated" tags visible (want the positions and the offer)`);
+    const queues = await p.locator('dd', { hasText: /^#\d+/ }).locator('visible=true').count();
+    if (n > queues + 1) throw new Error(`${n} "Simulated" tags for ${queues} positions + 1 offer`);
   });
   await step('accept the offer -> confirmation -> Accepted', async () => {
     await p.locator('button:visible', { hasText: /^\s*Accept( offer)?\s*$/ }).first().click();
@@ -145,9 +149,11 @@ async function centreJourney(b: Browser, width: number, errors: string[]) {
   const p = await ctx.newPage();
   collectErrors(p, 'centre', errors);
 
-  await step('centre demo login shows the simulated-account banner', async () => {
+  await step('centre demo login shows the demo-account banner, and no per-item "Simulated" tags', async () => {
     await login(p, 'CareQ Demo Centre (fictional)');
-    await visible(p, 'Simulated demo account').waitFor({ timeout: 10000 });
+    await visible(p, 'Demo account:').waitFor({ timeout: 10000 });
+    const n = await p.getByText('Simulated', { exact: true }).locator('visible=true').count();
+    if (n) throw new Error(`${n} "Simulated" tags on the centre overview`);
   });
   await step('centre sets a waitlist position to #2', async () => {
     await openTab(p, 'Applications & queue');
@@ -168,7 +174,7 @@ async function centreJourney(b: Browser, width: number, errors: string[]) {
     await visible(p, "can't be edited here").waitFor({ timeout: 5000 });
     await p.locator('#sim-hours').fill('8:00 AM – 5:30 PM');
     await p.getByRole('button', { name: /^Save$/ }).click();
-    await visible(p, /Families see these with a “Simulated” tag/).waitFor({ timeout: 8000 });
+    await visible(p, /Families using demo accounts see these/).waitFor({ timeout: 8000 });
   });
   await step('Review opens an application', async () => {
     await openTab(p, 'Applications & queue');

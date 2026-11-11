@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Centre, Application, ChatMessage } from '../data/mockData';
 import { StatusBadge } from './StatusBadge';
-import { AiFallbackNote, AiMode, AiNotice, SimTag } from './ui/CareUI';
+import { AiFallbackNote, AiMode, AiNotice } from './ui/CareUI';
 import { parentMessageSuggestions } from '../lib/messageSuggestions';
 import { AI_OFFLINE_STATUS, aiPost, isUserFacingAiError } from '../lib/aiFetch';
 import { X, Send, Bot, Loader2, Check, Building2, User, Baby, RefreshCw, MessageSquare, AlertTriangle, PenLine } from 'lucide-react';
@@ -278,16 +278,9 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                 >
                   <div className="text-xs font-semibold text-cq-stone-500 mb-1 px-1 flex items-center gap-1">
                     <span>{msg.senderName}</span>
-                    {/* Every centre message in the demo is simulated */}
-                    {msg.sender === 'centre' && <SimTag />}
                     {msg.aiAssisted && (
                       <span className="text-xs text-cq-teal-800 bg-cq-teal-100 font-bold px-1.5 py-0.2 rounded">
                         AI Drafted
-                      </span>
-                    )}
-                    {msg.basedOnSimulatedData && (
-                      <span className="inline-flex items-center rounded px-1.5 py-0.5 bg-cq-band text-cq-sand-ink text-xs font-semibold leading-none">
-                        Based on simulated application data
                       </span>
                     )}
                   </div>
@@ -474,7 +467,6 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                       <li key={f.label} className="flex flex-wrap items-center gap-1">
                         <span className="font-semibold">{f.label}:</span>
                         <span>{f.value}</span>
-                        {f.simulated && <SimTag />}
                       </li>
                     ))}
                   </ul>

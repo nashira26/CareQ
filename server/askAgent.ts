@@ -15,7 +15,10 @@
 import type { Content, FunctionCall, FunctionDeclaration, GenerateContentConfig } from '@google/genai';
 import { HELP_FAQS } from '../src/data/helpData';
 import { BF_TORONTO_OPERATOR_ID, BF_TORONTO_SOURCE_NOTE } from '../src/data/policyCoverage';
-import { estimateLine, reportedLine } from '../src/lib/simulated';
+
+/** Ask CareQ's own wording for a simulated application (unchanged; the app's cards no longer repeat "Simulated"). */
+const reportedLine = (centreName: string, date: string) => `Reported by ${centreName} · Simulated · ${date}`;
+const estimateLine = (estimate: string) => `Centre's estimate: ${estimate}, not a guarantee · Simulated`;
 import {
   BASIC_SEARCH_NOTICE,
   PROVINCIAL_LABEL,

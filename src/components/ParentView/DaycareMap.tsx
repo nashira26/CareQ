@@ -232,7 +232,7 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
             <div className="text-xs text-cq-stone-500 flex items-center gap-2">
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-cq-teal-700 inline-block"></span>
-                <span>CareQ demo centre (simulated applications)</span>
+                <span>CareQ demo centre</span>
               </span>
               {realCentresOnMap.length > 0 && (
                 <span className="flex items-center gap-1">
@@ -249,7 +249,7 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
 
           {/* Bottom helper pill */}
           <div className="absolute bottom-3 left-3 z-1000 bg-cq-stone-900/80 backdrop-blur-xs text-white text-xs px-3 py-1 rounded-full shadow-sm pointer-events-none">
-            Powered by OpenStreetMap • {centres.length} demo (simulated applications) + {realCentresOnMap.length} licensed centres
+            Powered by OpenStreetMap • {centres.length} demo + {realCentresOnMap.length} licensed centres
           </div>
         </div>
 

@@ -11,7 +11,7 @@ import {
   citationHeading,
   showSourceNote,
 } from '../lib/askCareQ';
-import { AiFallbackNote, AiMode, SimTag } from './ui/CareUI';
+import { AiFallbackNote, AiMode } from './ui/CareUI';
 
 interface ChatMessage {
   id: string;
@@ -27,17 +27,11 @@ const NO_INFO = "I don't have that information; please contact the centre or use
 const BASIC_SEARCH_NOTICE = 'AI search limited right now: basic search used';
 const now = () => new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
-/** One source under an answer: a handbook quote card, or "From your application · Simulated". */
+/** One source under an answer: a handbook quote card, or "From your application". */
 const QuoteCard: React.FC<{ c: AskCitation }> = ({ c }) => (
   <div className="rounded-xl border border-cq-line bg-cq-page px-2.5 py-2 space-y-1">
     <p className="text-xs font-semibold text-cq-muted flex items-center gap-1 flex-wrap">
       <span>{citationHeading(c)}</span>
-      {c.kind === 'application' && c.simulated && (
-        <>
-          <span aria-hidden>·</span>
-          <SimTag />
-        </>
-      )}
     </p>
     {c.kind === 'document' && <p className="text-xs text-cq-ink italic leading-snug">“{c.quote}”</p>}
     {c.label && <p className="text-xs font-medium text-cq-sand-ink-2">{c.label}</p>}

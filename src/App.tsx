@@ -43,7 +43,7 @@ import torontoAreas from './data/torontoAreas.json';
 import fsaCentroids from './data/fsaCentroids.json';
 import { LogoFull } from './components/Logo';
 import { setAiOffline } from './lib/aiFetch';
-import { CentreDemoBanner } from './components/ui/CareUI';
+import { DemoAccountBanner } from './components/ui/CareUI';
 import { StepComplete, StepCompleteInfo } from './components/ui/StepComplete';
 import { SpotJourney } from './components/ui/Illustrations';
 import {
@@ -53,7 +53,6 @@ import {
   ListFilter,
   HelpCircle,
   Home,
-  Info,
   Heart,
   LayoutGrid,
   ScrollText,
@@ -683,13 +682,12 @@ export default function App() {
           onLogout={handleLogout}
         />
         <div className="flex-1 min-w-0 flex flex-col pb-tabbar">
-          {/* Thin simulation prototype notice band above Navbar */}
-          <div className="min-h-8 py-1.5 bg-butter border-b border-butter-line text-xs text-cq-sand-ink flex items-center justify-center gap-2 px-4 shrink-0 select-none">
-            <span className="font-extrabold">Prototype</span>
-            <span className="hidden sm:inline">Families, applications, positions, offers and messages in this demo are simulated.</span>
-            <span className="sm:hidden">Simulated data prototype.</span>
-            <Info className="w-3.5 h-3.5 text-cq-sand-ink shrink-0" />
-          </div>
+          {/* The one simulation notice, on every portal screen, for demo accounts only (newly signed-up accounts see none) */}
+          {currentAccount?.isDemoAccount && (
+            <DemoAccountBanner
+              realCentreName={currentRole === 'centre' && activeSingleCentre.demoKind === 'open-data' ? activeSingleCentre.name : undefined}
+            />
+          )}
 
           {/* Top Navbar: Role is fixed to the logged-in account (parents see only parent view; centres see only centre view) */}
           <Navbar
@@ -738,6 +736,7 @@ export default function App() {
                     applications={myApplications}
                     parentProfile={activeParentProfile}
                     homeArea={activeParentProfile.homeArea}
+                    isDemoAccount={Boolean(currentAccount?.isDemoAccount)}
                     onSelectCentre={handleSelectCentre}
                     onNavigateToApply={() => setParentTab('apply')}
                     onOpenConversation={handleParentOpenConversation}
@@ -766,6 +765,7 @@ export default function App() {
                     centres={centres}
                     applications={myApplications}
                     parentProfile={activeParentProfile}
+                    isDemoAccount={Boolean(currentAccount?.isDemoAccount)}
                     onAcceptOffer={handleAcceptOffer}
                     onWithdrawApplication={handleWithdrawApplication}
                     onNavigateToApply={() => setParentTab('apply')}
@@ -797,10 +797,6 @@ export default function App() {
             ) : (
               /* Centres see ONLY the centre screens */
               <div className="space-y-6">
-                {/* On every centre-portal page: demo centres' portal accounts are simulated */}
-                {activeSingleCentre.demoKind && (
-                  <CentreDemoBanner centreName={activeSingleCentre.name} realCentre={activeSingleCentre.demoKind === 'open-data'} />
-                )}
                 {centreTab === 'home' && (
                   <CentreOverview
                     singleCentre={activeSingleCentre}

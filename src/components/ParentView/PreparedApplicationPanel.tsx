@@ -119,9 +119,6 @@ export const PreparedApplicationPanel: React.FC<Props> = ({ app, centre, parentP
             <h5 className="text-sm font-bold text-cq-ink flex items-center gap-2">
               <PenLine className="w-4 h-4 text-brand" aria-hidden="true" /> AI draft — review before sending
             </h5>
-            <span className="rounded px-1.5 py-0.5 bg-cq-band text-cq-sand-ink text-xs font-semibold">
-              {centre.demoKind === 'open-data' ? 'Simulated application' : 'Simulated centre'}
-            </span>
           </div>
           <AiFallbackNote aiMode={draft.aiMode} />
           <AiNotice message={aiNotice} />

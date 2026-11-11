@@ -181,7 +181,7 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
             </span>
             <div className="text-xs sm:text-sm text-cq-stone-700">
               <span className="font-bold text-cq-stone-900">Simulated data is labelled: </span>
-              Every simulated waitlist position, queue calculation, and demo profile is visibly marked with a "Simulated data" badge so users are never misled.
+              Demo accounts see a banner at the top of every screen saying their applications, waitlist positions, offers and messages are simulated, plus a "Simulated" tag next to each waitlist position and offer in Track.
             </div>
           </div>
         </div>

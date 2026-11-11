@@ -242,8 +242,8 @@ export const SimNote: React.FC<SimNoteProps> = ({ children, className = '' }) =>
 );
 
 /**
- * "Simulated" chip for every simulated item (status, position, estimate, offer, centre message,
- * notification). Never used on real data (open-data details, handbook content).
+ * Small "Simulated" chip. Used sparingly: only next to the waitlist position and the offer in the
+ * parent Track view, for demo accounts. Everything else is covered by DemoAccountBanner.
  */
 export const SimTag: React.FC<{ className?: string }> = ({ className = '' }) => (
   <span
@@ -253,27 +253,20 @@ export const SimTag: React.FC<{ className?: string }> = ({ className = '' }) => 
   </span>
 );
 
-/** Banner on every centre-portal page: the account is a simulated demo account. */
-export const CentreDemoBanner: React.FC<{ centreName: string; realCentre: boolean; className?: string }> = ({
-  centreName,
-  realCentre,
-  className = '',
-}) => (
+/**
+ * The one simulation notice for demo accounts, at the top of every portal screen (parent and centre).
+ * A real centre's demo account also says it isn't operated by or affiliated with that centre.
+ * Newly signed-up accounts never see it.
+ */
+export const DemoAccountBanner: React.FC<{ realCentreName?: string; className?: string }> = ({ realCentreName, className = '' }) => (
   <div
     role="note"
-    className={`rounded-xl border border-butter-line bg-butter px-4 py-2.5 text-sm text-cq-sand-ink flex items-start gap-2 ${className}`}
+    className={`bg-butter border-b border-butter-line px-4 py-1.5 text-xs text-cq-sand-ink flex items-start sm:items-center justify-center gap-2 shrink-0 ${className}`}
   >
-    <Info className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+    <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 sm:mt-0" aria-hidden="true" />
     <span>
-      {realCentre ? (
-        <>
-          <span className="font-bold">Simulated demo account.</span> Not operated by or affiliated with {centreName}.
-        </>
-      ) : (
-        <>
-          <span className="font-bold">Simulated demo account.</span> {centreName} is a fictional centre.
-        </>
-      )}
+      <span className="font-bold">Demo account:</span> applications, waitlist positions, offers and messages are simulated.
+      {realCentreName && <> Not operated by or affiliated with {realCentreName}.</>}
     </span>
   </div>
 );

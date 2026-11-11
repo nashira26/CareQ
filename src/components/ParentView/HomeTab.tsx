@@ -242,8 +242,6 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                       <div className="flex items-center gap-1.5 text-xs text-cq-stone-400 capitalize">
                         <span>{notif.type || 'Update'}</span>
                         <span>·</span>
-                        <span>Simulated</span>
-                        <span>·</span>
                         <span>{notif.timestamp}</span>
                         {isUnread && (
                           <span className="w-2 h-2 rounded-full bg-cq-secondary inline-block ml-1" />
