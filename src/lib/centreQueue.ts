@@ -17,5 +17,15 @@ export function newestRequests<T extends Pick<Application, 'status' | 'submitted
     .map((x) => x.a);
 }
 
-/** Short reference shown instead of an internal id: "Ref. CQ-4F2A" (last 4 letters or digits, uppercase). */
-export const shortRef = (id: string): string => `Ref. CQ-${id.replace(/[^a-z0-9]/gi, '').slice(-4).toUpperCase()}`;
+/**
+ * Short reference shown instead of an internal id: "Ref. CQ-4821". Four digits from a hash (FNV-1a) of the
+ * id, so the same application always gets the same reference and it never spells part of a name.
+ */
+export const shortRef = (id: string): string => {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < id.length; i++) {
+    h ^= id.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return `Ref. CQ-${String(h % 10000).padStart(4, '0')}`;
+};

@@ -26,9 +26,14 @@ test('newest requests on the seeded demo centre queue are in date order', () => 
   assert.deepEqual(times, [...times].sort((a, b) => b - a));
 });
 
-test('short reference: last 4 letters or digits, uppercase, never the internal id', async () => {
+test('short reference: "CQ-" + 4 digits from a hash of the id, the same every time, never letters', async () => {
   const { shortRef } = await import('./centreQueue');
-  assert.equal(shortRef('app-careq-demo-anya-17f4f2a'), 'Ref. CQ-4F2A');
-  assert.equal(shortRef('app-x-y-1'), 'Ref. CQ-PXY1');
-  assert.doesNotMatch(shortRef('app-on-00576-child-anya-1730000000000'), /app-|child/);
+  for (const id of ['app-careq-demo-anya-17f4f2a', 'app-x-y-1', 'app-on-00576-child-anya-1730000000000', 'app-jesse-ketchum-ama', '']) {
+    assert.match(shortRef(id), /^Ref\. CQ-\d{4}$/, id);
+    assert.equal(shortRef(id), shortRef(id));
+  }
+  assert.notEqual(shortRef('app-jesse-ketchum-ama'), shortRef('app-jesse-ketchum-ren'));
+  // Seeded applications each get their own reference
+  const refs = INITIAL_APPLICATIONS.map((a) => shortRef(a.id));
+  assert.equal(new Set(refs).size, refs.length);
 });
