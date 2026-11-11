@@ -17,6 +17,7 @@ import { SearchChips } from './SearchChips';
 import { reportedLineOnCard } from '../../lib/simulated';
 import { licenceLabel, shownHours } from '../../lib/family';
 import { doesntServeLabel } from '../../lib/searchCriteria';
+import { statusLabel } from '../../lib/centreQueue';
 import {
   PageHeader,
   Card,
@@ -56,7 +57,8 @@ interface FindTabProps {
   applications: Application[];
   parentProfile: ParentProfile;
   onSelectCentre: (centreId: string) => void;
-  onNavigateToApply: () => void;
+  /** Manage: a draft opens Drafts; a sent application opens in My applications. */
+  onManageApplication: (app: Application) => void;
   onOpenConversation: (centreId: string) => void;
   /** Active child's home area: the first search is "near {area}". */
   homeArea?: string;
@@ -99,7 +101,8 @@ const explainKey = (r: RankedCentre) => `${r.id}|${r.matchedFacts.join(';')}|${r
 /** Real centre (open data) or the fictional demo centre. */
 const demoCentreLabel = (c: Centre) => (c.demoKind === 'open-data' ? 'Ontario open data' : 'Fictional demo centre');
 
-const appliedLabel = (status: ApplicationStatus) => (status === 'Draft' ? 'Draft application' : `Applied · ${status}`);
+/** Just the application's current status, in the parent's wording ("Submitted", "Offer Available", "Draft"). */
+const appliedLabel = (status: ApplicationStatus) => statusLabel(status, 'parent');
 
 /** Queue position exactly as the centre reported it, with the date when known. */
 const positionLabel = (app: Application, centreName?: string) =>
@@ -114,7 +117,7 @@ export const FindTab: React.FC<FindTabProps> = ({
   homeArea,
   isDemoAccount = false,
   onSelectCentre,
-  onNavigateToApply,
+  onManageApplication,
   onOpenConversation,
 }) => {
   const [searchText, setSearchText] = useState('');
@@ -287,7 +290,7 @@ export const FindTab: React.FC<FindTabProps> = ({
     [results]
   );
 
-  // One status label per centre: "Applied · {status}" (+ reported position), or "Shortlisted"
+  // One status label per centre: the application's current status (+ reported position), or "Shortlisted"
   const statusPill = (id: string) => {
     const app = appByCentre.get(id);
     if (app) {
@@ -419,7 +422,7 @@ export const FindTab: React.FC<FindTabProps> = ({
               Message
             </GhostButton>
             {existingApp ? (
-              <GhostButton onClick={onNavigateToApply} className="h-10">
+              <GhostButton onClick={() => onManageApplication(existingApp)} className="h-10">
                 Manage ({existingApp.status})
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </GhostButton>
@@ -473,7 +476,7 @@ export const FindTab: React.FC<FindTabProps> = ({
                   <div className="mt-auto flex items-end justify-between gap-2">
                     {statusPill(id)}
                     {app && (
-                      <TertiaryButton onClick={onNavigateToApply} className="h-9 px-1 shrink-0">
+                      <TertiaryButton onClick={() => onManageApplication(app)} className="h-9 px-1 shrink-0">
                         Manage
                         <ArrowRight className="w-4 h-4" aria-hidden="true" />
                       </TertiaryButton>
@@ -622,7 +625,7 @@ export const FindTab: React.FC<FindTabProps> = ({
             realCentres={mapOpenData}
             onSelectCentre={onSelectCentre}
             onOpenConversation={onOpenConversation}
-            onNavigateToApply={onNavigateToApply}
+            onManageApplication={onManageApplication}
           />
         </Card>
       )}

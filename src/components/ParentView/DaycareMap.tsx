@@ -27,7 +27,7 @@ interface DaycareMapProps {
   realCentres?: OntarioCentre[];
   onSelectCentre: (centreId: string) => void;
   onOpenConversation: (centreId: string) => void;
-  onNavigateToApply: () => void;
+  onManageApplication: (app: Application) => void;
 }
 
 export const DaycareMap: React.FC<DaycareMapProps> = ({
@@ -37,7 +37,7 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
   realCentres = NO_REAL_CENTRES,
   onSelectCentre,
   onOpenConversation,
-  onNavigateToApply,
+  onManageApplication,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -343,7 +343,7 @@ export const DaycareMap: React.FC<DaycareMapProps> = ({
                   {isSelected ? (
                     <button
                       type="button"
-                      onClick={onNavigateToApply}
+                      onClick={() => currentApp && onManageApplication(currentApp)}
                       className="flex-1 bg-cq-emerald-50 border border-cq-emerald-300 text-cq-emerald-800 hover:bg-cq-emerald-100 font-medium text-xs py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1.5"
                     >
                       <CheckCircle2 className="w-4 h-4 text-cq-emerald-600" />

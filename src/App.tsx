@@ -530,6 +530,13 @@ export default function App() {
 		setFocusApplicationId(applicationId);
 		setParentTab("track");
 	};
+	/** Find's "Manage": a draft is finished in Drafts; a sent application opens in My applications. */
+	const handleManageApplication = (app: Application) => {
+		if (app.status === "Draft") {
+			setFocusApplicationId(null);
+			setParentTab("apply");
+		} else openApplication(app.id);
+	};
 	const handleWithdrawApplication = (applicationId: string) =>
 		store && run(store.withdraw(applicationId));
 
@@ -1167,7 +1174,7 @@ export default function App() {
 										homeArea={activeParentProfile.homeArea}
 										isDemoAccount={Boolean(currentAccount?.isDemoAccount)}
 										onSelectCentre={handleSelectCentre}
-										onNavigateToApply={() => setParentTab("apply")}
+										onManageApplication={handleManageApplication}
 										onOpenConversation={handleParentOpenConversation}
 									/>
 								)}
