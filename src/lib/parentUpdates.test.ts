@@ -139,3 +139,26 @@ test('Bell: same unread items and count as Updates, newest first, at most 5; rea
   assert.deepEqual(capped.items.map((u) => u.id), ['x7', 'x6', 'x5', 'x4', 'x3']);
   assert.deepEqual(bellPreview(all.map((u) => ({ ...u, unread: false }))), { count: 0, items: [] });
 });
+
+test('Updates: wait estimate changes sit under Waitlist with their own headlines', () => {
+  const base = { recipientRole: 'parent' as const, recipientId: PRIYA_ACCOUNT_ID, timestamp: 'Nov 11', read: false, type: 'estimate' as const };
+  const list = buildParentUpdates({
+    notifications: [
+      { ...base, id: 'e1', createdAt: 2, message: 'Jesse Ketchum Early Learning & Child Care Centre updated its wait estimate for Anya to 3–6 months on Nov 11' },
+      { ...base, id: 'e2', createdAt: 1, message: 'Jesse Ketchum Early Learning & Child Care Centre removed its wait estimate for Anya on Nov 11' },
+    ],
+    conversations: {},
+    applications: priyaApps,
+    centres: INITIAL_CENTRES,
+    childIds: ['child-anya'],
+  });
+  assert.deepEqual(list.map((u) => [u.kind, u.headline]), [
+    ['waitlist', 'Wait estimate updated'],
+    ['waitlist', 'Wait estimate removed'],
+  ]);
+  assert.equal(list[0].applicationId, 'app-jesse-ketchum-anya');
+  assert.match(list[0].label, /^Waitlist · Jesse Ketchum/);
+  // Home: titled by the headline, not "New waitlist position"
+  const items = attentionItems({ applications: [], centres: INITIAL_CENTRES, updates: list });
+  assert.deepEqual(items.map((i) => i.title), ['Wait estimate updated', 'Wait estimate removed']);
+});

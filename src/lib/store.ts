@@ -50,6 +50,8 @@ export interface DemoStore {
   acceptOffer(id: string): Promise<Snapshot>;
   declineOffer(id: string): Promise<Snapshot>;
   setStatus(id: string, status: CentreStatus, waitlistPosition?: number, waitlistEstimate?: string): Promise<Snapshot>;
+  /** Waitlisted only: change just the centre's wait estimate (blank clears it). */
+  updateEstimate(id: string, estimate: string): Promise<Snapshot>;
   sendMessage(target: { centreId: string; childId: string }, text: string, aiAssisted: boolean, fromSimulatedDraft?: boolean): Promise<Snapshot>;
   markRead(ids: string[] | 'all'): Promise<Snapshot>;
   createSupportRequest(input: SupportInput): Promise<Snapshot>;
@@ -108,6 +110,8 @@ export class ApiStore implements DemoStore {
   declineOffer = (id: string) => call<Snapshot>('POST', `/applications/${encodeURIComponent(id)}/decline`);
   setStatus = (id: string, status: CentreStatus, waitlistPosition?: number, waitlistEstimate?: string) =>
     call<Snapshot>('POST', `/applications/${encodeURIComponent(id)}/status`, { status, waitlistPosition, waitlistEstimate });
+  updateEstimate = (id: string, estimate: string) =>
+    call<Snapshot>('POST', `/applications/${encodeURIComponent(id)}/estimate`, { estimate });
   sendMessage = (target: { centreId: string; childId: string }, text: string, aiAssisted: boolean, fromSimulatedDraft = false) =>
     call<Snapshot>('POST', '/messages', { ...target, text, aiAssisted, fromSimulatedDraft });
   markRead = (ids: string[] | 'all') => call<Snapshot>('POST', '/notifications/read', { ids });
@@ -255,6 +259,8 @@ export class LocalStore implements DemoStore {
   declineOffer = (id: string) => this.run((r, a) => svc.declineOffer(r, actorOf(a), id));
   setStatus = (id: string, status: CentreStatus, pos?: number, est?: string) =>
     this.run((r, a) => svc.setStatus(r, actorOf(a), id, status, pos, est));
+  updateEstimate = (id: string, estimate: string) =>
+    this.run((r, a) => svc.updateWaitlistEstimate(r, actorOf(a), id, estimate));
   sendMessage = (target: { centreId: string; childId: string }, text: string, aiAssisted: boolean, fromSimulatedDraft = false) =>
     this.run((r, a) => svc.sendMessage(r, actorOf(a), target, text, aiAssisted, new Date(), fromSimulatedDraft));
   markRead = (ids: string[] | 'all') => this.run((r, a) => svc.markNotificationsRead(r, actorOf(a), ids));

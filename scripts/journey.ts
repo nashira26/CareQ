@@ -6,7 +6,7 @@
  *   npm run journey -- --width=390                   # one viewport width only
  *   npm run journey -- --headed                      # watch it run
  *
- * It changes demo data (edits Anya's notes and home area; as Jesse Ketchum, moves Anya to #3, makes her an offer
+ * It changes demo data (edits Anya's notes and home area; as Jesse Ketchum, moves Anya to #3, changes her wait estimate, makes her an offer
  * and sets the centre's simulated hours; as Priya, accepts that offer and withdraws her other applications).
  * In local mode each run uses fresh browser storage, so nothing is shared. Against a MongoDB-backed
  * server it would change the shared demo, so it refuses unless you pass --allow-mongo (then run
@@ -284,6 +284,17 @@ async function centreJourney(b: Browser, width: number, errors: string[]) {
     await p.locator('#waitlist-pos-input').waitFor({ state: 'detached', timeout: 5000 });
     await centreRow(p, 'Anya').getByText('#3').waitFor({ timeout: 8000 });
   });
+  await step("centre changes only Anya's wait estimate (Edit estimate): position stays #3", async () => {
+    await p.getByRole('button', { name: 'Edit wait estimate for Anya' }).locator('visible=true').first().click({ timeout: 5000 });
+    const dialog = p.getByRole('dialog', { name: 'Edit wait estimate' });
+    await dialog.waitFor({ timeout: 5000 });
+    if ((await p.locator('#estimate-only-input').inputValue()) !== '4–6 months') throw new Error('estimate not prefilled');
+    await dialog.getByRole('button', { name: '3–6 months', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Save estimate' }).click();
+    await dialog.waitFor({ state: 'detached', timeout: 5000 });
+    await centreRow(p, 'Anya').getByText('Your estimate: 3–6 months').waitFor({ timeout: 8000 });
+    await centreRow(p, 'Anya').getByText('#3').waitFor({ timeout: 5000 });
+  });
   await step('centre makes Anya an offer', async () => {
     await p.locator('button:visible:not([disabled])', { hasText: /^\s*(Make offer|Offer)\s*$/ }).first().click({ timeout: 8000 });
     await visible(p, /Updated Anya's application to "Offer"/).waitFor({ timeout: 8000 });
@@ -325,12 +336,19 @@ async function centreJourney(b: Browser, width: number, errors: string[]) {
     await visible(p, new RegExp(`^Offer · Jesse Ketchum.* · ${today}$`)).waitFor({ timeout: 8000 });
     await visible(p, new RegExp(`^Waitlist · Jesse Ketchum.* · ${today}$`)).waitFor({ timeout: 8000 });
   });
+  await step('Priya: the estimate change is under the Waitlist filter as "Wait estimate updated"', async () => {
+    await p.getByRole('button', { name: 'Waitlist', exact: true }).locator('visible=true').first().click();
+    await visible(p, 'Wait estimate updated').waitFor({ timeout: 8000 });
+    await visible(p, /updated its wait estimate for Anya to 3–6 months/).waitFor({ timeout: 5000 });
+    await p.getByRole('button', { name: 'All', exact: true }).locator('visible=true').first().click();
+  });
   // By its heading: after accepting, other cards also mention Jesse Ketchum ("Withdrawn when you accepted …")
   const jkCard = () => p.locator('li:visible').filter({ has: p.getByRole('heading', { name: /^Jesse Ketchum/ }) }).first();
   await step('Priya: My applications shows the Jesse Ketchum offer, #3 and the date it was reported', async () => {
     await openTab(p, 'My applications');
     await jkCard().locator('button', { hasText: /^\s*Accept offer\s*$/ }).waitFor({ timeout: 8000 });
     await jkCard().getByText('#3').waitFor({ timeout: 5000 });
+    await jkCard().getByText("Centre's estimate: 3–6 months, not a guarantee").waitFor({ timeout: 5000 });
     await jkCard().getByText(new RegExp(today)).first().waitFor({ timeout: 5000 });
   });
   const acceptDialog = () => p.getByRole('dialog', { name: /^Accept the offer from Jesse Ketchum/ });

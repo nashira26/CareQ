@@ -160,7 +160,7 @@ export interface InAppNotification {
   timestamp: string;
   createdAt: number;
   read: boolean;
-  type?: 'status' | 'position' | 'offer' | 'application';
+  type?: 'status' | 'position' | 'estimate' | 'offer' | 'application';
 }
 
 export const PRIYA_ACCOUNT_ID = 'parent-priya';

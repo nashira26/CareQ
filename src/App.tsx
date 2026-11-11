@@ -556,6 +556,8 @@ export default function App() {
 				waitlistEstimate
 			)
 		);
+	const handleUpdateEstimate = (applicationId: string, estimate: string) =>
+		store && run(store.updateEstimate(applicationId, estimate));
 	const handleUpdateCentreRequirements = (
 		centreId: string,
 		requirements: string[],
@@ -1275,6 +1277,7 @@ export default function App() {
 										autoReadDocKey={docToRead}
 										onAutoReadDocStarted={() => setDocToRead(null)}
 										onUpdateStatus={handleUpdateStatus}
+										onUpdateEstimate={handleUpdateEstimate}
 										onUpdateCentreRequirements={handleUpdateCentreRequirements}
 										onOpenConversation={handleCentreOpenConversation}
 										requests={supportRequests}

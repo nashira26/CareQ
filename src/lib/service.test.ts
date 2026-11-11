@@ -136,12 +136,71 @@ test('live position updates use the seed wording: "moved … to #new (from #old)
 
 test('live position update for seeded Anya at Jesse Ketchum: moved to #3 (from #4)', async () => {
   const { repo, jesseKetchum } = await setup();
-  await svc.setStatus(repo, jesseKetchum,'app-jesse-ketchum-anya', 'Waitlisted', 3, undefined, new Date('2026-11-10T15:00:00Z'));
+  // The dialog sends the current estimate back unchanged: no estimate wording
+  await svc.setStatus(repo, jesseKetchum,'app-jesse-ketchum-anya', 'Waitlisted', 3, '4–6 months', new Date('2026-11-10T15:00:00Z'));
   const priya = await svc.getSnapshot(repo, (await repo.getAccount('parent-priya'))!);
   assert.ok(
     priya.notifications.some((n) => n.message === "Jesse Ketchum Early Learning & Child Care Centre moved Anya's waitlist position to #3 (from #4) on Nov 10"),
     priya.notifications.map((n) => n.message).join('\n')
   );
+});
+
+test('position and estimate changed in one save: one combined notification', async () => {
+  const { repo, jesseKetchum } = await setup();
+  const nov11 = new Date('2026-11-11T15:00:00Z');
+  await svc.setStatus(repo, jesseKetchum, 'app-jesse-ketchum-anya', 'Waitlisted', 3, '3–6 months', nov11);
+  const priya = await svc.getSnapshot(repo, (await repo.getAccount('parent-priya'))!);
+  const fresh = priya.notifications.filter((n) => n.createdAt >= nov11.getTime());
+  assert.deepEqual(fresh.map((n) => [n.type, n.message]), [
+    ['position', "Jesse Ketchum Early Learning & Child Care Centre moved Anya's waitlist position to #3 (from #4) and updated its wait estimate to 3–6 months on Nov 11"],
+  ]);
+  const centre = await svc.getSnapshot(repo, (await repo.getAccount(jesseKetchum.accountId))!);
+  assert.ok(centre.notifications.some((n) => n.message === "Updated Anya's position to 3 and wait estimate to 3–6 months on Nov 11"));
+  // Cleared in the same save
+  await svc.setStatus(repo, jesseKetchum, 'app-jesse-ketchum-anya', 'Waitlisted', 2, '', new Date(nov11.getTime() + 60_000));
+  const after = await svc.getSnapshot(repo, (await repo.getAccount('parent-priya'))!);
+  assert.ok(after.notifications.some((n) => n.message === "Jesse Ketchum Early Learning & Child Care Centre moved Anya's waitlist position to #2 (from #3) and removed its wait estimate on Nov 11"));
+});
+
+test('estimate only: changes just the estimate and sends one "estimate" notification', async () => {
+  const { repo, jesseKetchum } = await setup();
+  const id = 'app-jesse-ketchum-anya';
+  const before = (await repo.getApplication(id))!;
+  const nov11 = new Date('2026-11-11T15:00:00Z');
+  await svc.updateWaitlistEstimate(repo, jesseKetchum, id, ' 3–6 months ', nov11);
+  const app = (await repo.getApplication(id))!;
+  assert.equal(app.waitlistEstimate, '3–6 months');
+  // Nothing else moves
+  assert.equal(app.status, 'Waitlisted');
+  assert.equal(app.waitlistPosition, before.waitlistPosition);
+  assert.equal(app.waitlistReportedDate, before.waitlistReportedDate);
+  assert.deepEqual(app.positionHistory, before.positionHistory);
+  const parentNotes = async () =>
+    (await svc.getSnapshot(repo, (await repo.getAccount('parent-priya'))!)).notifications.filter((n) => n.type === 'estimate');
+  assert.deepEqual((await parentNotes()).map((n) => n.message), [
+    'Jesse Ketchum Early Learning & Child Care Centre updated its wait estimate for Anya to 3–6 months on Nov 11',
+  ]);
+  const centre = await svc.getSnapshot(repo, (await repo.getAccount(jesseKetchum.accountId))!);
+  assert.ok(centre.notifications.some((n) => n.type === 'estimate' && n.message === "Updated Anya's wait estimate to 3–6 months on Nov 11"));
+
+  // Same value again: nothing saved, no notification
+  await svc.updateWaitlistEstimate(repo, jesseKetchum, id, '3–6 months', nov11);
+  assert.equal((await parentNotes()).length, 1);
+
+  // Blank clears it
+  await svc.updateWaitlistEstimate(repo, jesseKetchum, id, '  ', new Date(nov11.getTime() + 60_000));
+  assert.equal((await repo.getApplication(id))!.waitlistEstimate, undefined);
+  assert.ok((await parentNotes()).some((n) => n.message === 'Jesse Ketchum Early Learning & Child Care Centre removed its wait estimate for Anya on Nov 11'));
+});
+
+test('estimate only: own centre, waitlisted applications only', async () => {
+  const { repo, jesseKetchum, sunny, priya, demoCentre } = await setup();
+  await rejects403(svc.updateWaitlistEstimate(repo, sunny, 'app-jesse-ketchum-anya', '1–2 months'));
+  await rejects403(svc.updateWaitlistEstimate(repo, demoCentre, 'app-jesse-ketchum-anya', '1–2 months'));
+  await rejects403(svc.updateWaitlistEstimate(repo, priya, 'app-jesse-ketchum-anya', '1–2 months'));
+  const notWaitlisted = (await repo.listApplications({ centreId: JESSE_KETCHUM_ID })).find((a) => a.status === 'Under review')!;
+  await assert.rejects(svc.updateWaitlistEstimate(repo, jesseKetchum, notWaitlisted.id, '1–2 months'), (e) => e instanceof InputError);
+  assert.equal((await repo.getApplication(notWaitlisted.id))!.waitlistEstimate, notWaitlisted.waitlistEstimate);
 });
 
 test('messages: parents only about their own child; centres only with connected families', async () => {

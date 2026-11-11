@@ -11,7 +11,7 @@ export type UpdateKind = 'waitlist' | 'offer' | 'application' | 'message';
 export interface ParentUpdate {
   id: string;
   kind: UpdateKind;
-  /** "Waitlist position updated", "Offer received", "Application updated", "Message from the centre". */
+  /** "Waitlist position updated", "Wait estimate updated" / "removed", "Offer received", "Application updated", "Message from the centre". */
   headline: string;
   /** "Waitlist · Macaulay · Nov 4" */
   label: string;
@@ -36,7 +36,15 @@ const KIND: Record<UpdateKind, { word: string; headline: string }> = {
 };
 
 const kindOf = (type: InAppNotification['type']): UpdateKind =>
-  type === 'position' ? 'waitlist' : type === 'offer' ? 'offer' : 'application';
+  type === 'position' || type === 'estimate' ? 'waitlist' : type === 'offer' ? 'offer' : 'application';
+
+/** Wait estimate changes sit under Waitlist but have their own headline. */
+const headlineOf = (n: Pick<InAppNotification, 'type' | 'message'>, kind: UpdateKind) =>
+  n.type === 'estimate'
+    ? / removed its wait estimate /.test(n.message)
+      ? 'Wait estimate removed'
+      : 'Wait estimate updated'
+    : KIND[kind].headline;
 
 /** "Macaulay - Dovercourt Child Care Centre" -> "Macaulay"; "Leaside Day Care Centre (Rolph Road…)" -> "Leaside Day Care Centre". */
 export const shortCentreName = (name: string) => name.split(/\s+[-–(]\s*/)[0].trim() || name;
@@ -86,7 +94,7 @@ export function buildParentUpdates(input: {
     out.push({
       id: n.id,
       kind,
-      headline: KIND[kind].headline,
+      headline: headlineOf(n, kind),
       label: labelFor(kind, centre?.name, n.timestamp),
       text: n.message,
       centreId: centre?.id,
@@ -175,7 +183,7 @@ export function attentionItems(input: {
   for (const u of updates.filter((x) => x.unread && (x.kind === 'waitlist' || x.kind === 'application'))) {
     items.push({
       id: `update-${u.id}`,
-      title: u.kind === 'waitlist' ? 'New waitlist position' : 'Application updated',
+      title: u.headline.startsWith('Wait estimate') ? u.headline : u.kind === 'waitlist' ? 'New waitlist position' : 'Application updated',
       detail: u.text,
       cta: 'See application',
       tab: u.applicationId ? 'track' : 'updates',

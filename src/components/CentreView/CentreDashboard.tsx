@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { shortRef } from "../../lib/centreQueue";
 import { withdrawalLabel } from "../../lib/offers";
 import { EmptyState, SpotChecklist } from "../ui/Illustrations";
@@ -77,6 +78,8 @@ interface CentreDashboardProps {
 		waitlistPosition?: number,
 		waitlistEstimate?: string
 	) => void;
+	/** Waitlisted only: change just the wait estimate (blank clears it). */
+	onUpdateEstimate: (applicationId: string, estimate: string) => void;
 	onUpdateCentreRequirements: (
 		centreId: string,
 		newRequirements: string[],
@@ -108,6 +111,7 @@ export const CentreDashboard: React.FC<CentreDashboardProps> = ({
 	singleCentre,
 	applications,
 	onUpdateStatus,
+	onUpdateEstimate,
 	onUpdateCentreRequirements,
 	onOpenConversation,
 	requests,
@@ -142,6 +146,11 @@ export const CentreDashboard: React.FC<CentreDashboardProps> = ({
 	const [positionInput, setPositionInput] = useState<number>(14);
 	const [waitEstimateInput, setWaitEstimateInput] =
 		useState<string>("8–12 months");
+	// "Edit estimate" dialog: only the estimate, for a waitlisted application
+	const [estimateModalAppId, setEstimateModalAppId] = useState<string | null>(
+		null
+	);
+	const [estimateInput, setEstimateInput] = useState<string>("");
 	const [lastActionMessage, setLastActionMessage] = useState<string | null>(
 		null
 	);
@@ -427,6 +436,37 @@ A signed Photography & Media Consent Form is required for classroom developmenta
 	const activeWaitlistApp = centreApplications.find(
 		(a) => a.id === waitlistModalAppId
 	);
+	const activeEstimateApp = centreApplications.find(
+		(a) => a.id === estimateModalAppId && a.status === "Waitlisted"
+	);
+	const openEstimate = (app: Application) => {
+		setEstimateInput(app.waitlistEstimate ?? "");
+		setEstimateModalAppId(app.id);
+	};
+	const saveEstimate = (app: Application) => {
+		const next = estimateInput.trim();
+		if (next !== (app.waitlistEstimate ?? "").trim()) {
+			onUpdateEstimate(app.id, next);
+			setLastActionMessage(
+				next
+					? `Updated ${app.childName}'s wait estimate to ${next}.`
+					: `Removed ${app.childName}'s wait estimate.`
+			);
+		}
+		setEstimateModalAppId(null);
+	};
+	// "Edit estimate" / "Add estimate", under the queue number of a waitlisted application
+	const estimateLink = (app: Application) =>
+		app.status === "Waitlisted" && (
+			<button
+				type="button"
+				onClick={() => openEstimate(app)}
+				aria-label={`${app.waitlistEstimate ? "Edit" : "Add"} wait estimate for ${app.childName}`}
+				className="mt-1 flex w-fit items-center gap-1 text-xs font-semibold text-cq-secondary hover:underline cursor-pointer">
+				<PenLine className="w-3 h-3" aria-hidden="true" />
+				{app.waitlistEstimate ? "Edit estimate" : "Add estimate"}
+			</button>
+		);
 
 	return (
 		<div className="space-y-6 animate-fadeIn">
@@ -577,9 +617,10 @@ A signed Photography & Media Consent Form is required for classroom developmenta
 																	</div>
 																	{app.waitlistEstimate && (
 																		<div className="text-xs text-cq-soft mt-0.5 leading-tight">
-																			Estimate: {app.waitlistEstimate}
+																			Your estimate: {app.waitlistEstimate}
 																		</div>
 																	)}
+																	{estimateLink(app)}
 																</div>
 															) : (
 																<div className="text-xs text-cq-soft">
@@ -812,9 +853,10 @@ A signed Photography & Media Consent Form is required for classroom developmenta
 															</span>
 															{app.waitlistEstimate && (
 																<span className="block text-xs text-cq-soft">
-																	{app.waitlistEstimate}
+																	Your estimate: {app.waitlistEstimate}
 																</span>
 															)}
+															{estimateLink(app)}
 														</div>
 													) : (
 														<span className="text-xs text-cq-soft">
@@ -1289,40 +1331,11 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
 									className="text-xs font-semibold text-cq-ink block mb-1">
 									Centre's typical wait estimate:
 								</label>
-								<input
+								<EstimateField
 									id="waitlist-est-input"
-									type="text"
-									placeholder="e.g. 8–12 months (or leave blank if no estimate)"
 									value={waitEstimateInput}
-									onChange={(e) => setWaitEstimateInput(e.target.value)}
-									className="w-full text-xs font-medium px-3 py-1.5 border border-cq-line bg-cq-input rounded-xl focus:outline-hidden focus:ring-2 focus:ring-cq-secondary/25 focus:border-cq-secondary text-cq-ink"
+									onChange={setWaitEstimateInput}
 								/>
-								<div className="flex flex-wrap gap-1 mt-1.5">
-									{[
-										"8–12 months",
-										"6–9 months",
-										"3–6 months",
-										"12+ months",
-									].map((preset) => (
-										<button
-											key={preset}
-											type="button"
-											onClick={() => setWaitEstimateInput(preset)}
-											className={`text-xs px-2 py-0.5 rounded-lg border transition-colors cursor-pointer ${
-												waitEstimateInput === preset
-													? "bg-cq-brand text-white border-cq-brand font-semibold"
-													: "bg-white text-cq-muted hover:bg-cq-page border-cq-line"
-											}`}>
-											{preset}
-										</button>
-									))}
-									<button
-										type="button"
-										onClick={() => setWaitEstimateInput("")}
-										className="text-xs px-2 py-0.5 rounded-lg border text-cq-soft hover:text-cq-ink hover:bg-cq-page border-cq-line cursor-pointer">
-										Clear (no estimate)
-									</button>
-								</div>
 							</div>
 
 							<p className="text-xs text-cq-soft pt-1">
@@ -1358,6 +1371,63 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
 				</div>
 			)}
 
+			{/* Modal for changing only the wait estimate (portaled: <main> has a transform) */}
+			{activeEstimateApp &&
+				createPortal(
+					<div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-ink/45">
+						<Card
+							role="dialog"
+							aria-modal="true"
+							aria-labelledby="estimate-dialog-title"
+							className="max-w-sm w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-6 shadow-xl space-y-4">
+							<div>
+								<h3
+									id="estimate-dialog-title"
+									className="text-base font-bold text-cq-ink">
+									{activeEstimateApp.waitlistEstimate
+										? "Edit wait estimate"
+										: "Add wait estimate"}
+								</h3>
+								<p className="text-xs text-cq-muted mt-0.5">
+									{activeEstimateApp.childName} · Waitlist position #
+									{activeEstimateApp.waitlistPosition}
+								</p>
+							</div>
+							<div>
+								<label
+									htmlFor="estimate-only-input"
+									className="text-xs font-semibold text-cq-ink block mb-1">
+									Centre's typical wait estimate:
+								</label>
+								<EstimateField
+									id="estimate-only-input"
+									value={estimateInput}
+									onChange={setEstimateInput}
+								/>
+							</div>
+							<p className="text-xs text-cq-soft">
+								Only the estimate changes. The position stays at #
+								{activeEstimateApp.waitlistPosition}.{" "}
+								{activeEstimateApp.parentName} will be notified.
+							</p>
+							<div className="pt-2 flex justify-end gap-2 border-t border-cq-line">
+								<GhostButton
+									onClick={() => setEstimateModalAppId(null)}
+									className="h-9 px-3.5 text-xs">
+									Cancel
+								</GhostButton>
+								<PrimaryButton
+									noArrow
+									onClick={() => saveEstimate(activeEstimateApp)}
+									className="h-9 px-4 text-xs font-semibold">
+									Save estimate
+								</PrimaryButton>
+							</div>
+						</Card>
+					</div>,
+					document.body
+				)}
+
 			{/* Application & Submitted Documents Viewer Modal */}
 			{selectedAppForDetails && (
 				<ApplicationDetailsModal
@@ -1372,3 +1442,45 @@ Emergency Contacts Authorization with 2 verified guardians is mandatory.`
 		</div>
 	);
 };
+
+/** The wait estimate input with presets and "Clear (no estimate)". Used by both waitlist dialogs. */
+const EstimateField: React.FC<{
+	id: string;
+	value: string;
+	onChange: (value: string) => void;
+}> = ({ id, value, onChange }) => (
+	<>
+		<input
+			id={id}
+			type="text"
+			maxLength={80}
+			placeholder="e.g. 8–12 months (or leave blank if no estimate)"
+			value={value}
+			onChange={(e) => onChange(e.target.value)}
+			className="w-full text-xs font-medium px-3 py-1.5 border border-cq-line bg-cq-input rounded-xl focus:outline-hidden focus:ring-2 focus:ring-cq-secondary/25 focus:border-cq-secondary text-cq-ink"
+		/>
+		<div className="flex flex-wrap gap-1 mt-1.5">
+			{["8–12 months", "6–9 months", "3–6 months", "12+ months"].map(
+				(preset) => (
+					<button
+						key={preset}
+						type="button"
+						onClick={() => onChange(preset)}
+						className={`text-xs px-2 py-0.5 rounded-lg border transition-colors cursor-pointer ${
+							value === preset
+								? "bg-cq-brand text-white border-cq-brand font-semibold"
+								: "bg-white text-cq-muted hover:bg-cq-page border-cq-line"
+						}`}>
+						{preset}
+					</button>
+				)
+			)}
+			<button
+				type="button"
+				onClick={() => onChange("")}
+				className="text-xs px-2 py-0.5 rounded-lg border text-cq-soft hover:text-cq-ink hover:bg-cq-page border-cq-line cursor-pointer">
+				Clear (no estimate)
+			</button>
+		</div>
+	</>
+);

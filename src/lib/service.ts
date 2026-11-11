@@ -480,19 +480,53 @@ export async function setStatus(
   // Same wording as the seeded notifications: "… moved Anya's waitlist position to #4 (from #6) on Nov 2".
   // No earlier position (or the same one again): "… set Anya's waitlist position to #4 on Nov 2".
   const oldPosition = Number.isInteger(app.waitlistPosition) && app.waitlistPosition! > 0 ? app.waitlistPosition : undefined;
+  // The estimate changed in the same save: one combined notification ("… and updated its wait estimate to 3–6 months")
+  const newEstimate = waitlistEstimate?.trim() || undefined;
+  const estimateChanged = isWaitlisted && (app.waitlistEstimate?.trim() || undefined) !== newEstimate;
+  const estimatePart = !estimateChanged ? '' : newEstimate ? ` and updated its wait estimate to ${newEstimate}` : ' and removed its wait estimate';
+  const centreEstimatePart = !estimateChanged ? '' : newEstimate ? ` and wait estimate to ${newEstimate}` : ' and removed the wait estimate';
   const positionMessage =
     oldPosition !== undefined && oldPosition !== waitlistPosition
-      ? `${centreName} moved ${app.childName}'s waitlist position to #${waitlistPosition} (from #${oldPosition}) on ${date}`
-      : `${centreName} set ${app.childName}'s waitlist position to #${waitlistPosition} on ${date}`;
+      ? `${centreName} moved ${app.childName}'s waitlist position to #${waitlistPosition} (from #${oldPosition})${estimatePart} on ${date}`
+      : `${centreName} set ${app.childName}'s waitlist position to #${waitlistPosition}${estimatePart} on ${date}`;
   const [parentMessage, centreMessage, type] =
     isWaitlisted
-      ? [positionMessage, `Updated ${app.childName}'s position to ${waitlistPosition} on ${date}`, 'position' as const]
+      ? [positionMessage, `Updated ${app.childName}'s position to ${waitlistPosition}${centreEstimatePart} on ${date}`, 'position' as const]
       : status === 'Offer'
       ? [`${centreName} made an offer for ${app.childName} on ${date}`, `Made an offer to ${app.parentName} for ${app.childName} on ${date}`, 'offer' as const]
       : [`${centreName} updated your application status to ${status} on ${date}`, `Updated ${app.childName}'s status to ${status} on ${date}`, 'status' as const];
   await notify(repo, [
     { id: rid('notif-parent'), recipientRole: 'parent', recipientId: app.parentAccountId, message: parentMessage, timestamp: date, createdAt: now.getTime(), read: false, type },
     { id: rid('notif-centre'), recipientRole: 'centre', recipientId: app.centreId, message: centreMessage, timestamp: date, createdAt: now.getTime() + 1, read: false, type },
+  ]);
+}
+
+/**
+ * The centre changes only its wait estimate for a waitlisted application (blank clears it).
+ * Status, position, position history and the "reported on" date stay as they are. Same value: nothing happens.
+ */
+export async function updateWaitlistEstimate(repo: Repo, actor: Actor, id: string, estimate: string | undefined, now = new Date()) {
+  const app = await repo.getApplication(id);
+  if (!app) throw new NotFoundError('Application not found.');
+  assertAllowed(canReadApplication(actor, app)); // another centre's application, or a draft: 403
+  assertAllowed(canSetStatus(actor, app), 'This application can no longer be changed.');
+  if (app.status !== 'Waitlisted') throw new InputError('Only waitlisted applications have an estimate.');
+  const next = estimate?.trim() || undefined;
+  if ((app.waitlistEstimate?.trim() || undefined) === next) return;
+  await repo.updateApplication(id, { waitlistEstimate: next });
+
+  const centre = await repo.getCentre(app.centreId);
+  const centreName = centre?.name ?? 'The centre';
+  const date = shortDate(now);
+  const parentMessage = next
+    ? `${centreName} updated its wait estimate for ${app.childName} to ${next} on ${date}`
+    : `${centreName} removed its wait estimate for ${app.childName} on ${date}`;
+  const centreMessage = next
+    ? `Updated ${app.childName}'s wait estimate to ${next} on ${date}`
+    : `Removed ${app.childName}'s wait estimate on ${date}`;
+  await notify(repo, [
+    { id: rid('notif-parent'), recipientRole: 'parent', recipientId: app.parentAccountId, message: parentMessage, timestamp: date, createdAt: now.getTime(), read: false, type: 'estimate' },
+    { id: rid('notif-centre'), recipientRole: 'centre', recipientId: app.centreId, message: centreMessage, timestamp: date, createdAt: now.getTime() + 1, read: false, type: 'estimate' },
   ]);
 }
 

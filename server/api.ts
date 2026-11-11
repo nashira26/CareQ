@@ -110,6 +110,8 @@ export const schemas = {
     waitlistPosition: z.number().int().min(1).max(10000).optional(),
     waitlistEstimate: str(80).optional(),
   }),
+  // Blank clears the estimate
+  estimate: z.object({ estimate: str(80) }).strict(),
   message: z.object({ centreId: str(80), childId: str(80), text: str(2000).min(1), aiAssisted: z.boolean(), fromSimulatedDraft: z.boolean().optional() }),
   markRead: z.object({ ids: z.union([z.literal('all'), z.array(str(120)).max(500)]) }),
   supportRequest: z.object({
@@ -318,6 +320,12 @@ export function createDataApi(ctx: Ctx): Router {
     const b = body(schemas.status, req, res);
     if (!b) return;
     await svc.setStatus(repo(), req.actor!, req.params.id, b.status, b.waitlistPosition, b.waitlistEstimate);
+    res.json(await snapshotFor(req));
+  }));
+  r.post('/applications/:id/estimate', ...act(async (req, res) => {
+    const b = body(schemas.estimate, req, res);
+    if (!b) return;
+    await svc.updateWaitlistEstimate(repo(), req.actor!, req.params.id, b.estimate);
     res.json(await snapshotFor(req));
   }));
 
