@@ -82,7 +82,7 @@ export const HELP_FAQS: FAQItem[] = [
     id: 'faq-7',
     question: 'Can I decline an offer or withdraw an application?',
     answer:
-      'Yes. When an offer is extended by a centre, you can choose to accept the offer (and optionally withdraw pending applications from other centres) or decline/withdraw directly from your Track Status dashboard.',
+      'Yes. When an offer is extended by a centre, you can choose to accept the offer (and optionally withdraw pending applications from other centres) or decline/withdraw directly from My applications.',
     source: 'Help FAQ',
   },
 ];

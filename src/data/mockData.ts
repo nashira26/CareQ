@@ -197,6 +197,7 @@ export const INITIAL_CENTRES: Centre[] = DEMO_CENTRES;
 const WELLESLEY_ID = 'on-0002899';
 const MACAULAY_ID = 'on-0004062';
 const LEASIDE_ID = 'on-0002575';
+const MARY_WARD_ID = 'on-12256';
 const nameOf = (id: string) => DEMO_CENTRES.find((c) => c.id === id)!.name;
 const allDone = (centreId: string) => [...DEMO_CENTRES.find((c) => c.id === centreId)!.requirements];
 
@@ -281,6 +282,14 @@ export const INITIAL_APPLICATIONS: Application[] = [
       'Emergency Contact & Medical Consent Form': { fileName: 'emergency_consent_signed.pdf', fileSize: '650 KB', uploadedAt: 'Oct 14, 2026' },
     },
     parentNotes: 'Requesting Toddler room placement.',
+  },
+  {
+    // Not sent yet: Priya's one draft (Drafts tab), with one of the two documents still to add
+    ...anya,
+    id: 'app-mary-ward-anya',
+    centreId: MARY_WARD_ID,
+    status: 'Draft',
+    completedRequirements: ['Emergency contact information'],
   },
 
   // ---- Fictional families at Jesse Ketchum (so its simulated dashboard isn't empty) ----

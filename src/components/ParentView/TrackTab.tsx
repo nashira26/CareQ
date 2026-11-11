@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { shortRef } from "../../lib/centreQueue";
 import { Centre, Application, ParentProfile } from "../../data/mockData";
 import { StatusBadge } from "../StatusBadge";
@@ -28,24 +28,39 @@ interface TrackTabProps {
 	parentProfile: ParentProfile;
 	onAcceptOffer: (applicationId: string, withdrawOthers: boolean) => void;
 	onWithdrawApplication: (applicationId: string) => void;
-	onNavigateToApply: () => void;
 	onNavigateToFind: () => void;
 	onOpenConversation: (centreId: string) => void;
 	/** Demo accounts: one small "Simulated" tag next to each waitlist position and the offer (nowhere else). */
 	isDemoAccount?: boolean;
+	/** Opened from Home or Updates: scroll to this application and highlight it. */
+	focusApplicationId?: string | null;
 }
 
+/** My applications: only applications that were sent (drafts live in Drafts). */
 export const TrackTab: React.FC<TrackTabProps> = ({
 	centres,
-	applications,
+	applications: allApplications,
 	parentProfile,
 	isDemoAccount = false,
 	onAcceptOffer,
 	onWithdrawApplication,
-	onNavigateToApply,
 	onNavigateToFind,
 	onOpenConversation,
+	focusApplicationId,
 }) => {
+	const applications = allApplications.filter((a) => a.status !== "Draft");
+
+	// After the page has scrolled to the top (App does that on every page change), bring the focused card into view
+	useEffect(() => {
+		if (!focusApplicationId) return;
+		const t = window.setTimeout(() => {
+			document
+				.getElementById(`application-${focusApplicationId}`)
+				?.scrollIntoView({ block: "center", behavior: "smooth" });
+		}, 50);
+		return () => window.clearTimeout(t);
+	}, [focusApplicationId]);
+
 	// Offer acceptance confirmation dialog state
 	const [selectedOfferAppId, setSelectedOfferAppId] = useState<string | null>(
 		null
@@ -67,8 +82,8 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 		? centres.find((c) => c.id === selectedOfferApp.centreId)
 		: null;
 
-	// Other active applications that could be withdrawn
-	const otherActiveApps = applications.filter(
+	// Other active applications that could be withdrawn (drafts too: accepting with "withdraw others" withdraws them)
+	const otherActiveApps = allApplications.filter(
 		(a) =>
 			a.id !== selectedOfferAppId &&
 			a.status !== "Withdrawn" &&
@@ -79,8 +94,8 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 		<div className="space-y-6">
 			{/* Page Header */}
 			<PageHeader
-				title="Your applications"
-				subtitle="Follow each status and respond to offers."
+				title="My applications"
+				subtitle="Applications you've sent, with each centre's latest update."
 				action={
 					<GhostButton onClick={onNavigateToFind}>
 						Find centres
@@ -143,14 +158,17 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 						const isOffer = app.status === "Offer";
 						const isAccepted = app.status === "Accepted";
 						const isWithdrawn = app.status === "Withdrawn";
-						const isDraft = app.status === "Draft";
+						const isFocused = app.id === focusApplicationId;
 
 						return (
 							<li
 								key={app.id}
-								className={`rounded-2xl bg-white border border-cq-line p-4 sm:p-5 flex flex-col gap-4 ${
+								id={`application-${app.id}`}
+								className={`rounded-2xl bg-white border border-cq-line p-4 sm:p-5 flex flex-col gap-4 scroll-mt-24 ${
 									isOffer ? "border-l-4 border-l-coral shadow-sm" : ""
-								} ${isWithdrawn ? "opacity-75" : ""}`}>
+								} ${isWithdrawn ? "opacity-75" : ""} ${
+									isFocused ? "ring-2 ring-brand ring-offset-2" : ""
+								}`}>
 								<div className="flex items-start gap-3">
 									<CentreAvatar centreId={app.centreId} />
 									<div className="min-w-0 flex-1">
@@ -233,14 +251,6 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 											Accept offer
 										</PrimaryButton>
 									)}
-									{isDraft && (
-										<PrimaryButton
-											arrow
-											onClick={onNavigateToApply}
-											className="h-10">
-											Complete apply
-										</PrimaryButton>
-									)}
 									<GhostButton
 										onClick={() => onOpenConversation(app.centreId)}
 										className="h-10">
@@ -253,7 +263,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 												History
 											</TertiaryButton>
 										)}
-										{!isOffer && !isDraft && !isAccepted && !isWithdrawn && (
+										{!isOffer && !isAccepted && !isWithdrawn && (
 											<TertiaryButton
 												onClick={() => onWithdrawApplication(app.id)}
 												className="text-ink-muted decoration-ink-muted/40 hover:text-error">
@@ -280,7 +290,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 			) : (
 				<Card>
 					<EmptyState
-						title="No applications recorded yet."
+						title="No applications sent yet."
 						spot={<SpotChecklist />}
 						actions={
 							<PrimaryButton arrow onClick={onNavigateToFind}>

@@ -32,7 +32,6 @@ interface ApplyTabProps {
   /** Note to the centre on a draft (used when the centre has no published requirements). */
   onUpdateNoteToCentre: (applicationId: string, note: string) => void;
   onNavigateToFind: () => void;
-  onNavigateToTrack: () => void;
 }
 
 export const ApplyTab: React.FC<ApplyTabProps> = ({
@@ -47,7 +46,6 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
   onUpdatePreparedDraft,
   onUpdateNoteToCentre,
   onNavigateToFind,
-  onNavigateToTrack,
 }) => {
   // Modal state for review and approve confirmation
   const [reviewingAppId, setReviewingAppId] = useState<string | null>(null);
@@ -107,8 +105,8 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="Apply"
-        subtitle="Each checklist comes from the centre's own policy. You approve before anything is sent."
+        title="Drafts"
+        subtitle="Applications you haven't sent yet."
         action={
           <GhostButton onClick={onNavigateToFind}>
             <Plus className="w-4 h-4" aria-hidden="true" />
@@ -389,21 +387,15 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
       ) : (
         <Card>
           <EmptyState
-            title="No draft applications in progress"
+            title="No applications in progress."
             spot={<SpotChecklist />}
             actions={
-              <>
-                <PrimaryButton arrow onClick={onNavigateToFind}>
-                  Find centres
-                </PrimaryButton>
-                <GhostButton onClick={onNavigateToTrack}>
-                  View track status
-                  <ArrowRight className="w-4 h-4" aria-hidden="true" />
-                </GhostButton>
-              </>
+              <PrimaryButton arrow onClick={onNavigateToFind}>
+                Find centres
+              </PrimaryButton>
             }
           >
-            All your selected child care centres have been submitted, or you can find more centres to begin a new application.
+            Find a centre to start one.
           </EmptyState>
         </Card>
       )}

@@ -46,7 +46,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ role, items, activeId, o
           const Icon = item.icon;
           const isActive = item.id === activeId;
           return (
-            <li key={item.id} className="flex-1 min-w-0">
+            // Sized to each label, so a longer one ("Applications") isn't cut off at phone width
+            <li key={item.id} className="flex-auto min-w-0">
               <button
                 type="button"
                 onClick={() => onSelect(item.id)}

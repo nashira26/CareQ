@@ -76,9 +76,13 @@ async function parentJourney(b: Browser, width: number, errors: string[]) {
     await p.goto(base);
     await visible(p, 'Get started').waitFor({ timeout: 10000 });
   });
-  await step('parent demo login lands on Overview', async () => {
+  await step('parent demo login lands on Home: action items and counts, no application list', async () => {
     await login(p, 'Test Parent: Priya Patel');
-    await visible(p, 'Priya').waitFor({ timeout: 10000 });
+    await visible(p, 'What needs your attention today.').waitFor({ timeout: 10000 });
+    await visible(p, 'Respond to your offer').waitFor({ timeout: 5000 });
+    const actions = await p.locator('#needs-heading + ul > li').locator('visible=true').count();
+    if (actions < 1 || actions > 3) throw new Error(`${actions} action items (want 1 to 3)`);
+    for (const label of ['Preparing', 'Sent', 'Offers']) await visible(p, label).waitFor({ timeout: 5000 });
   });
   await step('avatar menu opens with the keyboard; "Your profile" opens the Profile page', async () => {
     const avatar = p.getByRole('button', { name: /^Account menu for/ });
@@ -108,7 +112,7 @@ async function parentJourney(b: Browser, width: number, errors: string[]) {
     await visible(p, /Near Leslieville/).waitFor({ timeout: 10000 });
   });
   await step('Find: a described search returns centres', async () => {
-    await openTab(p, 'Find Centres');
+    await openTab(p, 'Find centres');
     const input = p.locator('input[type="text"]:visible, input:not([type]):visible, input[type="search"]:visible').first();
     await input.fill('toddler full day near The Annex');
     const search = p.getByRole('button', { name: /^search$/i }).locator('visible=true').first();
@@ -116,16 +120,28 @@ async function parentJourney(b: Browser, width: number, errors: string[]) {
     else await input.press('Enter');
     await visible(p, /centres? match/).waitFor({ timeout: 25000 });
   });
-  await step('Apply opens', async () => {
-    await openTab(p, 'Apply');
+  await step('Drafts lists only unsent applications (Priya has one)', async () => {
+    await openTab(p, 'Drafts');
+    await p.getByRole('heading', { name: 'Drafts', exact: true }).waitFor({ timeout: 8000 });
+    await visible(p, /Mary Ward/).waitFor({ timeout: 8000 });
+    if (await p.getByText(/Macaulay/).locator('visible=true').count()) throw new Error('a sent application is listed in Drafts');
   });
-  await step('Track: one demo banner; "Simulated" tags only next to positions and the offer', async () => {
-    await openTab(p, 'Track Status');
+  await step('Updates: a dated feed that opens the application in My applications', async () => {
+    await openTab(p, 'Updates');
+    await p.getByRole('heading', { name: 'Updates', exact: true }).waitFor({ timeout: 8000 });
+    await visible(p, 'Offer · Macaulay · Nov 4').waitFor({ timeout: 8000 });
+    const items = await p.getByRole('button', { name: /Open in My applications/ }).locator('visible=true').count();
+    if (items < 3) throw new Error(`only ${items} updates link to an application`);
+    await p.getByRole('button', { name: /Open in My applications/ }).locator('visible=true').first().click();
+    await p.getByRole('heading', { name: 'My applications', exact: true }).waitFor({ timeout: 8000 });
+  });
+  await step('My applications: only sent applications; one demo banner; at most one "Simulated" tag per position and offer', async () => {
+    await openTab(p, 'My applications');
     await visible(p, 'Macaulay').waitFor({ timeout: 10000 });
+    if (await p.getByText(/Mary Ward/).locator('visible=true').count()) throw new Error('a draft is listed in My applications');
     const banners = await p.getByText('Demo account:', { exact: true }).locator('visible=true').count();
     if (banners !== 1) throw new Error(`${banners} demo banners visible (want 1)`);
     const n = await p.getByText('Simulated', { exact: true }).locator('visible=true').count();
-    if (n < 2) throw new Error(`only ${n} "Simulated" tags visible (want the positions and the offer)`);
     const queues = await p.locator('dd', { hasText: /^#\d+/ }).locator('visible=true').count();
     if (n > queues + 1) throw new Error(`${n} "Simulated" tags for ${queues} positions + 1 offer`);
   });
@@ -150,7 +166,7 @@ async function centreJourney(b: Browser, width: number, errors: string[]) {
   collectErrors(p, 'centre', errors);
 
   await step('centre demo login shows the demo-account banner, and no per-item "Simulated" tags', async () => {
-    await login(p, 'CareQ Demo Centre (fictional)');
+    await login(p, 'CareQ Demo Centre'); // the login card's label, with or without "(fictional)"
     await visible(p, 'Demo account:').waitFor({ timeout: 10000 });
     const n = await p.getByText('Simulated', { exact: true }).locator('visible=true').count();
     if (n) throw new Error(`${n} "Simulated" tags on the centre overview`);

@@ -1,71 +1,48 @@
 import React from "react";
-import {
-	ParentProfile,
-	Application,
-	Centre,
-	InAppNotification,
-	ApplicationStatus,
-} from "../../data/mockData";
-import { StatusBadge } from "../StatusBadge";
+import { ParentProfile, Application, Centre } from "../../data/mockData";
 import { ageInMonths, formatAge } from "../../lib/family";
 import {
-	PrimaryButton,
-	GhostButton,
-	TertiaryButton,
-	SimNote,
-	CentreAvatar,
-	ProgressStrip,
-	GreetingBand,
-} from "../ui/CareUI";
-import { Bell, ChevronRight, ArrowRight } from "lucide-react";
+	ParentUpdate,
+	applicationCounts,
+	attentionItems,
+} from "../../lib/parentUpdates";
+import { PrimaryButton, GhostButton, GreetingBand } from "../ui/CareUI";
+import { ArrowRight, ChevronRight } from "lucide-react";
+
+/** Parent tabs other pages can link to. */
+export type ParentTabId = "home" | "find" | "apply" | "track" | "updates" | "help";
 
 export interface ParentOverviewProps {
 	parentProfile: ParentProfile;
 	applications: Application[];
 	centres: Centre[];
-	notifications: InAppNotification[];
-	onNavigate: (
-		tab: "home" | "find" | "apply" | "track" | "companion" | "help"
-	) => void;
+	updates: ParentUpdate[];
+	onNavigate: (tab: ParentTabId) => void;
+	/** Opens one sent application in My applications. */
+	onOpenApplication: (applicationId: string) => void;
 }
 
-/** Applications that need the parent come first; the rest keep their stored order. */
-const ATTENTION_ORDER: Record<ApplicationStatus, number> = {
-	Offer: 0,
-	Draft: 1,
-	"Under review": 2,
-	Waitlisted: 3,
-	Submitted: 4,
-	Accepted: 5,
-	Withdrawn: 6,
-};
-
+/** Home: only what needs the parent (at most 3 items) and simple counts. No application lists. */
 export const ParentOverview: React.FC<ParentOverviewProps> = ({
 	parentProfile,
 	applications,
 	centres,
-	notifications,
+	updates,
 	onNavigate,
+	onOpenApplication,
 }) => {
-	const draftApps = applications.filter((a) => a.status === "Draft");
-	const unreadNotifications = notifications.filter((n) => !n.read);
-	const journeyApps = applications
-		.filter((a) => a.status !== "Withdrawn")
-		.map((a, i) => ({ a, i }))
-		.sort(
-			(x, y) =>
-				ATTENTION_ORDER[x.a.status] - ATTENTION_ORDER[y.a.status] || x.i - y.i
-		)
-		.map(({ a }) => a);
-
-	const getCentreName = (centreId: string) =>
-		centres.find((c) => c.id === centreId)?.name ?? "Child Care Centre";
-	const offerApp = applications.find((a) => a.status === "Offer");
+	const items = attentionItems({ applications, centres, updates });
+	const counts = applicationCounts(applications);
 	const firstName = parentProfile.name.split(" ")[0] || parentProfile.name;
+
+	const countTiles: { label: string; value: number; tab: ParentTabId }[] = [
+		{ label: "Preparing", value: counts.preparing, tab: "apply" },
+		{ label: "Sent", value: counts.sent, tab: "track" },
+		{ label: "Offers", value: counts.offers, tab: "track" },
+	];
 
 	return (
 		<div className="space-y-8 animate-fadeIn">
-			{/* Greeting band */}
 			<GreetingBand
 				tone="butter"
 				photo="parent"
@@ -77,7 +54,7 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
 					Hello, {firstName}
 				</h1>
 				<p className="mt-1 text-base text-ink">
-					Here’s where things stand today.
+					What needs your attention today.
 				</p>
 				{parentProfile.children.length > 0 && (
 					<p className="mt-3 text-sm text-cq-sand-ink">
@@ -98,167 +75,88 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
 				</div>
 			</GreetingBand>
 
-			<div className="grid lg:grid-cols-5 gap-8">
-				{/* Needs you + updates */}
-				<section
-					className="lg:col-span-2 space-y-3"
-					aria-labelledby="needs-heading">
-					<h2 id="needs-heading" className="text-xl font-extrabold text-brand">
-						Here’s what needs your attention
-					</h2>
-
-					<div className="rounded-2xl bg-white border border-cq-line border-l-4 border-l-coral shadow-sm p-5">
-						<div className="flex items-center justify-between gap-2">
-							<p className="text-sm font-extrabold text-coral-ink">Needs you</p>
-						</div>
-						{offerApp ? (
-							<>
-								<h3 className="mt-1 text-lg font-extrabold text-ink">
-									You have an offer!
-								</h3>
-								<p className="mt-0.5 text-[15px] text-ink-muted">
-									{getCentreName(offerApp.centreId)} has a spot for{" "}
-									{offerApp.childName}.
-								</p>
-								<PrimaryButton
-									arrow
-									className="mt-4 w-full sm:w-auto"
-									onClick={() => onNavigate("track")}>
-									Review offer
-								</PrimaryButton>
-							</>
-						) : draftApps.length > 0 ? (
-							<>
-								<h3 className="mt-1 text-lg font-extrabold text-ink">
-									Finish your application
-								</h3>
-								<p className="mt-0.5 text-[15px] text-ink-muted">
-									You have {draftApps.length} draft
-									{draftApps.length === 1 ? "" : "s"} waiting for documents or
-									submission.
-								</p>
-								<PrimaryButton
-									arrow
-									className="mt-4 w-full sm:w-auto"
-									onClick={() => onNavigate("apply")}>
-									Continue application
-								</PrimaryButton>
-							</>
-						) : (
-							<>
-								<h3 className="mt-1 text-lg font-extrabold text-ink">
-									You’re all caught up
-								</h3>
-								<p className="mt-0.5 text-[15px] text-ink-muted">
-									Nothing needs your attention today.
-								</p>
-								<GhostButton
-									className="mt-4 w-full sm:w-auto"
-									onClick={() => onNavigate("find")}>
-									Browse more centres
-									<ArrowRight className="w-4 h-4" aria-hidden="true" />
-								</GhostButton>
-							</>
-						)}
+			<section aria-labelledby="needs-heading" className="space-y-3">
+				<h2 id="needs-heading" className="text-xl font-extrabold text-brand">
+					Needs your attention
+				</h2>
+				{items.length === 0 ? (
+					<div className="rounded-2xl bg-white border border-cq-line p-5">
+						<h3 className="text-lg font-extrabold text-ink">
+							You’re all caught up
+						</h3>
+						<p className="mt-0.5 text-[15px] text-ink-muted">
+							Nothing needs your attention today.
+						</p>
 					</div>
-
-					<button
-						type="button"
-						onClick={() => onNavigate("companion")}
-						className="w-full flex items-center gap-3 rounded-2xl bg-white border border-cq-line px-4 py-3.5 text-left hover:bg-mint-50 transition-colors cursor-pointer">
-						<span className="w-10 h-10 rounded-xl bg-info-bg text-info flex items-center justify-center shrink-0">
-							<Bell className="w-5 h-5" aria-hidden="true" />
-						</span>
-						<span className="flex-1 min-w-0">
-							<span className="block text-[15px] font-bold text-ink">
-								{unreadNotifications.length} unread companion update
-								{unreadNotifications.length === 1 ? "" : "s"}
-							</span>
-							<span className="block text-xs text-ink-muted">
-								Messages &amp; status changes
-							</span>
-						</span>
-						<ChevronRight
-							className="w-5 h-5 text-ink-faint shrink-0"
-							aria-hidden="true"
-						/>
-					</button>
-				</section>
-
-				{/* Your applications */}
-				<section className="lg:col-span-3" aria-labelledby="apps-heading">
-					<div className="flex items-baseline justify-between gap-3 mb-3">
-						<h2 id="apps-heading" className="text-xl font-extrabold text-brand">
-							Your applications
-						</h2>
-						{journeyApps.length > 0 && (
-							<TertiaryButton
-								className="h-auto px-0"
-								onClick={() => onNavigate("track")}>
-								View all
-								<ArrowRight className="w-4 h-4" aria-hidden="true" />
-							</TertiaryButton>
-						)}
-					</div>
-
-					{journeyApps.length === 0 ? (
-						<div className="rounded-2xl bg-white border border-cq-line px-5 py-8 text-center text-sm text-ink-muted">
-							No applications submitted yet. Explore centres to start.
-						</div>
-					) : (
-						<ul className="rounded-2xl bg-white border border-cq-line divide-y divide-cq-line overflow-hidden">
-							{journeyApps.map((app) => (
-								<li key={app.id}>
-									<button
-										type="button"
+				) : (
+					<ul className="grid gap-3 lg:grid-cols-3">
+						{items.map((item, i) => (
+							<li
+								key={item.id}
+								className={`rounded-2xl bg-white border border-cq-line p-5 flex flex-col ${
+									i === 0 ? "border-l-4 border-l-coral shadow-sm" : ""
+								}`}>
+								<h3 className="text-lg font-extrabold text-ink">
+									{item.title}
+								</h3>
+								<p className="mt-0.5 text-[15px] text-ink-muted flex-1">
+									{item.detail}
+								</p>
+								{i === 0 ? (
+									<PrimaryButton
+										arrow
+										className="mt-4 w-full sm:w-auto self-start"
 										onClick={() =>
-											onNavigate(app.status === "Draft" ? "apply" : "track")
-										}
-										className="w-full flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-4 text-left hover:bg-mint-50 transition-colors cursor-pointer">
-										<CentreAvatar centreId={app.centreId} />
-										<span className="flex-1 min-w-0">
-											<span className="block text-[15px] font-bold text-ink leading-snug">
-												{getCentreName(app.centreId)}
-											</span>
-											<span className="block text-xs text-ink-muted mt-0.5">
-												{app.childName} · {app.careType}
-											</span>
-											<span className="mt-2 flex flex-wrap items-center gap-1.5">
-												<StatusBadge
-													status={app.status}
-													waitlistPosition={app.waitlistPosition}
-												/>
-											</span>
-											<ProgressStrip
-												status={app.status}
-												className="mt-3 max-w-sm"
-											/>
-										</span>
-										<ChevronRight
-											className="hidden sm:block w-5 h-5 text-ink-faint shrink-0"
-											aria-hidden="true"
-										/>
-									</button>
-								</li>
-							))}
-						</ul>
-					)}
+											item.tab === "track" && item.applicationId
+												? onOpenApplication(item.applicationId)
+												: onNavigate(item.tab)
+										}>
+										{item.cta}
+									</PrimaryButton>
+								) : (
+									<GhostButton
+										className="mt-4 w-full sm:w-auto self-start"
+										onClick={() =>
+											item.tab === "track" && item.applicationId
+												? onOpenApplication(item.applicationId)
+												: onNavigate(item.tab)
+										}>
+										{item.cta}
+										<ArrowRight className="w-4 h-4" aria-hidden="true" />
+									</GhostButton>
+								)}
+							</li>
+						))}
+					</ul>
+				)}
+			</section>
 
-					<SimNote className="mt-3">
-						Queue positions are determined by each centre under its own
-						published policy.
-					</SimNote>
-
-					<div className="mt-6">
-						<GhostButton
-							onClick={() => onNavigate("find")}
-							className="w-full sm:w-auto">
-							Explore centres
-							<ArrowRight className="w-4 h-4" aria-hidden="true" />
-						</GhostButton>
-					</div>
-				</section>
-			</div>
+			<section aria-labelledby="counts-heading">
+				<h2 id="counts-heading" className="sr-only">
+					Your applications at a glance
+				</h2>
+				<ul className="grid grid-cols-3 gap-3">
+					{countTiles.map((t) => (
+						<li key={t.label}>
+							<button
+								type="button"
+								onClick={() => onNavigate(t.tab)}
+								className="w-full rounded-2xl bg-white border border-cq-line px-4 py-3.5 text-left hover:bg-mint-50 transition-colors cursor-pointer flex items-center gap-2">
+								<span className="flex-1 min-w-0">
+									<span className="block text-2xl font-extrabold text-brand leading-tight">
+										{t.value}
+									</span>
+									<span className="block text-sm text-ink-muted">{t.label}</span>
+								</span>
+								<ChevronRight
+									className="hidden sm:block w-5 h-5 text-ink-faint shrink-0"
+									aria-hidden="true"
+								/>
+							</button>
+						</li>
+					))}
+				</ul>
+			</section>
 		</div>
 	);
 };

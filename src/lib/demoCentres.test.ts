@@ -83,8 +83,13 @@ test('Priya lives in The Annex; Anya is a 22-month-old toddler in full day care'
   assert.equal(PARENT_PROFILE.childAgeMonths, 22);
 });
 
-test("Priya's seeded applications: Submitted, Waitlisted (with history) and one Offer at the named centres", () => {
-  const mine = INITIAL_APPLICATIONS.filter((a) => a.parentAccountId === 'parent-priya');
+test("Priya's seeded applications: Submitted, Waitlisted (with history) and one Offer at the named centres, plus one draft", () => {
+  const all = INITIAL_APPLICATIONS.filter((a) => a.parentAccountId === 'parent-priya');
+  assert.deepEqual(
+    all.filter((a) => a.status === 'Draft').map((a) => a.centreId),
+    ['on-12256']
+  );
+  const mine = all.filter((a) => a.status !== 'Draft');
   assert.deepEqual(
     mine.map((a) => a.centreId).sort(),
     ['on-00576', 'on-0002899', 'on-0004062', 'on-0002575', DEMO_CENTRE_ID].sort()

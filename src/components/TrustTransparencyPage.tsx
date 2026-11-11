@@ -181,7 +181,7 @@ export const TrustTransparencyPage: React.FC<TrustTransparencyPageProps> = ({
             </span>
             <div className="text-xs sm:text-sm text-cq-stone-700">
               <span className="font-bold text-cq-stone-900">Simulated data is labelled: </span>
-              Demo accounts see a banner at the top of every screen saying their applications, waitlist positions, offers and messages are simulated, plus a "Simulated" tag next to each waitlist position and offer in Track.
+              Demo accounts see a banner at the top of every screen saying their applications, waitlist positions, offers and messages are simulated.
             </div>
           </div>
         </div>

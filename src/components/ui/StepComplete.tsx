@@ -5,6 +5,8 @@ import { SpotJourney } from './Illustrations';
 export interface StepCompleteInfo {
   /** One plain line under the heading, e.g. "Your application was sent to {centre}." */
   message: string;
+  /** Optional link under the message, e.g. "Open My applications". */
+  action?: { label: string; onClick: () => void };
 }
 
 /**
@@ -29,6 +31,18 @@ export const StepComplete: React.FC<{ info: StepCompleteInfo | null; onClose: ()
           <div className="min-w-0 flex-1">
             <p className="text-base font-extrabold text-brand">You’ve completed this step</p>
             <p className="text-sm text-ink-muted mt-0.5">{info.message}</p>
+            {info.action && (
+              <button
+                type="button"
+                onClick={() => {
+                  info.action!.onClick();
+                  onClose();
+                }}
+                className="mt-1 text-sm font-bold text-brand underline underline-offset-2 hover:no-underline cursor-pointer"
+              >
+                {info.action.label}
+              </button>
+            )}
           </div>
           <button
             type="button"

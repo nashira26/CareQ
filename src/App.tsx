@@ -16,6 +16,7 @@ import { Navbar } from "./components/Navbar";
 import { AppSidebar, SidebarItem } from "./components/AppSidebar";
 import { ParentHome } from "./components/ParentView/ParentHome";
 import { ParentOverview } from "./components/ParentView/ParentOverview";
+import { buildParentUpdates } from "./lib/parentUpdates";
 import { FindTab } from "./components/ParentView/FindTab";
 import { ApplyTab } from "./components/ParentView/ApplyTab";
 import { TrackTab } from "./components/ParentView/TrackTab";
@@ -60,6 +61,7 @@ import { StepComplete, StepCompleteInfo } from "./components/ui/StepComplete";
 import { SpotJourney } from "./components/ui/Illustrations";
 import {
 	Search,
+	Bell,
 	FileEdit,
 	FileText,
 	ListFilter,
@@ -86,7 +88,7 @@ type ParentTab =
 	| "find"
 	| "apply"
 	| "track"
-	| "companion"
+	| "updates"
 	| "help"
 	| "profile";
 type CentreTab =
@@ -104,6 +106,10 @@ export default function App() {
 	const [bootError, setBootError] = useState<string | null>(null);
 	const [stepDone, setStepDone] = useState<StepCompleteInfo | null>(null);
 	const closeStepDone = useCallback(() => setStepDone(null), []);
+	// My applications: the application opened from Home, Updates or a confirmation (highlighted there)
+	const [focusApplicationId, setFocusApplicationId] = useState<string | null>(
+		null
+	);
 	const [snapshot, setRawSnapshot] = useState<Snapshot>(EMPTY_SNAPSHOT);
 	const [outage, setOutage] = useState<string | null>(null);
 	const [actionError, setActionError] = useState<string | null>(null);
@@ -491,8 +497,14 @@ export default function App() {
 		const centreName = centreNameFor(applicationId);
 		await flushWrites(); // the reviewed draft and note must be saved before sending
 		if (await run(store.submit(applicationId))) {
-			setParentTab("track");
-			setStepDone({ message: `Your application was sent to ${centreName}.` });
+			// It leaves Drafts and appears in My applications
+			setStepDone({
+				message: `Your application was sent to ${centreName}.`,
+				action: {
+					label: "Open My applications",
+					onClick: () => openApplication(applicationId),
+				},
+			});
 		}
 	};
 	const handleAcceptOffer = async (
@@ -504,6 +516,11 @@ export default function App() {
 		if (await run(store.acceptOffer(applicationId, withdrawOthers))) {
 			setStepDone({ message: `You accepted the offer from ${centreName}.` });
 		}
+	};
+	/** Open one sent application in My applications (scrolled to and highlighted). */
+	const openApplication = (applicationId: string) => {
+		setFocusApplicationId(applicationId);
+		setParentTab("track");
 	};
 	const handleWithdrawApplication = (applicationId: string) =>
 		store && run(store.withdraw(applicationId));
@@ -684,29 +701,41 @@ export default function App() {
 	const myApplications = currentRole === "parent" ? applications : [];
 	const draftCount = myApplications.filter((a) => a.status === "Draft").length;
 	const offerCount = myApplications.filter((a) => a.status === "Offer").length;
+	const parentUpdates = buildParentUpdates({
+		notifications: currentRole === "parent" ? notifications : [],
+		conversations: currentRole === "parent" ? conversations ?? {} : {},
+		applications: myApplications,
+		centres,
+		childIds: [
+			...activeParentProfile.children.map((c) => c.id),
+			...myApplications.map((a) => a.childId),
+		],
+	});
+	const unreadUpdateCount = parentUpdates.filter((u) => u.unread).length;
 
 	const parentSidebarItems: SidebarItem[] = [
-		{ id: "home", label: "Overview", shortLabel: "Home", icon: Home },
-		{ id: "find", label: "Find Centres", shortLabel: "Find", icon: Search },
+		{ id: "home", label: "Home", shortLabel: "Home", icon: Home },
+		{ id: "find", label: "Find centres", shortLabel: "Find", icon: Search },
 		{
 			id: "apply",
-			label: "Apply",
-			shortLabel: "Apply",
+			label: "Drafts",
+			shortLabel: "Drafts",
 			icon: FileEdit,
 			badge: draftCount > 0 ? `${draftCount} in progress` : undefined,
 		},
 		{
 			id: "track",
-			label: "Track Status",
-			shortLabel: "Track",
+			label: "My applications",
+			shortLabel: "Applications",
 			icon: ListFilter,
 			badge: offerCount > 0 ? "Offer" : undefined,
 		},
 		{
-			id: "companion",
-			label: "Parent companion",
-			shortLabel: "Companion",
-			icon: Heart,
+			id: "updates",
+			label: "Updates",
+			shortLabel: "Updates",
+			icon: Bell,
+			badge: unreadUpdateCount > 0 ? String(unreadUpdateCount) : undefined,
 		},
 		{
 			id: "help",
@@ -984,8 +1013,10 @@ export default function App() {
 					}
 					activeId={currentRole === "parent" ? parentTab : centreTab}
 					onSelect={(id) => {
-						if (currentRole === "parent") setParentTab(id as ParentTab);
-						else setCentreTab(id as CentreTab);
+						if (currentRole === "parent") {
+							setFocusApplicationId(null);
+							setParentTab(id as ParentTab);
+						} else setCentreTab(id as CentreTab);
 					}}
 					onLogout={handleLogout}
 				/>
@@ -1029,22 +1060,23 @@ export default function App() {
 										parentProfile={activeParentProfile}
 										applications={myApplications}
 										centres={centres}
-										notifications={notifications}
-										onNavigate={setParentTab}
+										updates={parentUpdates}
+										onNavigate={(tab) => {
+											setFocusApplicationId(null);
+											setParentTab(tab);
+										}}
+										onOpenApplication={openApplication}
 									/>
 								)}
 
-								{parentTab === "companion" && (
+								{parentTab === "updates" && (
 									<ParentHome
-										parentProfile={activeParentProfile}
-										applications={myApplications}
-										centres={centres}
-										notifications={notifications}
+										updates={parentUpdates}
 										onMarkAsRead={handleMarkNotificationAsRead}
 										onMarkAllAsRead={() =>
 											handleMarkAllNotificationsAsRead("parent")
 										}
-										onNavigate={setParentTab}
+										onOpenApplication={openApplication}
 									/>
 								)}
 
@@ -1074,7 +1106,6 @@ export default function App() {
 										onUpdatePreparedDraft={handleUpdatePreparedDraft}
 										onUpdateNoteToCentre={handleUpdateNoteToCentre}
 										onNavigateToFind={() => setParentTab("find")}
-										onNavigateToTrack={() => setParentTab("track")}
 									/>
 								)}
 
@@ -1086,9 +1117,9 @@ export default function App() {
 										isDemoAccount={Boolean(currentAccount?.isDemoAccount)}
 										onAcceptOffer={handleAcceptOffer}
 										onWithdrawApplication={handleWithdrawApplication}
-										onNavigateToApply={() => setParentTab("apply")}
 										onNavigateToFind={() => setParentTab("find")}
 										onOpenConversation={handleParentOpenConversation}
+										focusApplicationId={focusApplicationId}
 									/>
 								)}
 
