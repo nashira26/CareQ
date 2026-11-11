@@ -58,10 +58,14 @@ Open http://localhost:3000 (or the port in your `PORT` variable).
 The login page has one-click demo buttons (password `password` for all):
 
 - **Priya** (parent, `priya@example.ca`): home area The Annex; child Anya, 22 months, toddler, full day.
-- **CareQ Demo Centre (fictional)** (centre, `centre@careq-demo.example`).
-- **Jesse Ketchum Early Learning & Child Care Centre · simulated demo account** (centre, `jesse-ketchum.demo@careq.example`).
+- **Jesse Ketchum Early Learning & Child Care Centre · simulated demo account** (centre, `jesse-ketchum.demo@careq.example`). Anya is #4 on its waitlist; update her position or make an offer here and it shows on Priya's side.
 
 You can also create your own parent or centre account.
+
+**Testing accounts.** Not on the login page; type the email on the Centre portal login (password `password`):
+
+- **CareQ Demo Centre (fictional)** (centre, `centre@careq-demo.example`): sample families in every status, with uploaded documents. Used by the API tests.
+- The other real centres' simulated demo accounts (`{slug}.demo@careq.example`, see below), e.g. Macaulay (`macaulay-dovercourt.demo@careq.example`), which made Priya's seeded offer.
 
 **Demo centres.** Seven real Ontario centres (the `demoCentreId` in each `data/policies/*/meta.json`) plus one fictional "CareQ Demo Centre". The real centres keep their open-data details, and their checklists are quoted word for word from each operator's published handbook, with page citations (Family Day Care's handbook lists no admission documents, so it uses the Ontario licensing manual). Each real centre has a centre-portal account named "{centre} · simulated demo account". Every centre-portal page shows "Simulated demo account. Not operated by or affiliated with {centre}." Applications, positions, offers and messages involving these centres are simulated and labelled "Simulated"; these centres have not partnered with CareQ. The operators' other sites stay open-data centres (information only). Other accounts follow the same pattern: `{slug}.demo@careq.example` (see `src/lib/world.ts`).
 

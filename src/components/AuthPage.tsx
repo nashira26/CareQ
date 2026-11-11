@@ -56,17 +56,13 @@ interface AuthPageProps {
 
 const DEMO_PASSWORD = "password";
 const PARENT_DEMO_EMAIL = "priya@example.ca";
+// The one centre demo login: Priya's waitlist application (position updates) is here.
+// Other centre accounts (e.g. the fictional CareQ Demo Centre) are testing accounts listed in the README.
 const CENTRE_DEMOS = [
 	{
-		label: "CareQ Demo Centre (fictional)",
-		email: "centre@careq-demo.example",
-		note: "Fictional centre with sample families.",
-	},
-	{
-		label:
-			"Jesse Ketchum Early Learning & Child Care Centre · simulated demo account",
+		label: "Jesse Ketchum Early Learning & Child Care Centre",
 		email: "jesse-ketchum.demo@careq.example",
-		note: "Real centre (Ontario open data). Simulated demo account, not operated by or affiliated with the centre.",
+		note: "Simulated demo account",
 	},
 ];
 
@@ -564,7 +560,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 										</button>
 									</div>
 
-									{/* Test centres: the fictional demo centre, and one real centre's simulated demo account */}
+									{/* Test centre: one real centre's simulated demo account */}
 									{CENTRE_DEMOS.map((d) => (
 										<div
 											key={d.email}
