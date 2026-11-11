@@ -20,7 +20,7 @@ export interface ParentUpdate {
   centreName?: string;
   /** The parent's application this update is about (opens it in My applications). */
   applicationId?: string;
-  /** Notifications: their read flag. Centre messages: not in the parent's read list (kept in this browser). */
+  /** Notifications: their read flag. Centre messages: not in the parent's read list and not replied to since. */
   unread: boolean;
   notificationId?: string;
   /** Centre messages only: the chat message id (used to mark it read). */
@@ -70,7 +70,10 @@ export function buildParentUpdates(input: {
   applications: Application[];
   centres: Centre[];
   childIds: string[];
-  /** Centre message ids the parent has read. Left out: centre messages count as read. */
+  /**
+   * Centre message ids the parent has read (this browser). A centre message the parent replied after
+   * is read too. Left out: centre messages count as read.
+   */
   readMessageIds?: ReadonlySet<string>;
 }): ParentUpdate[] {
   const { notifications, conversations, applications, centres, childIds, readMessageIds } = input;
@@ -98,8 +101,13 @@ export function buildParentUpdates(input: {
   for (const centre of centres) {
     for (const childId of new Set(childIds)) {
       const messages = conversations[conversationKey(centre.id, childId)] ?? [];
-      for (const m of messages) {
-        if (m.sender !== 'centre') continue;
+      // The parent answered after it: they've read it (messages are stored in the order they were sent)
+      let lastParentReply = -1;
+      messages.forEach((m, i) => {
+        if (m.sender === 'parent') lastParentReply = i;
+      });
+      messages.forEach((m, i) => {
+        if (m.sender !== 'centre') return;
         const { key, day } = messageDate(m.timestamp);
         out.push({
           id: `msg-${m.id}`,
@@ -110,11 +118,11 @@ export function buildParentUpdates(input: {
           centreId: centre.id,
           centreName: centre.name,
           applicationId: applicationAt(applications, centre.id, '', childId)?.id,
-          unread: readMessageIds ? !readMessageIds.has(m.id) : false,
+          unread: readMessageIds ? i > lastParentReply && !readMessageIds.has(m.id) : false,
           messageId: m.id,
           sortKey: key,
         });
-      }
+      });
     }
   }
 

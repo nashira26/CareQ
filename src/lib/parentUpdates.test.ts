@@ -40,12 +40,43 @@ test('Updates: centre messages are unread until the parent reads them, and then 
   };
   const fresh = buildParentUpdates({ ...input, readMessageIds: new Set() }).filter((u) => u.kind === 'message');
   assert.ok(fresh.length > 0);
-  assert.ok(fresh.every((u) => u.unread && u.messageId && !u.notificationId));
-  const read = new Set([fresh[0].messageId!]);
+  assert.ok(fresh.every((u) => u.messageId && !u.notificationId));
+  const unread = fresh.filter((u) => u.unread);
+  assert.ok(unread.length > 0);
+  const read = new Set([unread[0].messageId!]);
   const after = buildParentUpdates({ ...input, readMessageIds: read }).filter((u) => u.kind === 'message');
-  assert.equal(after.filter((u) => u.unread).length, fresh.length - 1);
+  assert.equal(after.filter((u) => u.unread).length, unread.length - 1);
   // Without a read list (old callers), messages never count as unread
   assert.ok(updates.filter((u) => u.kind === 'message').every((u) => !u.unread));
+});
+
+test('Updates: a centre message the parent replied after is read; the seeded badge shows only new items', () => {
+  const at = (id: string) => buildParentUpdates({
+    notifications: [],
+    conversations,
+    applications: priyaApps,
+    centres: INITIAL_CENTRES,
+    childIds: ['child-anya'],
+    readMessageIds: new Set(),
+  }).find((u) => u.messageId === id)!;
+  assert.equal(at('m-jk-2').unread, false, 'Priya answered the Nov 2 update');
+  assert.equal(at('m-mac-1').unread, true, 'the Macaulay offer message has no reply yet');
+  // Conversations where the centre wrote after the parent's last reply stay unread
+  const later = { ...conversations };
+  const key = Object.keys(later).find((k) => later[k].some((m) => m.id === 'm-jk-2'))!;
+  later[key] = [...later[key], { id: 'm-jk-new', sender: 'centre', senderName: 'JK', text: 'A space opened.', timestamp: 'Nov 9, 2026 • 9:00 AM' }];
+  const withNew = buildParentUpdates({ notifications: [], conversations: later, applications: priyaApps, centres: INITIAL_CENTRES, childIds: ['child-anya'], readMessageIds: new Set() });
+  assert.equal(withNew.find((u) => u.messageId === 'm-jk-new')!.unread, true);
+
+  const badge = buildParentUpdates({
+    notifications: INITIAL_NOTIFICATIONS.filter((n) => n.recipientId === PRIYA_ACCOUNT_ID),
+    conversations,
+    applications: priyaApps,
+    centres: INITIAL_CENTRES,
+    childIds: ['child-anya'],
+    readMessageIds: new Set(),
+  }).filter((u) => u.unread).length;
+  assert.ok(badge >= 2 && badge <= 3, `Priya's seeded badge is ${badge}`);
 });
 
 test('Home: at most 3 action items: the offer first, then the new position, then the draft', () => {

@@ -753,6 +753,13 @@ export const INITIAL_CONVERSATIONS: { centreId: string; childId: string; message
         text: 'Hi Priya, thanks for your application. We will be in touch once we have reviewed it.',
         timestamp: 'Oct 29, 2026 • 3:45 PM',
       },
+      {
+        id: 'm-wel-3',
+        sender: 'parent',
+        senderName: 'Priya',
+        text: 'Thank you, we look forward to hearing from you.',
+        timestamp: 'Oct 29, 2026 • 6:10 PM',
+      },
     ],
   },
   {
@@ -779,6 +786,13 @@ export const INITIAL_CONVERSATIONS: { centreId: string; childId: string; message
         senderName: DEMO_CENTRE_NAME,
         text: 'All documents look complete. We will follow up as toddler room allocations for March are finalized.',
         timestamp: 'Oct 17, 2026 • 11:05 AM',
+      },
+      {
+        id: 'm-demo-4',
+        sender: 'parent',
+        senderName: 'Priya',
+        text: 'Great, thank you for confirming!',
+        timestamp: 'Oct 17, 2026 • 1:30 PM',
       },
     ],
   },
