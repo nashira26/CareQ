@@ -7,7 +7,7 @@ import {
 	attentionItems,
 } from "../../lib/parentUpdates";
 import { PrimaryButton, GhostButton, GreetingBand } from "../ui/CareUI";
-import { ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowRight, FileEdit, Gift, Send } from "lucide-react";
 
 /** Parent tabs other pages can link to. */
 export type ParentTabId = "home" | "find" | "apply" | "track" | "updates" | "help";
@@ -35,10 +35,43 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
 	const counts = applicationCounts(applications);
 	const firstName = parentProfile.name.split(" ")[0] || parentProfile.name;
 
-	const countTiles: { label: string; value: number; tab: ParentTabId }[] = [
-		{ label: "Preparing", value: counts.preparing, tab: "apply" },
-		{ label: "Sent", value: counts.sent, tab: "track" },
-		{ label: "Offers", value: counts.offers, tab: "track" },
+	// Like the centre's overview boxes: an icon in the status colour (as on the status badges),
+	// a plain label, an arrow, and a coral edge when something is waiting on the parent
+	const offers = applications.filter((a) => a.status === "Offer");
+	const countTiles: {
+		label: string;
+		value: number;
+		Icon: typeof Gift;
+		tone: string;
+		urgent: boolean;
+		open: () => void;
+	}[] = [
+		{
+			label: counts.preparing === 1 ? "Draft being prepared" : "Drafts being prepared",
+			value: counts.preparing,
+			Icon: FileEdit,
+			tone: "bg-stone text-status-draft",
+			urgent: false,
+			open: () => onNavigate("apply"),
+		},
+		{
+			label: counts.sent === 1 ? "Application sent" : "Applications sent",
+			value: counts.sent,
+			Icon: Send,
+			tone: "bg-info-bg text-info",
+			urgent: false,
+			open: () => onNavigate("track"),
+		},
+		{
+			label: counts.offers === 1 ? "Offer to respond to" : "Offers to respond to",
+			value: counts.offers,
+			Icon: Gift,
+			tone: "bg-sun text-status-offer",
+			urgent: counts.offers > 0,
+			// One offer: straight to it
+			open: () =>
+				offers.length === 1 ? onOpenApplication(offers[0].id) : onNavigate("track"),
+		},
 	];
 
 	return (
@@ -131,25 +164,33 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({
 				)}
 			</section>
 
-			<section aria-labelledby="counts-heading">
-				<h2 id="counts-heading" className="sr-only">
-					Your applications at a glance
+			<section aria-labelledby="counts-heading" className="space-y-3">
+				<h2 id="counts-heading" className="text-xl font-extrabold text-brand">
+					Your applications
 				</h2>
-				<ul className="grid grid-cols-3 gap-3">
-					{countTiles.map((t) => (
-						<li key={t.label}>
+				<ul className="grid sm:grid-cols-3 gap-3">
+					{countTiles.map(({ label, value, Icon, tone, urgent, open }) => (
+						<li key={label}>
 							<button
 								type="button"
-								onClick={() => onNavigate(t.tab)}
-								className="w-full rounded-2xl bg-white border border-cq-line px-4 py-3.5 text-left hover:bg-mint-50 transition-colors cursor-pointer flex items-center gap-2">
-								<span className="flex-1 min-w-0">
-									<span className="block text-2xl font-extrabold text-brand leading-tight">
-										{t.value}
-									</span>
-									<span className="block text-sm text-ink-muted">{t.label}</span>
+								onClick={open}
+								className={`group w-full h-full rounded-2xl bg-white border border-cq-line p-4 flex items-center gap-3.5 text-left hover:bg-mint-50 transition-colors cursor-pointer ${
+									urgent ? "border-l-4 border-l-coral" : ""
+								}`}>
+								<span
+									className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${tone}`}>
+									<Icon className="w-5 h-5" aria-hidden="true" />
 								</span>
-								<ChevronRight
-									className="hidden sm:block w-5 h-5 text-ink-faint shrink-0"
+								<span className="min-w-0 flex-1">
+									<span className="block text-2xl font-extrabold text-ink leading-none">
+										{value}
+									</span>
+									<span className="block text-sm text-ink-muted mt-1">
+										{label}
+									</span>
+								</span>
+								<ArrowRight
+									className="w-4 h-4 text-ink-faint group-hover:translate-x-0.5 transition-transform shrink-0"
 									aria-hidden="true"
 								/>
 							</button>

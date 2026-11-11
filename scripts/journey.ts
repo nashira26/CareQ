@@ -82,7 +82,18 @@ async function parentJourney(b: Browser, width: number, errors: string[]) {
     await visible(p, 'Respond to your offer').waitFor({ timeout: 5000 });
     const actions = await p.locator('#needs-heading + ul > li').locator('visible=true').count();
     if (actions < 1 || actions > 3) throw new Error(`${actions} action items (want 1 to 3)`);
-    for (const label of ['Preparing', 'Sent', 'Offers']) await visible(p, label).waitFor({ timeout: 5000 });
+    // "Your applications": three boxes like the centre overview's (icon, count, label, arrow)
+    const boxes = p.locator('#counts-heading + ul > li button').locator('visible=true');
+    if ((await boxes.count()) !== 3) throw new Error(`${await boxes.count()} count boxes`);
+    for (const label of [/^\d+\s*Drafts? being prepared$/, /^\d+\s*Applications? sent$/, /^\d+\s*Offers? to respond to$/]) {
+      if (!(await boxes.filter({ hasText: label }).count())) throw new Error(`no box ${label}`);
+    }
+    // The offer box is marked (coral edge) and, with one offer, opens it in My applications
+    const offerBox = boxes.filter({ hasText: /Offers? to respond to/ });
+    if (!/border-l-coral/.test((await offerBox.getAttribute('class')) ?? '')) throw new Error('offer box not marked');
+    await offerBox.click();
+    await p.getByRole('heading', { name: 'My applications', exact: true }).waitFor({ timeout: 8000 });
+    await openTab(p, 'Home');
   });
   await step('avatar menu opens with the keyboard; "Your profile" opens the Profile page', async () => {
     const avatar = p.getByRole('button', { name: /^Account menu for/ });
