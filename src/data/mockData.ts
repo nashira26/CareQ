@@ -137,6 +137,11 @@ export interface Application {
   submittedAt?: string;
   completedRequirements: string[];
   uploadedDocuments?: Record<string, UploadedDocument>;
+  /**
+   * Why and when a Withdrawn application was closed. 'accepted-other': the family accepted another offer
+   * (acceptedApplicationId; never sent to centres). 'declined': the family declined this offer.
+   */
+  withdrawal?: { reason: 'withdrawn' | 'accepted-other' | 'declined'; date: string; acceptedApplicationId?: string };
   parentNotes?: string;
   /** Saved only when the parent approves and submits (see src/lib/prepareApplication.ts). */
   preparedFields?: { label: string; value: string; source: 'family profile' | 'parent to provide' }[];

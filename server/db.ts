@@ -233,6 +233,9 @@ export class MongoRepo implements Repo {
   updateApplication(id: string, patch: Partial<ApplicationRecord>) {
     return this.patch('applications', { id }, patch);
   }
+  async deleteApplication(id: string) {
+    await this.c('applications').deleteOne({ id });
+  }
 
   getConversation(key: string) {
     return this.c<ConversationRecord>('conversations').findOne({ key }, NO_ID) as Promise<ConversationRecord | null>;

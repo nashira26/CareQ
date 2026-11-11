@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { shortRef } from "../../lib/centreQueue";
+import { withdrawalLabel } from "../../lib/offers";
 import { EmptyState, SpotChecklist } from "../ui/Illustrations";
 import { Centre, Application, ApplicationStatus } from "../../data/mockData";
 import { StatusBadge } from "../StatusBadge";
@@ -560,6 +561,11 @@ A signed Photography & Media Consent Form is required for classroom developmenta
 																size="sm"
 																viewer="centre"
 															/>
+															{withdrawalLabel(app, "centre") && (
+																<div className="text-xs text-cq-soft mt-1">
+																	{withdrawalLabel(app, "centre")}
+																</div>
+															)}
 														</div>
 
 														{/* Queue */}
@@ -767,6 +773,11 @@ A signed Photography & Media Consent Form is required for classroom developmenta
 													{app.submittedAt && (
 														<div className="text-xs text-cq-soft mt-0.5">
 															Received {app.submittedAt}
+														</div>
+													)}
+													{withdrawalLabel(app, "centre") && (
+														<div className="text-xs text-cq-soft mt-0.5">
+															{withdrawalLabel(app, "centre")}
 														</div>
 													)}
 												</div>

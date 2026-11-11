@@ -105,7 +105,6 @@ export const schemas = {
   simulatedContact: z.object({ hours: str(80), contactEmail: str(200) }).strict(),
   createDraft: z.object({ centreId: str(80) }),
   draftChange: z.object({ change: draftChangeSchema }),
-  accept: z.object({ withdrawOthers: z.boolean() }),
   status: z.object({
     status: z.enum(['Under review', 'Waitlisted', 'Offer']),
     waitlistPosition: z.number().int().min(1).max(10000).optional(),
@@ -306,10 +305,13 @@ export function createDataApi(ctx: Ctx): Router {
     await svc.withdrawApplication(repo(), req.actor!, req.params.id);
     res.json(await snapshotFor(req));
   }));
+  // Accepting always withdraws the child's other applications (and deletes their drafts)
   r.post('/applications/:id/accept', ...act(async (req, res) => {
-    const b = body(schemas.accept, req, res);
-    if (!b) return;
-    await svc.acceptOffer(repo(), req.actor!, req.params.id, b.withdrawOthers);
+    await svc.acceptOffer(repo(), req.actor!, req.params.id);
+    res.json(await snapshotFor(req));
+  }));
+  r.post('/applications/:id/decline', ...act(async (req, res) => {
+    await svc.declineOffer(repo(), req.actor!, req.params.id);
     res.json(await snapshotFor(req));
   }));
   r.post('/applications/:id/status', ...act(async (req, res) => {

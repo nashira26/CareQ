@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { shortRef } from "../../lib/centreQueue";
 import { Centre, Application, ParentProfile } from "../../data/mockData";
 import { StatusBadge } from "../StatusBadge";
@@ -20,13 +21,17 @@ import {
 	reportedLine,
 	reportedLineOnCard,
 } from "../../lib/simulated";
-import { AlertTriangle, ArrowRight, Check, Gift, X } from "lucide-react";
+import { AlertTriangle, ArrowRight, Check, Gift, MessageSquare, X } from "lucide-react";
+import { otherOpenApplications, withdrawalLabel } from "../../lib/offers";
 
 interface TrackTabProps {
 	centres: Centre[];
 	applications: Application[];
 	parentProfile: ParentProfile;
-	onAcceptOffer: (applicationId: string, withdrawOthers: boolean) => void;
+	/** Accepts, and withdraws the child's other applications (their drafts are deleted). */
+	onAcceptOffer: (applicationId: string) => void;
+	/** Declines: only that application becomes Withdrawn. */
+	onDeclineOffer: (applicationId: string) => void;
 	onWithdrawApplication: (applicationId: string) => void;
 	onNavigateToFind: () => void;
 	onOpenConversation: (centreId: string) => void;
@@ -43,6 +48,7 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 	parentProfile,
 	isDemoAccount = false,
 	onAcceptOffer,
+	onDeclineOffer,
 	onWithdrawApplication,
 	onNavigateToFind,
 	onOpenConversation,
@@ -82,13 +88,22 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 		? centres.find((c) => c.id === selectedOfferApp.centreId)
 		: null;
 
-	// Other active applications that could be withdrawn (drafts too: accepting with "withdraw others" withdraws them)
-	const otherActiveApps = allApplications.filter(
-		(a) =>
-			a.id !== selectedOfferAppId &&
-			a.status !== "Withdrawn" &&
-			a.status !== "Accepted"
-	);
+	// The same child's other open applications (sent, offers, drafts): accepting closes all of them
+	const otherActiveApps = selectedOfferApp
+		? otherOpenApplications(allApplications, selectedOfferApp)
+		: [];
+	const childName = selectedOfferApp?.childName || parentProfile.childName;
+
+	// Offer dialogs render on <body>: <main> is animated (a transform), which would trap position: fixed
+	const overlay = (node: React.ReactNode) =>
+		typeof document !== "undefined" ? createPortal(node, document.body) : node;
+
+	// Decline confirmation dialog state
+	const [declineAppId, setDeclineAppId] = useState<string | null>(null);
+	const declineApp = applications.find((a) => a.id === declineAppId);
+	const declineCentre = declineApp
+		? centres.find((c) => c.id === declineApp.centreId)
+		: null;
 
 	return (
 		<div className="space-y-6">
@@ -193,6 +208,14 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 										size="sm"
 									/>
 									<ProgressStrip status={app.status} />
+									{isWithdrawn && app.withdrawal && (
+										<p className="text-xs text-ink-muted">
+											{withdrawalLabel(app, "parent", {
+												applications: allApplications,
+												centres,
+											})}
+										</p>
+									)}
 								</div>
 
 								<dl className="grid grid-cols-2 gap-3 pt-3 border-t border-cq-line text-sm">
@@ -243,13 +266,30 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 									hideWhenUncovered
 								/>
 
+								{isOffer && (
+									<button
+										type="button"
+										onClick={() => onOpenConversation(app.centreId)}
+										className="self-start text-left text-sm font-semibold text-brand hover:underline inline-flex items-start gap-1.5 cursor-pointer">
+										<MessageSquare className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+										Have a question about this offer? Message the centre
+									</button>
+								)}
+
 								<div className="mt-auto pt-3 border-t border-cq-line flex flex-wrap items-center gap-2">
 									{isOffer && (
-										<PrimaryButton
-											onClick={() => setSelectedOfferAppId(app.id)}
-											className="h-10">
-											Accept offer
-										</PrimaryButton>
+										<>
+											<PrimaryButton
+												onClick={() => setSelectedOfferAppId(app.id)}
+												className="h-10">
+												Accept offer
+											</PrimaryButton>
+											<GhostButton
+												onClick={() => setDeclineAppId(app.id)}
+												className="h-10">
+												Decline offer
+											</GhostButton>
+										</>
 									)}
 									<GhostButton
 										onClick={() => onOpenConversation(app.centreId)}
@@ -314,114 +354,99 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 				<SimNote>CareQ never calculates or predicts a queue position.</SimNote>
 			</div>
 
-			{/* Offer Acceptance & Withdraw Other Applications Confirmation Dialog */}
-			{selectedOfferApp && selectedOfferCentre && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/45">
-					<Card className="max-w-lg w-full p-6 shadow-2xl space-y-4 animate-pop">
+			{/* Accept: one choice. Accepting withdraws this child's other applications (drafts are deleted). */}
+			{selectedOfferApp && selectedOfferCentre && overlay(
+				<div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-ink/45">
+					<Card
+						role="dialog"
+						aria-modal="true"
+						aria-labelledby="accept-offer-title"
+						className="max-w-lg w-full max-h-[calc(100dvh-2rem)] overflow-y-auto p-6 shadow-2xl space-y-4 animate-pop">
 						<div className="flex items-start gap-3">
 							<span className="w-11 h-11 rounded-xl bg-sun text-status-offer flex items-center justify-center shrink-0">
 								<Gift className="w-5 h-5" aria-hidden="true" />
 							</span>
 							<div>
-								<h3 className="text-lg font-bold text-cq-ink">
-									Accept child care offer
+								<h3 id="accept-offer-title" className="text-lg font-bold text-cq-ink">
+									Accept the offer from {selectedOfferCentre.name} for {childName}?
 								</h3>
-								<p className="text-xs text-cq-muted">
-									{selectedOfferCentre.name} (
-									{selectedOfferCentre.neighbourhood})
+								<p className="text-xs text-cq-muted mt-0.5">
+									Start{" "}
+									{selectedOfferApp.preferredStartDate ||
+										parentProfile.preferredStartDate}
+									{selectedOfferCentre.hours ? ` · ${selectedOfferCentre.hours}` : ""}
 								</p>
 							</div>
 						</div>
 
-						<div className="bg-cq-sage/60 border border-cq-sage-line rounded-xl p-3.5 text-xs text-cq-ink space-y-1">
-							<p className="font-semibold flex flex-wrap items-center gap-2">
-								A licensed spot has been offered for {parentProfile.childName}.
-							</p>
-							<p className="text-cq-muted">
-								Target Start Date:{" "}
-								{selectedOfferApp.preferredStartDate ||
-									parentProfile.preferredStartDate}
-								{selectedOfferCentre.hours
-									? ` · ${selectedOfferCentre.hours}`
-									: ""}
-							</p>
-						</div>
-
-						{otherActiveApps.length > 0 ? (
+						{otherActiveApps.length > 0 && (
 							<div className="bg-cq-input border border-cq-line rounded-xl p-4 space-y-3">
-								<div className="flex items-start gap-2">
-									<AlertTriangle className="w-4 h-4 text-cq-peach-ink shrink-0 mt-0.5" />
-									<div>
-										<h4 className="text-xs font-semibold text-cq-ink">
-											Withdraw other applications?
-										</h4>
-										<p className="text-xs text-cq-muted mt-0.5">
-											You hold {otherActiveApps.length} other pending or
-											waitlisted application(s):
-										</p>
-									</div>
-								</div>
-
-								<div className="max-h-28 overflow-y-auto space-y-1 text-xs text-cq-muted pl-6 list-disc">
-									{otherActiveApps.map((oa) => {
-										const c = centres.find(
-											(centre) => centre.id === oa.centreId
-										);
-										return (
-											<div
-												key={oa.id}
-												className="flex justify-between items-center pr-2 py-0.5">
-												<span className="font-medium text-cq-ink truncate">
-													• {c?.name}
-												</span>
-												<StatusBadge status={oa.status} size="sm" />
-											</div>
-										);
-									})}
-								</div>
-
-								<p className="text-xs text-cq-soft pt-1 border-t border-cq-line">
-									Withdrawing other applications frees up waitlist spots for
-									other Ontario families.
+								<p className="text-sm text-cq-ink flex items-start gap-2">
+									<AlertTriangle className="w-4 h-4 text-cq-peach-ink shrink-0 mt-0.5" aria-hidden="true" />
+									<span>
+										Accepting will also withdraw your other applications for {childName}, so those places can go
+										to other families. This can't be undone.
+									</span>
 								</p>
+								<ul aria-label={`Your other applications for ${childName}`} className="max-h-40 overflow-y-auto space-y-1.5 text-sm">
+									{otherActiveApps.map((oa) => (
+										<li key={oa.id} className="flex justify-between items-center gap-3">
+											<span className="font-medium text-cq-ink min-w-0 leading-snug">
+												{centres.find((c) => c.id === oa.centreId)?.name ?? "Child care centre"}
+											</span>
+											<span className="shrink-0">
+												<StatusBadge status={oa.status} waitlistPosition={oa.waitlistPosition} size="sm" />
+											</span>
+										</li>
+									))}
+								</ul>
 							</div>
-						) : (
-							<p className="text-xs text-cq-muted">
-								You have no other active applications in the queue.
-							</p>
 						)}
 
-						{/* Dialog Actions */}
-						<div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
-							<GhostButton
-								onClick={() => setSelectedOfferAppId(null)}
-								className="order-3 sm:order-1 text-xs">
-								Cancel
-							</GhostButton>
-
-							{otherActiveApps.length > 0 && (
-								<GhostButton
-									onClick={() => {
-										onAcceptOffer(selectedOfferApp.id, false);
-										setSelectedOfferAppId(null);
-									}}
-									className="order-2 text-xs">
-									Accept &amp; Keep Others
-								</GhostButton>
-							)}
-
+						<div className="pt-2 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2">
 							<PrimaryButton
 								noArrow
 								onClick={() => {
-									onAcceptOffer(selectedOfferApp.id, true);
+									onAcceptOffer(selectedOfferApp.id);
 									setSelectedOfferAppId(null);
 								}}
-								className="order-1 sm:order-3 text-xs">
-								<Check className="w-4 h-4 mr-1.5" />
-								{otherActiveApps.length > 0
-									? "Accept & Withdraw Others"
-									: "Confirm & Accept Offer"}
+								className="sm:order-1">
+								<Check className="w-4 h-4 mr-1.5" aria-hidden="true" />
+								{otherActiveApps.length > 0 ? "Accept and withdraw others" : "Accept offer"}
 							</PrimaryButton>
+							<GhostButton onClick={() => setSelectedOfferAppId(null)} className="sm:order-2">
+								Cancel
+							</GhostButton>
+						</div>
+					</Card>
+				</div>
+			)}
+
+			{/* Decline: only this application is withdrawn */}
+			{declineApp && declineCentre && overlay(
+				<div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-ink/45">
+					<Card
+						role="dialog"
+						aria-modal="true"
+						aria-labelledby="decline-offer-title"
+						className="max-w-md w-full max-h-[calc(100dvh-2rem)] overflow-y-auto p-6 shadow-2xl space-y-4 animate-pop">
+						<h3 id="decline-offer-title" className="text-lg font-bold text-cq-ink">
+							Decline the offer from {declineCentre.name}?
+						</h3>
+						<p className="text-sm text-cq-muted">The centre can then offer this place to another family.</p>
+						<div className="pt-2 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2">
+							<PrimaryButton
+								noArrow
+								onClick={() => {
+									onDeclineOffer(declineApp.id);
+									setDeclineAppId(null);
+								}}
+								className="sm:order-1">
+								Decline offer
+							</PrimaryButton>
+							<GhostButton onClick={() => setDeclineAppId(null)} className="sm:order-2">
+								Cancel
+							</GhostButton>
 						</div>
 					</Card>
 				</div>

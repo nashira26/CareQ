@@ -17,6 +17,7 @@ import { AppSidebar, SidebarItem } from "./components/AppSidebar";
 import { ParentHome } from "./components/ParentView/ParentHome";
 import { ParentOverview } from "./components/ParentView/ParentOverview";
 import { bellPreview, buildParentUpdates, type ParentUpdate } from "./lib/parentUpdates";
+import { acceptedMessage, otherOpenApplications } from "./lib/offers";
 import { loadMessageReads, saveMessageReads } from "./lib/messageReads";
 import { FindTab } from "./components/ParentView/FindTab";
 import { ApplyTab } from "./components/ParentView/ApplyTab";
@@ -508,14 +509,20 @@ export default function App() {
 			});
 		}
 	};
-	const handleAcceptOffer = async (
-		applicationId: string,
-		withdrawOthers: boolean
-	) => {
+	/** Accepting always closes the child's other applications (withdrawn; drafts deleted). */
+	const handleAcceptOffer = async (applicationId: string) => {
+		const app = applications.find((a) => a.id === applicationId);
+		if (!store || !app) return;
+		const closed = otherOpenApplications(applications, app).length;
+		if (await run(store.acceptOffer(applicationId))) {
+			setStepDone({ message: acceptedMessage(closed) });
+		}
+	};
+	const handleDeclineOffer = async (applicationId: string) => {
 		if (!store) return;
 		const centreName = centreNameFor(applicationId);
-		if (await run(store.acceptOffer(applicationId, withdrawOthers))) {
-			setStepDone({ message: `You accepted the offer from ${centreName}.` });
+		if (await run(store.declineOffer(applicationId))) {
+			setStepDone({ message: `You declined the offer from ${centreName}.` });
 		}
 	};
 	/** Open one sent application in My applications (scrolled to and highlighted). */
@@ -1188,6 +1195,7 @@ export default function App() {
 										parentProfile={activeParentProfile}
 										isDemoAccount={Boolean(currentAccount?.isDemoAccount)}
 										onAcceptOffer={handleAcceptOffer}
+										onDeclineOffer={handleDeclineOffer}
 										onWithdrawApplication={handleWithdrawApplication}
 										onNavigateToFind={() => setParentTab("find")}
 										onOpenConversation={handleParentOpenConversation}

@@ -58,6 +58,8 @@ import {
 } from './family';
 import type { Area, FsaCentroids } from './rankCentres';
 import { doesntServeLabel } from './searchCriteria';
+import { shortCentreName } from './parentUpdates';
+import { otherOpenApplications } from './offers';
 import { NOT_PROVIDED, PreparedDraft } from './prepareApplication';
 
 const shortDate = (now: Date) => now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -97,6 +99,11 @@ export async function getSnapshot(repo: Repo, account: AccountRecord | null): Pr
   const preparedDrafts: Record<string, PreparedDraft> = {};
   const applications: Application[] = visible.map(({ preparedDraft, ...a }) => {
     if (preparedDraft && isParent(actor)) preparedDrafts[a.id] = preparedDraft; // parent-only
+    // Centres never learn which other centre the family chose
+    if (!isParent(actor) && a.withdrawal?.acceptedApplicationId) {
+      const { acceptedApplicationId: _hidden, ...w } = a.withdrawal;
+      return { ...a, withdrawal: w };
+    }
     return a;
   });
 
@@ -361,24 +368,68 @@ export async function submitApplication(repo: Repo, actor: Actor, id: string, no
 
 export async function withdrawApplication(repo: Repo, actor: Actor, id: string, now = new Date()) {
   const app = await ownApp(repo, actor, id, canWithdraw);
-  await repo.updateApplication(id, { status: 'Withdrawn' });
+  await repo.updateApplication(id, { status: 'Withdrawn', withdrawal: { reason: 'withdrawn', date: shortDate(now) } });
   await notify(repo, [
     centreNotification(app.centreId, `${app.parentName} withdrew the application for ${app.childName} on ${shortDate(now)}`, 'status', now),
   ]);
 }
 
-/** Accept an offer; optionally withdraw the same parent's other applications for the same child. */
-export async function acceptOffer(repo: Repo, actor: Actor, id: string, withdrawOthers: boolean, now = new Date()) {
+/** The parent's record of something they did (shown in Updates, already read). Starts with the centre's name. */
+const parentNote = (app: Application, message: string, now: Date, i = 0): InAppNotification => ({
+  id: rid('notif-parent'),
+  recipientRole: 'parent',
+  recipientId: app.parentAccountId,
+  message,
+  timestamp: shortDate(now),
+  createdAt: now.getTime() + i,
+  read: true,
+  type: 'status',
+});
+
+/**
+ * Accept an offer. The same child's other sent applications and open offers become Withdrawn
+ * ("withdrawn when you accepted …"); the child's drafts are deleted. Other children: untouched.
+ * Returns how many applications were closed (withdrawn + drafts deleted).
+ */
+export async function acceptOffer(repo: Repo, actor: Actor, id: string, now = new Date()): Promise<{ closed: number }> {
   const app = await ownApp(repo, actor, id, canAcceptOffer);
+  const date = shortDate(now);
+  const nameOf = async (centreId: string) => (await repo.getCentre(centreId))?.name ?? 'The centre';
+  const acceptedName = await nameOf(app.centreId);
+  const others = otherOpenApplications(await repo.listApplications({ parentAccountId: actor.accountId, childId: app.childId }), app);
+
   await repo.updateApplication(id, { status: 'Accepted' });
-  if (withdrawOthers) {
-    const others = await repo.listApplications({ parentAccountId: actor.accountId, childId: app.childId });
-    for (const o of others) {
-      if (o.id !== id && o.status !== 'Withdrawn' && o.status !== 'Accepted') await repo.updateApplication(o.id, { status: 'Withdrawn' });
+  const parentNotes: InAppNotification[] = [
+    parentNote(app, `${acceptedName}: you accepted the offer for ${app.childName} on ${date}`, now, others.length + 1),
+  ];
+  const centreNotes: InAppNotification[] = [
+    centreNotification(app.centreId, `${app.parentName} accepted the offer for ${app.childName} on ${date}`, 'offer', now),
+  ];
+  for (const [i, o] of others.entries()) {
+    const name = await nameOf(o.centreId);
+    if (o.status === 'Draft') {
+      await repo.deleteApplication(o.id); // never sent: the centre never saw it
+      parentNotes.push(parentNote(o, `${name}: draft for ${o.childName} deleted when you accepted ${shortCentreName(acceptedName)} on ${date}`, now, i));
+    } else {
+      await repo.updateApplication(o.id, { status: 'Withdrawn', withdrawal: { reason: 'accepted-other', date, acceptedApplicationId: id } });
+      parentNotes.push(parentNote(o, `${name}: application for ${o.childName} withdrawn when you accepted ${shortCentreName(acceptedName)} on ${date}`, now, i));
+      // The centre is told the family withdrew, never which centre they chose
+      centreNotes.push(centreNotification(o.centreId, `${o.parentName} withdrew the application for ${o.childName} on ${date}`, 'status', now));
     }
   }
+  await notify(repo, [...centreNotes, ...parentNotes]);
+  return { closed: others.length };
+}
+
+/** Decline an offer: only this application becomes Withdrawn ("Offer declined by you"). */
+export async function declineOffer(repo: Repo, actor: Actor, id: string, now = new Date()) {
+  const app = await ownApp(repo, actor, id, canAcceptOffer);
+  const date = shortDate(now);
+  const centreName = (await repo.getCentre(app.centreId))?.name ?? 'The centre';
+  await repo.updateApplication(id, { status: 'Withdrawn', withdrawal: { reason: 'declined', date } });
   await notify(repo, [
-    centreNotification(app.centreId, `${app.parentName} accepted the offer for ${app.childName} on ${shortDate(now)}`, 'offer', now),
+    centreNotification(app.centreId, `${app.parentName} declined the offer for ${app.childName} on ${date}`, 'offer', now),
+    parentNote(app, `${centreName}: you declined the offer for ${app.childName} on ${date}`, now),
   ]);
 }
 

@@ -35,6 +35,7 @@ export interface Repo {
   listApplications(filter: { parentAccountId?: string; centreId?: string; childId?: string }): Promise<ApplicationRecord[]>;
   insertApplication(a: ApplicationRecord): Promise<void>;
   updateApplication(id: string, patch: Partial<ApplicationRecord>): Promise<void>;
+  deleteApplication(id: string): Promise<void>;
 
   getConversation(key: string): Promise<ConversationRecord | null>;
   listConversations(filter: { parentAccountId?: string; centreId?: string }): Promise<ConversationRecord[]>;
@@ -127,6 +128,10 @@ export class MemoryRepo implements Repo {
   }
   async updateApplication(id: string, patch: Partial<ApplicationRecord>) {
     this.patch(this.world.applications, id, patch);
+  }
+  async deleteApplication(id: string) {
+    this.world.applications = this.world.applications.filter((a) => a.id !== id);
+    this.onChange();
   }
 
   async getConversation(key: string) {

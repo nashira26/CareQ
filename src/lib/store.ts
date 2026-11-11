@@ -47,7 +47,8 @@ export interface DemoStore {
   updateDraft(id: string, change: DraftChange): Promise<Snapshot>;
   submit(id: string): Promise<Snapshot>;
   withdraw(id: string): Promise<Snapshot>;
-  acceptOffer(id: string, withdrawOthers: boolean): Promise<Snapshot>;
+  acceptOffer(id: string): Promise<Snapshot>;
+  declineOffer(id: string): Promise<Snapshot>;
   setStatus(id: string, status: CentreStatus, waitlistPosition?: number, waitlistEstimate?: string): Promise<Snapshot>;
   sendMessage(target: { centreId: string; childId: string }, text: string, aiAssisted: boolean, fromSimulatedDraft?: boolean): Promise<Snapshot>;
   markRead(ids: string[] | 'all'): Promise<Snapshot>;
@@ -103,7 +104,8 @@ export class ApiStore implements DemoStore {
   updateDraft = (id: string, change: DraftChange) => call<Snapshot>('PATCH', `/applications/${encodeURIComponent(id)}/draft`, { change });
   submit = (id: string) => call<Snapshot>('POST', `/applications/${encodeURIComponent(id)}/submit`);
   withdraw = (id: string) => call<Snapshot>('POST', `/applications/${encodeURIComponent(id)}/withdraw`);
-  acceptOffer = (id: string, withdrawOthers: boolean) => call<Snapshot>('POST', `/applications/${encodeURIComponent(id)}/accept`, { withdrawOthers });
+  acceptOffer = (id: string) => call<Snapshot>('POST', `/applications/${encodeURIComponent(id)}/accept`);
+  declineOffer = (id: string) => call<Snapshot>('POST', `/applications/${encodeURIComponent(id)}/decline`);
   setStatus = (id: string, status: CentreStatus, waitlistPosition?: number, waitlistEstimate?: string) =>
     call<Snapshot>('POST', `/applications/${encodeURIComponent(id)}/status`, { status, waitlistPosition, waitlistEstimate });
   sendMessage = (target: { centreId: string; childId: string }, text: string, aiAssisted: boolean, fromSimulatedDraft = false) =>
@@ -249,7 +251,8 @@ export class LocalStore implements DemoStore {
   updateDraft = (id: string, change: DraftChange) => this.run((r, a) => svc.updateDraft(r, actorOf(a), id, change));
   submit = (id: string) => this.run((r, a) => svc.submitApplication(r, actorOf(a), id));
   withdraw = (id: string) => this.run((r, a) => svc.withdrawApplication(r, actorOf(a), id));
-  acceptOffer = (id: string, withdrawOthers: boolean) => this.run((r, a) => svc.acceptOffer(r, actorOf(a), id, withdrawOthers));
+  acceptOffer = (id: string) => this.run((r, a) => svc.acceptOffer(r, actorOf(a), id));
+  declineOffer = (id: string) => this.run((r, a) => svc.declineOffer(r, actorOf(a), id));
   setStatus = (id: string, status: CentreStatus, pos?: number, est?: string) =>
     this.run((r, a) => svc.setStatus(r, actorOf(a), id, status, pos, est));
   sendMessage = (target: { centreId: string; childId: string }, text: string, aiAssisted: boolean, fromSimulatedDraft = false) =>

@@ -314,21 +314,71 @@ async function centreJourney(b: Browser, width: number, errors: string[]) {
     await visible(p, new RegExp(`^Offer · Jesse Ketchum.* · ${today}$`)).waitFor({ timeout: 8000 });
     await visible(p, new RegExp(`^Waitlist · Jesse Ketchum.* · ${today}$`)).waitFor({ timeout: 8000 });
   });
-  const jkCard = () => p.locator('li:visible', { hasText: 'Jesse Ketchum' }).first();
+  // By its heading: after accepting, other cards also mention Jesse Ketchum ("Withdrawn when you accepted …")
+  const jkCard = () => p.locator('li:visible').filter({ has: p.getByRole('heading', { name: /^Jesse Ketchum/ }) }).first();
   await step('Priya: My applications shows the Jesse Ketchum offer, #3 and the date it was reported', async () => {
     await openTab(p, 'My applications');
     await jkCard().locator('button', { hasText: /^\s*Accept offer\s*$/ }).waitFor({ timeout: 8000 });
     await jkCard().getByText('#3').waitFor({ timeout: 5000 });
     await jkCard().getByText(new RegExp(today)).first().waitFor({ timeout: 5000 });
   });
-  await step('Priya accepts the Jesse Ketchum offer and withdraws the others (Macaulay too) in one step', async () => {
+  const acceptDialog = () => p.getByRole('dialog', { name: /^Accept the offer from Jesse Ketchum/ });
+  let others = 0;
+  await step('offer: the dialog lists Anya\'s other applications (drafts too); Cancel changes nothing', async () => {
+    await jkCard().getByRole('button', { name: 'Have a question about this offer? Message the centre' }).waitFor({ timeout: 5000 });
     await jkCard().locator('button', { hasText: /^\s*Accept offer\s*$/ }).click();
-    await p.locator('button:visible', { hasText: 'Accept & Withdraw Others' }).click({ timeout: 8000 });
-    await jkCard().getByText('Confirmed').waitFor({ timeout: 8000 });
-    const macaulay = p.locator('li:visible', { hasText: 'Macaulay' }).first();
-    await macaulay.getByText('Withdrawn', { exact: true }).last().waitFor({ timeout: 8000 });
+    await acceptDialog().getByText(/Accepting will also withdraw your other applications for Anya, so those places can go to other families\. This can't be undone\./).waitFor({ timeout: 5000 });
+    others = await acceptDialog().getByRole('list', { name: 'Your other applications for Anya' }).getByRole('listitem').count();
+    if (others < 2) throw new Error(`${others} other applications listed`);
+    for (const t of ['Macaulay', 'Mary Ward']) await acceptDialog().getByText(new RegExp(t)).first().waitFor({ timeout: 3000 });
+    await acceptDialog().getByRole('button', { name: 'Cancel' }).click();
+    await acceptDialog().waitFor({ state: 'detached', timeout: 3000 });
+    await jkCard().locator('button', { hasText: /^\s*Accept offer\s*$/ }).waitFor({ timeout: 3000 });
+    await openTab(p, 'Home');
+    await visible(p, 'Respond to your offer').waitFor({ timeout: 5000 });
+    await openTab(p, 'My applications');
+  });
+  await step('offer: Decline asks first ("The centre can then offer this place to another family."); Cancel keeps it', async () => {
+    await jkCard().getByRole('button', { name: 'Decline offer' }).click();
+    const d = p.getByRole('dialog', { name: /^Decline the offer from Jesse Ketchum/ });
+    await d.getByText('The centre can then offer this place to another family.').waitFor({ timeout: 5000 });
+    await d.getByRole('button', { name: 'Cancel' }).click();
+    await d.waitFor({ state: 'detached', timeout: 3000 });
+    await jkCard().locator('button', { hasText: /^\s*Accept offer\s*$/ }).waitFor({ timeout: 3000 });
+  });
+  await step('Priya accepts the Jesse Ketchum offer: the others are withdrawn (Macaulay too), the draft deleted', async () => {
+    await jkCard().locator('button', { hasText: /^\s*Accept offer\s*$/ }).click();
+    await acceptDialog().getByRole('button', { name: 'Accept and withdraw others' }).click();
+    const must = async (what: string, l: { waitFor: (o: { timeout: number }) => Promise<void> }) =>
+      l.waitFor({ timeout: 8000 }).catch(() => { throw new Error(`not shown: ${what}`); });
+    const msg = `Offer accepted. You withdrew ${others} applications, and those places can now go to other families.`;
+    await must(msg, visible(p, msg));
+    const close = p.getByRole('button', { name: 'Close' }).locator('visible=true');
+    if (await close.count()) await close.first().click();
+    await must('Confirmed on the Jesse Ketchum card', jkCard().getByText('Confirmed'));
+    const label = `Withdrawn when you accepted Jesse Ketchum Early Learning & Child Care Centre · ${today}`;
+    const macaulay = p.locator('li:visible').filter({ has: p.getByRole('heading', { name: /^Macaulay/ }) }).first();
+    await must(`"${label}" on the Macaulay card`, macaulay.getByText(label));
     const open = await p.locator('li:visible').filter({ has: p.getByRole('button', { name: /^Withdraw$/ }) }).count();
     if (open) throw new Error(`${open} applications still open`);
+    await openTab(p, 'Drafts');
+    await p.getByRole('heading', { name: 'Drafts', exact: true }).waitFor({ timeout: 8000 });
+    if (await p.getByText(/Mary Ward/).locator('visible=true').count()) throw new Error('the draft was not deleted');
+  });
+  await step('centre side: Macaulay sees "Withdrawn by the family · date", never which centre was chosen', async () => {
+    await p.getByRole('button', { name: /^Account menu for/ }).click();
+    await p.getByRole('menuitem', { name: 'Log out' }).click();
+    await p.goto(base);
+    await p.getByRole('button', { name: /^log in$/i }).first().click();
+    await p.getByRole('button', { name: /Centre Portal/ }).first().click();
+    await p.locator('input[type="email"]:visible').first().fill('macaulay-dovercourt.demo@careq.example');
+    await p.locator('input[type="password"]:visible').first().fill('password');
+    await p.locator('form button[type="submit"]:visible').first().click();
+    await visible(p, 'Demo account:').waitFor({ timeout: 10000 });
+    await openTab(p, 'Applications & queue');
+    const row = centreRow(p, 'Anya');
+    await row.getByText(`Withdrawn by the family · ${today}`).first().waitFor({ timeout: 8000 });
+    if (await row.getByText(/Jesse Ketchum/).count()) throw new Error("the other centre's name is shown");
   });
   await ctx.close();
 }

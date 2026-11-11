@@ -82,7 +82,7 @@ export const HELP_FAQS: FAQItem[] = [
     id: 'faq-7',
     question: 'Can I decline an offer or withdraw an application?',
     answer:
-      'Yes. When an offer is extended by a centre, you can choose to accept the offer (and optionally withdraw pending applications from other centres) or decline/withdraw directly from My applications.',
+      "Yes. In My applications you can accept or decline an offer. Accepting also withdraws your other applications for that child (and deletes their drafts), so those places can go to other families; declining withdraws only that application. You can also withdraw any application you've sent.",
     source: 'Help FAQ',
   },
 ];
