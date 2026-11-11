@@ -124,3 +124,32 @@ test('real centres get "{centre} · simulated demo account" portal accounts; all
   assert.ok(world.accounts.some((a) => a.email === 'centre@careq-demo.example' && a.centreId === DEMO_CENTRE_ID));
   assert.ok(world.accounts.some((a) => a.email === 'jesse-ketchum.demo@careq.example' && a.centreId === 'on-00576'));
 });
+
+test('Jesse Ketchum seed: every status but Draft/Offer, one family per waitlist position, ages and files fit the centre', () => {
+  const jk = REAL_DEMO_CENTRES.find((c) => c.id === 'on-00576')!;
+  const apps = INITIAL_APPLICATIONS.filter((a) => a.centreId === jk.id);
+  assert.ok(apps.length >= 8, `${apps.length} applications`);
+  for (const s of ['Submitted', 'Under review', 'Waitlisted', 'Accepted', 'Withdrawn'] as const) {
+    assert.ok(apps.some((a) => a.status === s), `no ${s} application`);
+  }
+  // No open offers or drafts: the offer made live in the demo (to Priya) is the only one
+  assert.ok(!apps.some((a) => a.status === 'Offer' || a.status === 'Draft'));
+  // Priya/Anya keeps her seeded #4 and history
+  const anya = apps.find((a) => a.childId === 'child-anya')!;
+  assert.deepEqual([anya.status, anya.waitlistPosition, anya.positionHistory!.map((h) => h.position)], ['Waitlisted', 4, [9, 6, 4]]);
+  const positions = apps.filter((a) => a.status === 'Waitlisted').map((a) => a.waitlistPosition).sort();
+  assert.deepEqual(positions, [1, 2, 3, 4, 5, 6]);
+  for (const a of apps) {
+    const group = a.childAgeMonths < 18 ? 'Infant' : a.childAgeMonths < 30 ? 'Toddler' : 'Preschool';
+    assert.ok(jk.ageGroups.includes(group), `${a.childName} (${a.childAgeMonths} months) is ${group}`);
+    assert.match(a.submittedAt ?? '', /^(Aug|Sep|Oct|Nov) \d{1,2}, 2026$/, a.childName);
+    if (a.status === 'Waitlisted') assert.ok((a.positionHistory?.length ?? 0) >= 2 && a.waitlistReportedDate, a.childName);
+    for (const r of [...a.completedRequirements, ...Object.keys(a.uploadedDocuments ?? {})]) assert.ok(jk.requirements.includes(r), r);
+  }
+  // Review has both cases: all documents uploaded, and one missing
+  const uploaded = (a: (typeof apps)[number]) => Object.keys(a.uploadedDocuments ?? {}).length;
+  assert.ok(apps.some((a) => a.status === 'Submitted' && uploaded(a) === jk.requirements.length));
+  assert.ok(apps.some((a) => a.status === 'Submitted' && uploaded(a) === jk.requirements.length - 1));
+  // Seeded children are unique (conversations find their family by child id)
+  assert.equal(new Set(INITIAL_APPLICATIONS.map((a) => `${a.centreId}/${a.childId}`)).size, INITIAL_APPLICATIONS.length);
+});

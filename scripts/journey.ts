@@ -6,8 +6,8 @@
  *   npm run journey -- --width=390                   # one viewport width only
  *   npm run journey -- --headed                      # watch it run
  *
- * It changes demo data (edits Anya's notes and home area, accepts Priya's Macaulay offer, sets Maya's waitlist
- * position to #2, sets the demo centre's simulated hours).
+ * It changes demo data (edits Anya's notes and home area; as Jesse Ketchum, moves Anya to #3, makes her an offer
+ * and sets the centre's simulated hours; as Priya, accepts that offer and withdraws her other applications).
  * In local mode each run uses fresh browser storage, so nothing is shared. Against a MongoDB-backed
  * server it would change the shared demo, so it refuses unless you pass --allow-mongo (then run
  * `npm run reset` afterwards).
@@ -145,12 +145,6 @@ async function parentJourney(b: Browser, width: number, errors: string[]) {
     const queues = await p.locator('dd', { hasText: /^#\d+/ }).locator('visible=true').count();
     if (n > queues + 1) throw new Error(`${n} "Simulated" tags for ${queues} positions + 1 offer`);
   });
-  await step('accept the offer -> confirmation -> Accepted', async () => {
-    await p.locator('button:visible', { hasText: /^\s*Accept( offer)?\s*$/ }).first().click();
-    await p.locator('button:visible', { hasText: /Accept & Keep Others|Confirm & Accept Offer/ }).first().click({ timeout: 8000 });
-    await visible(p, 'You’ve completed this step').waitFor({ timeout: 8000 });
-    await visible(p, 'Accepted').waitFor({ timeout: 8000 });
-  });
   await step('Ask CareQ opens', async () => {
     const close = p.getByRole('button', { name: 'Close' }).locator('visible=true');
     if (await close.count()) await close.first().click();
@@ -160,28 +154,71 @@ async function parentJourney(b: Browser, width: number, errors: string[]) {
   await ctx.close();
 }
 
+/** The application row (desktop) or card (phone) on the centre's Applications & queue page. */
+const centreRow = (p: Page, child: string) =>
+  p
+    .locator('div:visible')
+    .filter({ hasText: new RegExp(child) }) // case-sensitive; no \b: textContent runs "Anya" into "Priya"
+    .filter({ has: p.locator('button:visible', { hasText: /^\s*(Review|Close)\s*$/ }) })
+    .last();
+
+/** The Jesse Ketchum demo login updates Anya's position and makes an offer; Priya sees both and accepts it. */
 async function centreJourney(b: Browser, width: number, errors: string[]) {
   const ctx = await b.newContext({ viewport: { width, height: 900 } });
   const p = await ctx.newPage();
   collectErrors(p, 'centre', errors);
+  const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); // the server's "Nov 10"
 
+  await step('the login page has one centre demo login (Jesse Ketchum), and it is the default centre email', async () => {
+    await p.goto(base);
+    await p.getByRole('button', { name: /^log in$/i }).first().click();
+    const cards = await p.getByText(/^Test Centre:/).locator('visible=true').count();
+    if (cards !== 1) throw new Error(`${cards} centre demo logins (want 1)`);
+    await visible(p, 'Test Centre: Jesse Ketchum').waitFor({ timeout: 5000 });
+    await p.getByRole('button', { name: /Centre Portal/ }).first().click();
+    const email = await p.locator('input[type="email"]:visible').first().inputValue();
+    if (email !== 'jesse-ketchum.demo@careq.example') throw new Error(`default centre email is ${email}`);
+  });
   await step('centre demo login shows the demo-account banner, and no per-item "Simulated" tags', async () => {
-    await login(p, 'CareQ Demo Centre'); // the login card's label, with or without "(fictional)"
+    await login(p, 'Test Centre: Jesse Ketchum');
     await visible(p, 'Demo account:').waitFor({ timeout: 10000 });
     const n = await p.getByText('Simulated', { exact: true }).locator('visible=true').count();
     if (n) throw new Error(`${n} "Simulated" tags on the centre overview`);
   });
-  await step('centre sets a waitlist position to #2', async () => {
+  await step("centre updates Anya's waitlist position from #4 to #3", async () => {
     await openTab(p, 'Applications & queue');
-    await p.locator('button:visible', { hasText: /^\s*Review/ }).nth(2).click(); // Maya: waitlisted #3 in the seed
+    await centreRow(p, 'Anya').locator('button:visible', { hasText: /^\s*Review/ }).click();
     await p
       .locator('button:visible:not([disabled])', { hasText: /^\s*(Waitlist…|Waitlisted( \(#\d+\)| · #\d+))\s*$/ })
       .first()
       .click({ timeout: 8000 });
-    await p.locator('#waitlist-pos-input').fill('2');
+    await p.locator('#waitlist-pos-input').fill('3');
     await p.locator('button:visible', { hasText: 'Save waitlist position' }).click();
     await p.locator('#waitlist-pos-input').waitFor({ state: 'detached', timeout: 5000 });
-    await visible(p, '#2').waitFor({ timeout: 8000 });
+    await centreRow(p, 'Anya').getByText('#3').waitFor({ timeout: 8000 });
+  });
+  await step('centre makes Anya an offer', async () => {
+    await p.locator('button:visible:not([disabled])', { hasText: /^\s*(Make offer|Offer)\s*$/ }).first().click({ timeout: 8000 });
+    await visible(p, /Updated Anya's application to "Offer"/).waitFor({ timeout: 8000 });
+  });
+  /** Opens a child's application file (one review panel is open at a time); returns its uploaded files. */
+  const openFile = async (child: string) => {
+    const row = centreRow(p, child);
+    if (!(await row.getByRole('button', { name: /Close/ }).count())) await row.locator('button:visible', { hasText: /^\s*Review/ }).click();
+    await p.locator('button:visible', { hasText: /^\s*(View application & docs|Docs)\s*$/ }).first().click({ timeout: 5000 });
+    await visible(p, `Application File: ${child}`).waitFor({ timeout: 5000 });
+    return p.getByText(/^File: /).locator('visible=true').count(); // not "Submitted": that's also a status badge
+  };
+  await step('review: Ama has every document uploaded; Mila shows the one that is missing', async () => {
+    const ama = await openFile('Ama');
+    await visible(p, 'All Requirements Provided').waitFor({ timeout: 5000 });
+    await p.getByTitle('Close modal').click();
+    if (ama !== 4) throw new Error(`Ama: ${ama} files (want 4)`);
+    const mila = await openFile('Mila');
+    await visible(p, '1 Missing').waitFor({ timeout: 5000 });
+    await p.getByText('Not Submitted', { exact: true }).locator('visible=true').first().waitFor({ timeout: 5000 });
+    await p.getByTitle('Close modal').click();
+    if (mila !== 3) throw new Error(`Mila: ${mila} files (want 3)`);
   });
   await step('centre profile: details read-only, simulated hours saved', async () => {
     await p.getByRole('button', { name: /^Account menu for/ }).click();
@@ -192,10 +229,30 @@ async function centreJourney(b: Browser, width: number, errors: string[]) {
     await p.getByRole('button', { name: /^Save$/ }).click();
     await visible(p, /Families using demo accounts see these/).waitFor({ timeout: 8000 });
   });
-  await step('Review opens an application', async () => {
-    await openTab(p, 'Applications & queue');
-    await p.locator('button:visible', { hasText: /^\s*Review/ }).first().click();
-    await p.locator('[role="dialog"]:visible, .fixed:visible').first().waitFor({ timeout: 5000 });
+  await step('Priya: the position update and offer are in Updates, with the date', async () => {
+    await p.getByRole('button', { name: /^Account menu for/ }).click();
+    await p.getByRole('menuitem', { name: 'Log out' }).click();
+    await login(p, 'Test Parent: Priya Patel');
+    await visible(p, 'What needs your attention today.').waitFor({ timeout: 10000 });
+    await openTab(p, 'Updates');
+    await visible(p, new RegExp(`^Offer · Jesse Ketchum.* · ${today}$`)).waitFor({ timeout: 8000 });
+    await visible(p, new RegExp(`^Waitlist · Jesse Ketchum.* · ${today}$`)).waitFor({ timeout: 8000 });
+  });
+  const jkCard = () => p.locator('li:visible', { hasText: 'Jesse Ketchum' }).first();
+  await step('Priya: My applications shows the Jesse Ketchum offer, #3 and the date it was reported', async () => {
+    await openTab(p, 'My applications');
+    await jkCard().locator('button', { hasText: /^\s*Accept offer\s*$/ }).waitFor({ timeout: 8000 });
+    await jkCard().getByText('#3').waitFor({ timeout: 5000 });
+    await jkCard().getByText(new RegExp(today)).first().waitFor({ timeout: 5000 });
+  });
+  await step('Priya accepts the Jesse Ketchum offer and withdraws the others (Macaulay too) in one step', async () => {
+    await jkCard().locator('button', { hasText: /^\s*Accept offer\s*$/ }).click();
+    await p.locator('button:visible', { hasText: 'Accept & Withdraw Others' }).click({ timeout: 8000 });
+    await jkCard().getByText('Confirmed').waitFor({ timeout: 8000 });
+    const macaulay = p.locator('li:visible', { hasText: 'Macaulay' }).first();
+    await macaulay.getByText('Withdrawn', { exact: true }).last().waitFor({ timeout: 8000 });
+    const open = await p.locator('li:visible').filter({ has: p.getByRole('button', { name: /^Withdraw$/ }) }).count();
+    if (open) throw new Error(`${open} applications still open`);
   });
   await ctx.close();
 }
