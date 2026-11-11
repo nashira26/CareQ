@@ -524,11 +524,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 								<div className="flex items-center justify-between">
 									<div className="flex items-center gap-1.5 text-xs font-bold text-cq-sand-ink">
 										<Info className="w-4 h-4" aria-hidden="true" />
-										<span>Demo accounts</span>
+										<span>Simulated Demo Accounts</span>
 									</div>
-									<span className="text-xs font-semibold text-cq-sand-ink/80 bg-white px-2 py-0.5 rounded-full border border-cq-sand-200">
+									{/* <span className="text-xs font-semibold text-cq-sand-ink/80 bg-white px-2 py-0.5 rounded-full border border-cq-sand-200">
 										Prototype Data
-									</span>
+									</span> */}
 								</div>
 
 								<div className="space-y-2 text-xs">
@@ -540,15 +540,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 												<span>Test Parent: Priya Patel</span>
 											</div>
 											<div className="text-xs text-cq-stone-500 mt-0.5">
-												Email:{" "}
+												{/* Email:{" "}
 												<code className="text-cq-brand font-semibold">
 													priya@example.ca
 												</code>{" "}
 												• Password:{" "}
 												<code className="text-cq-brand font-semibold">
 													password
-												</code>{" "}
-												• Child: Anya
+												</code>{" "} */}
+												Child: Anya
 											</div>
 										</div>
 										<button
@@ -571,18 +571,18 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 													<span>Test Centre: {d.label}</span>
 												</div>
 												<div className="text-xs text-cq-stone-500 mt-0.5">
-													Email:{" "}
+													{/* Email:{" "}
 													<code className="text-cq-brand font-semibold">
 														{d.email}
 													</code>{" "}
 													• Password:{" "}
 													<code className="text-cq-brand font-semibold">
 														password
-													</code>
+													</code> */}
 												</div>
-												<div className="text-xs text-cq-stone-500 mt-0.5">
+												{/* <div className="text-xs text-cq-stone-500 mt-0.5">
 													{d.note}
-												</div>
+												</div> */}
 											</div>
 											<button
 												type="button"
