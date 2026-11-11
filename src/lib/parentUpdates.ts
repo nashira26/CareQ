@@ -20,9 +20,11 @@ export interface ParentUpdate {
   centreName?: string;
   /** The parent's application this update is about (opens it in My applications). */
   applicationId?: string;
-  /** Only notifications can be unread; centre messages have no read state. */
+  /** Notifications: their read flag. Centre messages: not in the parent's read list (kept in this browser). */
   unread: boolean;
   notificationId?: string;
+  /** Centre messages only: the chat message id (used to mark it read). */
+  messageId?: string;
   sortKey: number;
 }
 
@@ -68,8 +70,10 @@ export function buildParentUpdates(input: {
   applications: Application[];
   centres: Centre[];
   childIds: string[];
+  /** Centre message ids the parent has read. Left out: centre messages count as read. */
+  readMessageIds?: ReadonlySet<string>;
 }): ParentUpdate[] {
-  const { notifications, conversations, applications, centres, childIds } = input;
+  const { notifications, conversations, applications, centres, childIds, readMessageIds } = input;
   const out: ParentUpdate[] = [];
 
   for (const n of notifications) {
@@ -106,7 +110,8 @@ export function buildParentUpdates(input: {
           centreId: centre.id,
           centreName: centre.name,
           applicationId: applicationAt(applications, centre.id, '', childId)?.id,
-          unread: false,
+          unread: readMessageIds ? !readMessageIds.has(m.id) : false,
+          messageId: m.id,
           sortKey: key,
         });
       }

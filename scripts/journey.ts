@@ -135,6 +135,35 @@ async function parentJourney(b: Browser, width: number, errors: string[]) {
     await p.getByRole('button', { name: /Open in My applications/ }).locator('visible=true').first().click();
     await p.getByRole('heading', { name: 'My applications', exact: true }).waitFor({ timeout: 8000 });
   });
+  // Desktop sidebar: "Updates 3"; phone tab bar: aria-label "Updates (3)"
+  const updatesBadge = async () => {
+    const tab = p.getByRole('button', { name: /^Updates/ }).locator('visible=true').first();
+    const name = (await tab.getAttribute('aria-label')) ?? (await tab.innerText());
+    return Number(name.match(/(\d+)/)?.[1] ?? 0);
+  };
+  await step('Updates: Messages shows only centre messages; Reply opens that conversation and reads it', async () => {
+    await openTab(p, 'Updates');
+    const before = await updatesBadge();
+    await p.getByRole('button', { name: 'Messages', exact: true }).locator('visible=true').first().click();
+    const items = p.locator('li:visible');
+    await items.first().waitFor({ timeout: 8000 });
+    const labels = await items.locator('p.text-xs').allInnerTexts();
+    if (!labels.length || labels.some((l) => !l.startsWith('Message ·'))) throw new Error(`non-message items: ${labels.join(' | ')}`);
+    const unread = await p.getByLabel('Unread').locator('visible=true').count();
+    if (unread < 1) throw new Error('no unread centre messages');
+    if (before < unread) throw new Error(`badge ${before} < ${unread} unread messages`);
+    const reply = p.getByRole('button', { name: /^Reply to / }).locator('visible=true').first();
+    const centre = ((await reply.getAttribute('aria-label')) ?? '').replace(/^Reply to /, '');
+    await reply.click();
+    // The same conversation My applications opens: the centre's name, Anya, and the message box
+    await p.getByRole('heading', { name: centre, exact: true }).locator('visible=true').waitFor({ timeout: 8000 });
+    await visible(p, /Child: Anya/).waitFor({ timeout: 5000 });
+    await p.locator('textarea:visible, input[type="text"]:visible').last().waitFor({ timeout: 5000 });
+    await p.getByRole('button', { name: 'Close conversation' }).click();
+    await p.getByRole('heading', { name: 'Updates', exact: true }).waitFor({ timeout: 5000 });
+    const after = await updatesBadge();
+    if (after >= before) throw new Error(`badge did not drop after reading (${before} -> ${after})`);
+  });
   await step('My applications: only sent applications; one demo banner; at most one "Simulated" tag per position and offer', async () => {
     await openTab(p, 'My applications');
     await visible(p, 'Macaulay').waitFor({ timeout: 10000 });

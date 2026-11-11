@@ -30,6 +30,24 @@ test('Updates: Priya has several dated updates, newest first, each with a readab
   assert.ok(updates.every((u) => !/Lucas|Maya|Chloe/.test(u.text)));
 });
 
+test('Updates: centre messages are unread until the parent reads them, and then count toward the badge no more', () => {
+  const input = {
+    notifications: [],
+    conversations,
+    applications: priyaApps,
+    centres: INITIAL_CENTRES,
+    childIds: ['child-anya'],
+  };
+  const fresh = buildParentUpdates({ ...input, readMessageIds: new Set() }).filter((u) => u.kind === 'message');
+  assert.ok(fresh.length > 0);
+  assert.ok(fresh.every((u) => u.unread && u.messageId && !u.notificationId));
+  const read = new Set([fresh[0].messageId!]);
+  const after = buildParentUpdates({ ...input, readMessageIds: read }).filter((u) => u.kind === 'message');
+  assert.equal(after.filter((u) => u.unread).length, fresh.length - 1);
+  // Without a read list (old callers), messages never count as unread
+  assert.ok(updates.filter((u) => u.kind === 'message').every((u) => !u.unread));
+});
+
 test('Home: at most 3 action items: the offer first, then the new position, then the draft', () => {
   const items = attentionItems({ applications: priyaApps, centres: INITIAL_CENTRES, updates });
   assert.ok(items.length <= 3);

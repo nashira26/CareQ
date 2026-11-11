@@ -16,7 +16,8 @@ import { Navbar } from "./components/Navbar";
 import { AppSidebar, SidebarItem } from "./components/AppSidebar";
 import { ParentHome } from "./components/ParentView/ParentHome";
 import { ParentOverview } from "./components/ParentView/ParentOverview";
-import { buildParentUpdates } from "./lib/parentUpdates";
+import { buildParentUpdates, type ParentUpdate } from "./lib/parentUpdates";
+import { loadMessageReads, saveMessageReads } from "./lib/messageReads";
 import { FindTab } from "./components/ParentView/FindTab";
 import { ApplyTab } from "./components/ParentView/ApplyTab";
 import { TrackTab } from "./components/ParentView/TrackTab";
@@ -697,6 +698,32 @@ export default function App() {
 		);
 	};
 
+	// Centre messages the parent has read: kept in this browser, per account (UI only, no server change)
+	const readerId =
+		currentRole === "parent" && currentAccount ? currentAccount.id : "";
+	const [messageReads, setMessageReads] = useState(() => ({
+		accountId: readerId,
+		ids: loadMessageReads(readerId),
+	}));
+	if (messageReads.accountId !== readerId)
+		setMessageReads({ accountId: readerId, ids: loadMessageReads(readerId) });
+	const markMessagesRead = useCallback((ids: string[]) => {
+		setMessageReads((prev) => {
+			if (!prev.accountId || ids.every((id) => prev.ids.has(id))) return prev;
+			const next = new Set(prev.ids);
+			ids.forEach((id) => next.add(id));
+			saveMessageReads(prev.accountId, next);
+			return { ...prev, ids: next };
+		});
+	}, []);
+	// Opening a conversation (from Updates, My applications or Find) reads the centre's messages in it
+	useEffect(() => {
+		if (currentRole !== "parent" || !activeChatModal?.isOpen) return;
+		markMessagesRead(
+			activeMessages.filter((m) => m.sender === "centre").map((m) => m.id)
+		);
+	}, [currentRole, activeChatModal?.isOpen, activeMessages, markMessagesRead]);
+
 	// ---------------- Navigation ----------------
 	const myApplications = currentRole === "parent" ? applications : [];
 	const draftCount = myApplications.filter((a) => a.status === "Draft").length;
@@ -710,8 +737,31 @@ export default function App() {
 			...activeParentProfile.children.map((c) => c.id),
 			...myApplications.map((a) => a.childId),
 		],
+		readMessageIds: currentRole === "parent" ? messageReads.ids : undefined,
 	});
+	// Unread notifications and unread centre messages
 	const unreadUpdateCount = parentUpdates.filter((u) => u.unread).length;
+	const handleMarkUpdateRead = (u: ParentUpdate) => {
+		if (u.notificationId) handleMarkNotificationAsRead(u.notificationId);
+		if (u.messageId) markMessagesRead([u.messageId]);
+	};
+	const handleMarkAllUpdatesRead = () => {
+		handleMarkAllNotificationsAsRead("parent");
+		markMessagesRead(
+			parentUpdates.flatMap((u) => (u.messageId ? [u.messageId] : []))
+		);
+	};
+	/** Reply from Updates: the same conversation My applications opens, for that application's child. */
+	const handleReplyToUpdate = (u: ParentUpdate) => {
+		if (!u.centreId) return;
+		setActiveChatModal({
+			isOpen: true,
+			centreId: u.centreId,
+			applicationId:
+				u.applicationId ??
+				`enquiry-${u.centreId}-${activeParentProfile.childId}`,
+		});
+	};
 
 	const parentSidebarItems: SidebarItem[] = [
 		{ id: "home", label: "Home", shortLabel: "Home", icon: Home },
@@ -1072,11 +1122,10 @@ export default function App() {
 								{parentTab === "updates" && (
 									<ParentHome
 										updates={parentUpdates}
-										onMarkAsRead={handleMarkNotificationAsRead}
-										onMarkAllAsRead={() =>
-											handleMarkAllNotificationsAsRead("parent")
-										}
+										onMarkAsRead={handleMarkUpdateRead}
+										onMarkAllAsRead={handleMarkAllUpdatesRead}
 										onOpenApplication={openApplication}
+										onReply={handleReplyToUpdate}
 									/>
 								)}
 

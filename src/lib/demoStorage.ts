@@ -14,8 +14,10 @@ export const DEMO_STORAGE_VERSION = 4;
 /** Older saved demos (different data shape): deleted on start, never converted. */
 export const OLD_DEMO_KEYS = ['careq-demo-v1', 'careq-demo-v2', 'careq-demo-v3'];
 export const SHORTLIST_KEY = 'careq.shortlist.v1';
+/** Centre messages the parent has read (see messageReads.ts). */
+export const MESSAGE_READS_STORAGE_KEY = 'careq.messageReads.v1';
 /** Every localStorage key Reset demo clears. */
-export const DEMO_KEYS = [DEMO_STORAGE_KEY, SHORTLIST_KEY, ...OLD_DEMO_KEYS];
+export const DEMO_KEYS = [DEMO_STORAGE_KEY, SHORTLIST_KEY, MESSAGE_READS_STORAGE_KEY, ...OLD_DEMO_KEYS];
 /** Mongo mode: the admin reset token, kept for this browser tab only (sessionStorage). */
 export const RESET_TOKEN_SESSION_KEY = 'careq.resetToken';
 
@@ -101,6 +103,15 @@ export function clearDemoStorage(storage: StorageLike | null = browserStorage())
     } catch {
       /* ignore */
     }
+  }
+}
+
+/** Mongo mode Reset: forgets which centre messages were read in this browser (the rest is server data). */
+export function clearMessageReads(storage: StorageLike | null = browserStorage()): void {
+  try {
+    storage?.removeItem(MESSAGE_READS_STORAGE_KEY);
+  } catch {
+    /* ignore */
   }
 }
 

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   DEMO_STORAGE_KEY,
   SHORTLIST_KEY,
+  MESSAGE_READS_STORAGE_KEY,
   loadLocalWorld,
   saveLocalWorld,
   clearDemoStorage,
@@ -68,14 +69,16 @@ test('storage that throws (private window) never breaks the app', async () => {
   assert.doesNotThrow(() => clearDemoStorage(throwing));
 });
 
-test('reset clears the demo key and the shortlist only', () => {
+test('reset clears the demo key, the shortlist and read messages only', () => {
   const s = memory();
   s.setItem(DEMO_STORAGE_KEY, '{}');
   s.setItem(SHORTLIST_KEY, '["careq-demo"]');
+  s.setItem(MESSAGE_READS_STORAGE_KEY, '{"parent-priya":["m-jk-1"]}');
   s.setItem('unrelated', 'keep');
   clearDemoStorage(s);
   assert.equal(s.getItem(DEMO_STORAGE_KEY), null);
   assert.equal(s.getItem(SHORTLIST_KEY), null);
+  assert.equal(s.getItem(MESSAGE_READS_STORAGE_KEY), null);
   assert.equal(s.getItem('unrelated'), 'keep');
 });
 

@@ -9,6 +9,7 @@ import { RotateCcw, KeyRound } from "lucide-react";
 import {
 	RESET_TOKEN_SESSION_KEY,
 	clearDemoStorage,
+	clearMessageReads,
 	sessionStore,
 	suspendSaving,
 } from "../lib/demoStorage";
@@ -92,6 +93,7 @@ export const ResetDemo: React.FC<ResetDemoProps> = ({
 		setBusy(true);
 		try {
 			await resetServerDemo(token!);
+			clearMessageReads(); // the re-seeded messages start unread again in this browser
 			window.location.reload(); // everyone was signed out: back to the login page
 		} catch (e) {
 			setBusy(false);
