@@ -79,6 +79,17 @@ test('Updates: a centre message the parent replied after is read; the seeded bad
   assert.ok(badge >= 2 && badge <= 3, `Priya's seeded badge is ${badge}`);
 });
 
+test("Seed: Priya's unread Jesse Ketchum notification matches Anya's position history (#6 -> #4, Nov 2)", () => {
+  const app = priyaApps.find((a) => a.id === 'app-jesse-ketchum-anya')!;
+  const history = app.positionHistory!;
+  const [prev, last] = history.slice(-2);
+  assert.equal(app.waitlistPosition, last.position);
+  const jk = updates.find((u) => u.kind === 'waitlist' && u.applicationId === app.id && u.unread)!;
+  assert.ok(jk, 'an unread waitlist update for Anya at Jesse Ketchum');
+  assert.ok(jk.text.includes(`to #${last.position} (from #${prev.position}) on ${last.date}`), jk.text);
+  assert.ok(jk.label.endsWith(`· ${last.date}`), jk.label);
+});
+
 test('Home: at most 3 action items: the offer first, then the new position, then the draft', () => {
   const items = attentionItems({ applications: priyaApps, centres: INITIAL_CENTRES, updates });
   assert.ok(items.length <= 3);

@@ -862,7 +862,8 @@ export const INITIAL_NOTIFICATIONS: InAppNotification[] = [
     id: 'notif-2',
     recipientRole: 'parent',
     recipientId: PRIYA_ACCOUNT_ID,
-    message: `${nameOf(JESSE_KETCHUM_ID)} updated your position to 4 on Nov 2`,
+    // Matches Anya's Jesse Ketchum history (9 → 6 → 4): the latest move, Oct 14 #6 → Nov 2 #4
+    message: `${nameOf(JESSE_KETCHUM_ID)} moved Anya's waitlist position to #4 (from #6) on Nov 2`,
     timestamp: 'Nov 2',
     createdAt: at('2026-11-02T14:00:00Z'),
     read: false,
