@@ -11,6 +11,8 @@ interface ApplicationDetailsModalProps {
   centre: Centre;
   onOpenConversation: (app: Application) => void;
   onUpdateStatus?: (status: any, waitlistPos?: number) => void;
+  /** Who is looking (status wording): defaults to the parent. */
+  viewer?: 'parent' | 'centre';
 }
 
 export const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = ({
@@ -20,6 +22,7 @@ export const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = (
   centre,
   onOpenConversation,
   onUpdateStatus,
+  viewer = 'parent',
 }) => {
   // Document preview state: null if viewing application overview, or document object if opened
   const [selectedDocReq, setSelectedDocReq] = useState<string | null>(null);
@@ -70,6 +73,7 @@ export const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = (
                   status={application.status}
                   waitlistPosition={application.waitlistPosition}
                   size="sm"
+                  viewer={viewer}
                 />
               </div>
               <p className="text-xs text-cq-stone-500 mt-0.5">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { shortRef } from '../../lib/centreQueue';
+import { shortRef, statusLabel } from '../../lib/centreQueue';
 import { Centre, Application, ConversationsMap, conversationKey } from '../../data/mockData';
 import {
   PageHeader,
@@ -80,7 +80,7 @@ export const CentreMessages: React.FC<CentreMessagesProps> = ({
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs text-cq-soft">
-                        {shortRef(app.id)} · {app.status}
+                        {shortRef(app.id)} · {statusLabel(app.status, 'centre')}
                       </span>
                       {lastMessage?.aiAssisted && (
                         <span className="inline-flex items-center gap-1 rounded-md bg-mint text-brand text-xs font-bold px-2 py-0.5">

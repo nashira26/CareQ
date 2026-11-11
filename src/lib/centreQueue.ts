@@ -1,5 +1,5 @@
 /** Centre-side ordering helpers (pure, unit-tested). */
-import type { Application } from '../data/mockData';
+import type { Application, ApplicationStatus } from '../data/mockData';
 
 /** "Sep 22, 2026" -> timestamp; missing or unreadable dates -> -Infinity (sorted last). */
 export const submittedTime = (a: Pick<Application, 'submittedAt'>): number => {
@@ -16,6 +16,20 @@ export function newestRequests<T extends Pick<Application, 'status' | 'submitted
     .slice(0, limit)
     .map((x) => x.a);
 }
+
+const STATUS_LABEL: Record<ApplicationStatus, string> = {
+  Draft: 'Draft',
+  Submitted: 'Submitted',
+  'Under review': 'Under review',
+  Waitlisted: 'Waitlisted',
+  Offer: 'Offer Available',
+  Accepted: 'Accepted',
+  Withdrawn: 'Withdrawn',
+};
+
+/** Status wording for whoever is looking: the parent submitted an application, the centre received it. */
+export const statusLabel = (status: ApplicationStatus, viewer: 'parent' | 'centre' = 'parent'): string =>
+  viewer === 'centre' && status === 'Submitted' ? 'Received' : STATUS_LABEL[status];
 
 /**
  * Short reference shown instead of an internal id: "Ref. CQ-4821". Four digits from a hash (FNV-1a) of the

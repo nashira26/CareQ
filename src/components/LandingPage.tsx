@@ -142,7 +142,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 	useEffect(() => {
 		if (audienceFromUrl() !== "centres") return;
 		const id = requestAnimationFrame(() =>
-			document.getElementById("how-it-works")?.scrollIntoView(),
+			document.getElementById("how-it-works")?.scrollIntoView()
 		);
 		return () => cancelAnimationFrame(id);
 	}, []);
@@ -369,7 +369,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 				<section className="py-16 lg:py-24">
 					<div className="max-w-6xl w-full mx-auto px-6">
 						<h2 className={`${h2Class} max-w-2xl mb-10 sm:mb-12`}>
-							Every update in one place
+							What CareQ gives you
 						</h2>
 
 						<div className="grid md:grid-cols-3 gap-6">
@@ -517,7 +517,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 											onClick={onGetStarted}
 											className={cardBtn}>
 											<span>Get started as a parent</span>
-											<ArrowRight className="w-4 h-4 shrink-0" aria-hidden="true" />
+											<ArrowRight
+												className="w-4 h-4 shrink-0"
+												aria-hidden="true"
+											/>
 										</button>
 									</div>
 								</div>
@@ -704,7 +707,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 										onClick={onGetStarted}
 										className={primaryBtn}>
 										<span>I'm a parent</span>
-										<ArrowRight className="w-4 h-4 shrink-0" aria-hidden="true" />
+										<ArrowRight
+											className="w-4 h-4 shrink-0"
+											aria-hidden="true"
+										/>
 									</button>
 									{centreButton(secondaryBtn)}
 								</div>

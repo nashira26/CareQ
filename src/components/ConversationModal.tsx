@@ -234,6 +234,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                   status={application.status}
                   waitlistPosition={application.waitlistPosition}
                   size="sm"
+                  viewer={role}
                 />
               </div>
               <p className="text-xs text-cq-stone-500 mt-0.5 flex items-center gap-1.5">

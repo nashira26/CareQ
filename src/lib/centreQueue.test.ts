@@ -37,3 +37,12 @@ test('short reference: "CQ-" + 4 digits from a hash of the id, the same every ti
   const refs = INITIAL_APPLICATIONS.map((a) => shortRef(a.id));
   assert.equal(new Set(refs).size, refs.length);
 });
+
+test('status wording: centres see a submitted application as "Received"; parents still see "Submitted"', async () => {
+  const { statusLabel } = await import('./centreQueue');
+  assert.equal(statusLabel('Submitted', 'centre'), 'Received');
+  assert.equal(statusLabel('Submitted', 'parent'), 'Submitted');
+  assert.equal(statusLabel('Submitted'), 'Submitted');
+  assert.equal(statusLabel('Under review', 'centre'), 'Under review');
+  assert.equal(statusLabel('Offer', 'centre'), 'Offer Available');
+});

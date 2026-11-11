@@ -1,17 +1,18 @@
 import React from 'react';
 import { ApplicationStatus } from '../data/mockData';
+import { statusLabel } from '../lib/centreQueue';
 import { FileText, Send, Search, ListOrdered, Gift, Check, Ban } from 'lucide-react';
 
 interface StatusBadgeProps {
   status: ApplicationStatus;
   waitlistPosition?: number;
   size?: 'sm' | 'md';
+  /** Who is looking: centres see "Received" where parents see "Submitted". */
+  viewer?: 'parent' | 'centre';
 }
 
 /** No "Simulated" tag here: demo accounts see one banner at the top of every portal screen instead. */
-export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, waitlistPosition, size }) => (
-  <Badge status={status} waitlistPosition={waitlistPosition} size={size} />
-);
+export const StatusBadge: React.FC<StatusBadgeProps> = (props) => <Badge {...props} />;
 
 /**
  * One colour and one icon per status, so colour is never the only cue.
@@ -27,21 +28,11 @@ const STYLES: Record<ApplicationStatus, { cls: string; Icon: React.ComponentType
   Withdrawn: { cls: 'bg-stone text-status-withdrawn border border-transparent line-through', Icon: Ban },
 };
 
-const LABEL: Record<ApplicationStatus, string> = {
-  Draft: 'Draft',
-  Submitted: 'Submitted',
-  'Under review': 'Under review',
-  Waitlisted: 'Waitlisted',
-  Offer: 'Offer Available',
-  Accepted: 'Accepted',
-  Withdrawn: 'Withdrawn',
-};
-
-const Badge: React.FC<StatusBadgeProps> = ({ status, waitlistPosition }) => {
+const Badge: React.FC<StatusBadgeProps> = ({ status, waitlistPosition, viewer }) => {
   const s = STYLES[status];
   if (!s) return null;
   const { cls, Icon } = s;
-  const label = status === 'Waitlisted' && waitlistPosition ? `Waitlisted · #${waitlistPosition}` : LABEL[status];
+  const label = status === 'Waitlisted' && waitlistPosition ? `Waitlisted · #${waitlistPosition}` : statusLabel(status, viewer);
   return (
     <span
       className={`inline-flex items-center gap-1.5 h-[26px] rounded-full px-2.5 text-xs font-bold leading-none whitespace-nowrap select-none transition-colors duration-300 ${cls}`}
