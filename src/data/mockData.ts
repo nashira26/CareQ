@@ -217,6 +217,48 @@ const anya = {
 };
 
 /**
+ * Anya's documents on her SENT applications: one file per requirement of that centre's own checklist,
+ * uploaded a few days before the application was submitted. File details only (no file contents);
+ * they open in the sample preview with fictional details. completedRequirements is derived from these,
+ * so nothing is "ready" without a matching file. Left out on purpose: Jesse Ketchum's custody documents
+ * (not applicable to this family) and Leaside's deposit (only due once a space is confirmed).
+ */
+const ANYA_DOCS: Record<string, Record<string, UploadedDocument>> = {
+  [JESSE_KETCHUM_ID]: {
+    'Child Admission Package': { fileName: 'Anya_Patel_Child_Admission_Package.pdf', fileSize: '1.6 MB', uploadedAt: 'Sep 18, 2026' },
+    'Emergency contact information': { fileName: 'Patel_Emergency_Contacts.pdf', fileSize: '220 KB', uploadedAt: 'Sep 18, 2026' },
+    'Up-to-date immunization information': { fileName: 'Anya_Patel_Immunization_Record.pdf', fileSize: '780 KB', uploadedAt: 'Sep 17, 2026' },
+  },
+  [LEASIDE_ID]: {
+    'Waiting list application form': { fileName: 'Anya_Patel_Waiting_List_Application.pdf', fileSize: '340 KB', uploadedAt: 'Sep 6, 2026' },
+    'Application package forms': { fileName: 'Anya_Patel_Application_Package_Forms.pdf', fileSize: '1.3 MB', uploadedAt: 'Sep 7, 2026' },
+  },
+  [WELLESLEY_ID]: {
+    'Registration Package and Signed Parent Contract': { fileName: 'Anya_Patel_Registration_Package_Signed_Contract.pdf', fileSize: '2.2 MB', uploadedAt: 'Oct 24, 2026' },
+    'Copy of Immunization Record': { fileName: 'Anya_Patel_Immunization_Record.pdf', fileSize: '780 KB', uploadedAt: 'Oct 24, 2026' },
+    'Signed Consent Forms (those that are applicable)': { fileName: 'Patel_Signed_Consent_Forms.pdf', fileSize: '560 KB', uploadedAt: 'Oct 25, 2026' },
+    'Emergency Contact Information': { fileName: 'Patel_Emergency_Contacts.pdf', fileSize: '220 KB', uploadedAt: 'Oct 25, 2026' },
+    'Pick Up Instructions': { fileName: 'Patel_Pick_Up_Instructions.pdf', fileSize: '180 KB', uploadedAt: 'Oct 25, 2026' },
+    'Preauthorized Debit form': { fileName: 'Patel_Preauthorized_Debit_Form.pdf', fileSize: '260 KB', uploadedAt: 'Oct 25, 2026' },
+  },
+  [MACAULAY_ID]: {
+    'Child registration forms': { fileName: 'Anya_Patel_Child_Registration_Forms.pdf', fileSize: '1.1 MB', uploadedAt: 'Aug 16, 2026' },
+    'Admission forms and up-to-date immunization records': { fileName: 'Anya_Patel_Admission_Forms_Immunization_Record.pdf', fileSize: '1.5 MB', uploadedAt: 'Aug 17, 2026' },
+  },
+  [DEMO_CENTRE_ID]: {
+    "Child's Birth Certificate": { fileName: 'Anya_Patel_Birth_Certificate.pdf', fileSize: '1.4 MB', uploadedAt: 'Oct 10, 2026' },
+    'Yellow Immunization Card (ISPA)': { fileName: 'Anya_Patel_Immunization_Record.pdf', fileSize: '920 KB', uploadedAt: 'Oct 10, 2026' },
+    'Proof of Toronto Residency': { fileName: 'Patel_Proof_of_Address_Hydro_Bill.pdf', fileSize: '410 KB', uploadedAt: 'Oct 11, 2026' },
+    'Emergency Contact & Medical Consent Form': { fileName: 'Patel_Emergency_Contact_Medical_Consent.pdf', fileSize: '650 KB', uploadedAt: 'Oct 11, 2026' },
+  },
+};
+/** A sent application's documents and its matching "ready" checklist items. */
+const anyaDocs = (centreId: string) => ({
+  uploadedDocuments: { ...ANYA_DOCS[centreId] },
+  completedRequirements: Object.keys(ANYA_DOCS[centreId]),
+});
+
+/**
  * Every status, position, estimate and offer below is SIMULATED (and labelled so in the UI).
  * The families are fictional.
  */
@@ -238,7 +280,7 @@ export const INITIAL_APPLICATIONS: Application[] = [
       { position: 4, date: 'Nov 2' },
     ],
     submittedAt: 'Sep 22, 2026',
-    completedRequirements: allDone(JESSE_KETCHUM_ID),
+    ...anyaDocs(JESSE_KETCHUM_ID),
   },
   {
     ...anya,
@@ -255,7 +297,7 @@ export const INITIAL_APPLICATIONS: Application[] = [
       { position: 10, date: 'Oct 1' },
     ],
     submittedAt: 'Sep 10, 2026',
-    completedRequirements: allDone(LEASIDE_ID),
+    ...anyaDocs(LEASIDE_ID),
   },
   {
     ...anya,
@@ -263,7 +305,7 @@ export const INITIAL_APPLICATIONS: Application[] = [
     centreId: WELLESLEY_ID,
     status: 'Submitted',
     submittedAt: 'Oct 28, 2026',
-    completedRequirements: allDone(WELLESLEY_ID),
+    ...anyaDocs(WELLESLEY_ID),
   },
   {
     ...anya,
@@ -271,7 +313,7 @@ export const INITIAL_APPLICATIONS: Application[] = [
     centreId: MACAULAY_ID,
     status: 'Offer',
     submittedAt: 'Aug 20, 2026',
-    completedRequirements: allDone(MACAULAY_ID),
+    ...anyaDocs(MACAULAY_ID),
   },
   {
     ...anya,
@@ -279,13 +321,7 @@ export const INITIAL_APPLICATIONS: Application[] = [
     centreId: DEMO_CENTRE_ID,
     status: 'Submitted',
     submittedAt: 'Oct 14, 2026',
-    completedRequirements: [...CAREQ_DEMO_CENTRE.requirements],
-    uploadedDocuments: {
-      "Child's Birth Certificate": { fileName: 'anya_birth_certificate.pdf', fileSize: '1.4 MB', uploadedAt: 'Oct 14, 2026' },
-      'Yellow Immunization Card (ISPA)': { fileName: 'anya_ispa_yellow_card_scan.pdf', fileSize: '920 KB', uploadedAt: 'Oct 14, 2026' },
-      'Proof of Toronto Residency': { fileName: 'toronto_hydro_bill_sept2026.pdf', fileSize: '410 KB', uploadedAt: 'Oct 14, 2026' },
-      'Emergency Contact & Medical Consent Form': { fileName: 'emergency_consent_signed.pdf', fileSize: '650 KB', uploadedAt: 'Oct 14, 2026' },
-    },
+    ...anyaDocs(DEMO_CENTRE_ID),
     parentNotes: 'Requesting Toddler room placement.',
   },
   {

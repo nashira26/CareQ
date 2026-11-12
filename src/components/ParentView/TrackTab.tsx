@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { shortRef } from "../../lib/centreQueue";
 import { Centre, Application, ParentProfile } from "../../data/mockData";
 import { StatusBadge } from "../StatusBadge";
+import { ApplicationDetailsModal } from "../ApplicationDetailsModal";
 import { AskAboutCentre } from "../AskAboutCentre";
 import {
 	PageHeader,
@@ -97,6 +98,11 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 	// Offer dialogs render on <body>: <main> is animated (a transform), which would trap position: fixed
 	const overlay = (node: React.ReactNode) =>
 		typeof document !== "undefined" ? createPortal(node, document.body) : node;
+
+	// The documents sent with an application (opens the same viewer the centre uses)
+	const [docsAppId, setDocsAppId] = useState<string | null>(null);
+	const docsApp = applications.find((a) => a.id === docsAppId);
+	const docsCentre = docsApp ? centres.find((c) => c.id === docsApp.centreId) : null;
 
 	// Decline confirmation dialog state
 	const [declineAppId, setDeclineAppId] = useState<string | null>(null);
@@ -297,6 +303,13 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 										View &amp; message
 									</GhostButton>
 									<div className="ml-auto flex items-center gap-1">
+										{Object.keys(app.uploadedDocuments ?? {}).length > 0 && (
+											<TertiaryButton
+												onClick={() => setDocsAppId(app.id)}
+												aria-label={`Documents sent to ${centreName}`}>
+												Documents ({Object.keys(app.uploadedDocuments ?? {}).length})
+											</TertiaryButton>
+										)}
 										{hasPosition && (
 											<TertiaryButton
 												onClick={() => setHistoryModalAppId(app.id)}>
@@ -450,6 +463,17 @@ export const TrackTab: React.FC<TrackTabProps> = ({
 						</div>
 					</Card>
 				</div>
+			)}
+
+			{/* Documents sent with this application */}
+			{docsApp && docsCentre && overlay(
+				<ApplicationDetailsModal
+					isOpen
+					onClose={() => setDocsAppId(null)}
+					application={docsApp}
+					centre={docsCentre}
+					onOpenConversation={() => onOpenConversation(docsApp.centreId)}
+				/>
 			)}
 
 			{/* Waitlist Position History Modal */}

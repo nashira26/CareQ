@@ -153,3 +153,29 @@ test('Jesse Ketchum seed: every status but Draft/Offer, one family per waitlist 
   // Seeded children are unique (conversations find their family by child id)
   assert.equal(new Set(INITIAL_APPLICATIONS.map((a) => `${a.centreId}/${a.childId}`)).size, INITIAL_APPLICATIONS.length);
 });
+
+test("Anya's sent applications carry a document for every ready item; the Mary Ward draft is unchanged", () => {
+  const anyaApps = INITIAL_APPLICATIONS.filter((a) => a.childId === 'child-anya');
+  const sent = anyaApps.filter((a) => a.status !== 'Draft');
+  assert.ok(sent.length >= 5, `${sent.length} sent applications`);
+  const day = (s: string) => new Date(s).getTime();
+  for (const a of sent) {
+    const centre = DEMO_CENTRES.find((c) => c.id === a.centreId)!;
+    const docs = a.uploadedDocuments ?? {};
+    assert.ok(Object.keys(docs).length > 0, `${centre.name}: no documents`);
+    // Only the centre's own checklist items, and nothing "ready" without its file
+    for (const r of Object.keys(docs)) assert.ok(centre.requirements.includes(r), `${centre.name}: ${r}`);
+    for (const r of a.completedRequirements) assert.ok(docs[r], `${centre.name}: "${r}" is ready without a document`);
+    for (const [r, d] of Object.entries(docs)) {
+      assert.match(d.fileName, /^(Anya_)?Patel_[A-Za-z_]+\.(pdf|jpg)$/, d.fileName);
+      assert.match(d.fileSize, /^\d+(\.\d)? (KB|MB)$/, d.fileSize);
+      // Uploaded a few days before the application was sent
+      const before = (day(a.submittedAt!) - day(d.uploadedAt)) / 86_400_000;
+      assert.ok(before >= 1 && before <= 7, `${centre.name} / ${r}: uploaded ${before} days before sending`);
+    }
+  }
+  const maryWard = anyaApps.find((a) => a.id === 'app-mary-ward-anya')!;
+  assert.equal(maryWard.status, 'Draft');
+  assert.deepEqual(maryWard.completedRequirements, ['Emergency contact information']);
+  assert.equal(maryWard.uploadedDocuments, undefined);
+});

@@ -170,6 +170,10 @@ export const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = (
                 style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
                 className="w-full max-w-2xl bg-white rounded-xl shadow-lg border border-cq-stone-300 p-8 sm:p-10 transition-transform duration-150 space-y-6 text-cq-stone-800"
               >
+                {/* Every document opens as a sample: no real file contents or personal data are stored */}
+                <p className="text-xs font-semibold text-cq-stone-500 text-center">
+                  Sample document preview • fictional details
+                </p>
                 {/* 1. BIRTH CERTIFICATE TEMPLATE */}
                 {getDocType(selectedDocReq) === 'birth_cert' && (
                   <div className="space-y-6 font-serif border-4 border-double border-cq-stone-300 p-6 sm:p-8 bg-cq-amber-50/15">
@@ -382,9 +386,6 @@ export const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = (
                         <span className="text-xs text-cq-stone-400 font-semibold block">Service & Residential Address:</span>
                         <span className="font-bold text-cq-stone-900 text-sm block">
                           123 Sample Street, Toronto, ON (fictional)
-                        </span>
-                        <span className="text-xs text-cq-stone-500">
-                          Sample document preview • fictional details
                         </span>
                       </div>
                     </div>

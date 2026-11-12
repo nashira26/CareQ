@@ -185,6 +185,21 @@ async function parentJourney(b: Browser, width: number, errors: string[]) {
     const queues = await p.locator('dd', { hasText: /^#\d+/ }).locator('visible=true').count();
     if (n > queues + 1) throw new Error(`${n} "Simulated" tags for ${queues} positions + 1 offer`);
   });
+  await step('My applications: Jesse Ketchum lists the 3 documents sent; each opens as a sample preview', async () => {
+    await p.getByRole('button', { name: /^Documents sent to Jesse Ketchum/ }).locator('visible=true').first().click();
+    await visible(p, 'Application File: Anya').waitFor({ timeout: 5000 });
+    const files = await p.getByText(/^File: /).locator('visible=true').count();
+    if (files !== 3) throw new Error(`${files} files (want 3)`);
+    await visible(p, 'Anya_Patel_Immunization_Record.pdf').waitFor({ timeout: 5000 });
+    const opens = p.locator('button:visible', { hasText: 'Open & View Document' });
+    for (let i = 0; i < files; i++) {
+      await opens.nth(i).click();
+      await visible(p, 'Sample document preview • fictional details').waitFor({ timeout: 5000 });
+      await p.locator('button:visible', { hasText: /Back to/ }).first().click();
+      await visible(p, 'Application File: Anya').waitFor({ timeout: 5000 });
+    }
+    await p.getByTitle('Close modal').click();
+  });
   // The parent bell previews Updates: same unread items, same number on both badges
   const bell = () => p.getByRole('button', { name: /^Notifications \(\d+ unread\)$/ }).locator('visible=true').first();
   const bellCount = async () => Number(((await bell().getAttribute('aria-label')) ?? '').match(/\((\d+) unread\)/)?.[1] ?? -1);
@@ -317,6 +332,13 @@ async function centreJourney(b: Browser, width: number, errors: string[]) {
     await p.getByText('Not Submitted', { exact: true }).locator('visible=true').first().waitFor({ timeout: 5000 });
     await p.getByTitle('Close modal').click();
     if (mila !== 3) throw new Error(`Mila: ${mila} files (want 3)`);
+  });
+  await step("review: Anya's file shows her 3 documents; custody (not applicable) is the only one not sent", async () => {
+    const anya = await openFile('Anya');
+    await visible(p, 'Anya_Patel_Child_Admission_Package.pdf').waitFor({ timeout: 5000 });
+    await visible(p, '1 Missing').waitFor({ timeout: 5000 });
+    await p.getByTitle('Close modal').click();
+    if (anya !== 3) throw new Error(`Anya: ${anya} files (want 3)`);
   });
   await step('centre profile: details read-only, simulated hours saved', async () => {
     await p.getByRole('button', { name: /^Account menu for/ }).click();
