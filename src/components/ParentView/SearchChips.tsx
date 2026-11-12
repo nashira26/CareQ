@@ -22,6 +22,8 @@ interface SearchChipsProps {
   languageOptions: string[];
   /** Languages found in any centre's data (lowercase); others can't be checked. */
   knownLanguages: Set<string>;
+  /** The default radius in use (place recognised, no distance given), or null. */
+  defaultRadius?: { km: number; widenedFromKm: number | null; count: number; onRemove: () => void } | null;
 }
 
 const chipBase =
@@ -75,6 +77,7 @@ export const SearchChips: React.FC<SearchChipsProps> = ({
   areas,
   languageOptions,
   knownLanguages,
+  defaultRadius = null,
 }) => {
   const [editing, setEditing] = useState<FilterKey | null>(null);
   const set = (patch: Partial<SearchCriteria>) => onChange({ ...criteria, ...patch });
@@ -184,6 +187,16 @@ export const SearchChips: React.FC<SearchChipsProps> = ({
   }
   if (criteria.maxDistanceKm !== null) {
     chips.push(editableChip('distance', `Within ${criteria.maxDistanceKm} km`, () => set({ maxDistanceKm: null })));
+  } else if (defaultRadius) {
+    // Default radius: same chip (click to pick another distance); removing it shows every distance
+    const { km, widenedFromKm, count, onRemove } = defaultRadius;
+    chips.push(
+      editableChip(
+        'distance',
+        `Within ${km} km · ${count} ${count === 1 ? 'centre' : 'centres'}${widenedFromKm ? ` (none within ${widenedFromKm} km)` : ''}`,
+        onRemove
+      )
+    );
   }
   if (criteria.ageGroup) {
     chips.push(
@@ -259,7 +272,7 @@ export const SearchChips: React.FC<SearchChipsProps> = ({
 
   // "+ Add filter": filters not yet set
   const addable = (Object.keys(FILTER_LABELS) as FilterKey[]).filter((k) =>
-    k === 'area' ? !criteria.areaText : k === 'distance' ? criteria.maxDistanceKm === null : k === 'age' ? !criteria.ageGroup : k === 'care' ? !criteria.careType : true
+    k === 'area' ? !criteria.areaText : k === 'distance' ? criteria.maxDistanceKm === null && !defaultRadius : k === 'age' ? !criteria.ageGroup : k === 'care' ? !criteria.careType : true
   );
   const addingNew = editing && !chips.some((c) => React.isValidElement(c) && c.key === editing);
 

@@ -1,5 +1,5 @@
 {
-  "metadata": {"approximate":true,"note":"Hand-picked approximate centre points for Toronto neighbourhoods and intersections. Used only to sort centres by distance. Each point was checked to have a licensed centre within 1 km.","count":69},
+  "metadata": {"approximate":true,"note":"Hand-picked approximate centre points for Toronto neighbourhoods and intersections. Used only to sort centres by distance. Each point was checked to have a licensed centre within 1 km.","count":69,"districts":"Districts are used by search only (not the home-area or centre-neighbourhood pickers). Each point is the centre of the district's postal-code areas (M1 Scarborough; M2-M3 North York; M8V-M8Z, M9A-M9C, M9P, M9R, M9V, M9W Etobicoke; M6C, M6E, M6M, M6N, M9N York), weighted by licensed centres. radiusKm: the default search radius; 10 km covers 221/221, 210/210, 140/144 and 64/64 of their licensed centres."},
   "areas": [
     {"name":"Danforth & Pape","aliases":["pape and danforth","pape station","pape"],"lat":43.6797,"lng":-79.3449},
     {"name":"Danforth & Broadview","aliases":["broadview and danforth","broadview station","broadview"],"lat":43.6769,"lng":-79.3584},
@@ -70,5 +70,11 @@
     {"name":"Agincourt","aliases":[],"lat":43.786,"lng":-79.283},
     {"name":"Malvern","aliases":["malvern town centre"],"lat":43.806,"lng":-79.221},
     {"name":"Guildwood","aliases":["guildwood village","scarborough village"],"lat":43.755,"lng":-79.198}
+  ],
+  "districts": [
+    {"name":"Scarborough","aliases":[],"lat":43.7673,"lng":-79.2501,"radiusKm":10},
+    {"name":"North York","aliases":["york mills"],"lat":43.7612,"lng":-79.4053,"radiusKm":10},
+    {"name":"Etobicoke","aliases":[],"lat":43.6581,"lng":-79.54,"radiusKm":10},
+    {"name":"York","aliases":["city of york"],"lat":43.6885,"lng":-79.4662,"radiusKm":10}
   ]
 }

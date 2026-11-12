@@ -279,3 +279,83 @@ test('language: the 3-centre threshold counts only centres left after the other 
   assert.deepEqual(r.map((x) => x.id).sort(), ['en', 'fr-near', 'fr-near2']);
   assert.ok(r.every((x) => x.languageStatus?.length === 1));
 });
+
+// ---------- Districts, places anywhere in the text, default radius (real area data) ----------
+
+import torontoAreas from '../data/torontoAreas.json';
+import fsaCentroids from '../data/fsaCentroids.json';
+import { applyDefaultRadius, defaultRadiusKm, knownPlaceIn, DEFAULT_RADIUS_KM, RankedCentre } from './rankCentres';
+
+const REAL_AREAS = (torontoAreas as { areas: Area[] }).areas;
+const SEARCH_AREAS: Area[] = [...REAL_AREAS, ...(torontoAreas as { districts: Area[] }).districts];
+const REAL_FSA = fsaCentroids as FsaCentroids;
+
+test('districts resolve with a 10 km default radius; neighbourhoods inside them still win', () => {
+  for (const name of ['Scarborough', 'North York', 'Etobicoke', 'York']) {
+    const p = resolveArea(name, SEARCH_AREAS, REAL_FSA);
+    assert.equal(p?.label, name);
+    assert.equal(p?.kind, 'district');
+    assert.equal(defaultRadiusKm(p!), 10);
+  }
+  assert.equal(resolveArea('near Scarborough', SEARCH_AREAS, REAL_FSA)?.label, 'Scarborough');
+  assert.equal(resolveArea('Scarborough Town Centre', SEARCH_AREAS, REAL_FSA)?.label, 'Scarborough Town Centre');
+  assert.equal(resolveArea('East York', SEARCH_AREAS, REAL_FSA)?.label, 'East York');
+  assert.equal(resolveArea('York University', SEARCH_AREAS, REAL_FSA)?.label, 'York University');
+  assert.equal(resolveArea('north york centre', SEARCH_AREAS, REAL_FSA)?.label, 'Yonge & Sheppard');
+  assert.equal(resolveArea('Yorkville', SEARCH_AREAS, REAL_FSA)?.label, 'Yorkville');
+  const annex = resolveArea('the Annex', SEARCH_AREAS, REAL_FSA)!;
+  assert.equal(annex.kind, 'area');
+  assert.equal(defaultRadiusKm(annex), DEFAULT_RADIUS_KM);
+  assert.equal(defaultRadiusKm(resolveArea('M5R', SEARCH_AREAS, REAL_FSA)!), DEFAULT_RADIUS_KM);
+});
+
+test('districts are search-only: not in the area list the pickers use', () => {
+  for (const name of ['Scarborough', 'North York', 'Etobicoke', 'York']) {
+    assert.ok(!REAL_AREAS.some((a) => a.name === name), name);
+  }
+});
+
+test('knownPlaceIn: longest known name anywhere; everyday-word aliases need "near"', () => {
+  assert.equal(knownPlaceIn('French toddler care downtown', SEARCH_AREAS), 'downtown');
+  assert.equal(knownPlaceIn('infant care Leslieville', SEARCH_AREAS), 'Leslieville');
+  assert.equal(knownPlaceIn('full day Scarborough Town Centre please', SEARCH_AREAS), 'Scarborough Town Centre');
+  assert.equal(knownPlaceIn('the main thing is a union job and Liberty to choose', SEARCH_AREAS), null);
+  assert.equal(knownPlaceIn('child care please', SEARCH_AREAS), null);
+});
+
+test('keyword fallback: a known place anywhere in the text, else the words after "near"', () => {
+  assert.equal(parseSearchFallback('French toddler care downtown', SEARCH_AREAS).areaText, 'downtown');
+  assert.equal(parseSearchFallback('infant care Leslieville', SEARCH_AREAS).areaText, 'Leslieville');
+  assert.equal(parseSearchFallback('preschool full-day near Scarborough', SEARCH_AREAS).areaText, 'scarborough');
+  assert.equal(parseSearchFallback('toddler care near the Annex', SEARCH_AREAS).areaText, 'the annex');
+  assert.equal(parseSearchFallback('care near M5R', SEARCH_AREAS).areaText, 'M5R');
+  // "near" words that aren't a known place lose to a known place elsewhere in the sentence
+  assert.equal(parseSearchFallback('toddler care near my work, Leslieville', SEARCH_AREAS).areaText, 'Leslieville');
+  // Unknown place: kept as written (the Find page asks the parent to pick an area)
+  assert.equal(parseSearchFallback('infant care near Narnia', SEARCH_AREAS).areaText, 'narnia');
+  // Everyday-word alias after "near" still counts
+  assert.equal(resolveArea(parseSearchFallback('care near Leslie', SEARCH_AREAS).areaText, SEARCH_AREAS, REAL_FSA)?.label, 'Leslieville');
+  // Without the area list it behaves as before
+  assert.equal(parseSearchFallback('French toddler care downtown').areaText, null);
+});
+
+const ranked = (...kms: (number | null)[]): RankedCentre[] =>
+  kms.map((km, i) => ({ id: `c${i}`, score: 100 - i, distanceKm: km, matchedFacts: [], unknownFacts: [] }));
+
+test('default radius: keeps results inside, in order; unknown locations not shown inside it', () => {
+  const v = applyDefaultRadius(ranked(0.5, 7, 3, null, 4.9), 5);
+  assert.deepEqual(v.results.map((r) => r.id), ['c0', 'c2', 'c4']);
+  assert.equal(v.radiusKm, 5);
+  assert.equal(v.widenedFromKm, null);
+});
+
+test('default radius widens (5 -> 10 -> 20 -> 40 km) when nothing is inside, then shows all', () => {
+  const w = applyDefaultRadius(ranked(12, 30), 5);
+  assert.equal(w.radiusKm, 20);
+  assert.equal(w.widenedFromKm, 5);
+  assert.deepEqual(w.results.map((r) => r.id), ['c0']);
+  const all = applyDefaultRadius(ranked(55, 60, null), 10);
+  assert.equal(all.radiusKm, null);
+  assert.equal(all.results.length, 3);
+  assert.equal(applyDefaultRadius([], 5).radiusKm, null);
+});

@@ -3,6 +3,7 @@
  * Only what the parent wrote is captured; nothing is inferred about the family.
  */
 import type { AgeGroup } from '../data/mockData';
+import { knownPlaceIn, type Area } from './rankCentres';
 
 export type CareType = 'Full day' | 'Part day' | 'Before school' | 'After school';
 export const CARE_TYPES: CareType[] = ['Full day', 'Part day', 'Before school', 'After school'];
@@ -103,8 +104,13 @@ const MUST_HAVE_PHRASES = [
   'garden', 'meals included', 'hot lunch', 'organic', 'nut-free', 'nut free', 'parking', 'flexible hours',
 ];
 
-/** Plain keyword parsing of the parent's description. Only extracts what was literally written. */
-export function parseSearchFallback(text: string): SearchCriteria {
+/**
+ * Plain keyword parsing of the parent's description. Only extracts what was literally written.
+ * Place: a postal code; else the words after "near"/"in"/… when they name a known area; else any known
+ * area name or alias anywhere in the text (`areas`: neighbourhoods and districts); else the words after
+ * "near"/"in"/… as written (the Find page then asks the parent to pick an area).
+ */
+export function parseSearchFallback(text: string, areas: Area[] = []): SearchCriteria {
   const t = ` ${text.toLowerCase().replace(/\s+/g, ' ')} `;
   const raw: Record<string, unknown> = {};
 
@@ -131,14 +137,14 @@ export function parseSearchFallback(text: string): SearchCriteria {
 
   const fsa = text.match(/\b([Mm]\d[A-Za-z])\b/);
   const area = t.match(/\b(?:near|around|close to|in|by)\s+(?!the subway|subway|ttc\b)([a-z0-9.'&\- ]+?)(?=,| from | starting | within | for | with | that | who | and (?:a|an|has|have|with)\b|\.|;| $)/);
+  const captured =
+    area && !MONTHS.includes(area[1].trim()) && !LANGUAGES.some((l) => l.toLowerCase() === area[1].trim())
+      ? area[1].trim()
+      : null;
+  const mentioned = knownPlaceIn(text, areas);
   if (fsa) raw.areaText = fsa[1].toUpperCase();
-  else if (
-    area &&
-    !MONTHS.includes(area[1].trim()) &&
-    !LANGUAGES.some((l) => l.toLowerCase() === area[1].trim())
-  ) {
-    raw.areaText = area[1].trim();
-  }
+  else if (captured && (!mentioned || knownPlaceIn(captured, areas))) raw.areaText = captured;
+  else if (mentioned) raw.areaText = mentioned;
 
   const found: string[] = [];
   for (const p of MUST_HAVE_PHRASES) {

@@ -1,6 +1,6 @@
 /**
  * npm run reset                          Reset the demo on http://localhost:$PORT (default 3000)
- * npm run reset -- https://careq.onrender.com   Reset a deployed demo
+ * npm run reset -- https://careq-gfe9.onrender.com   Reset the live demo
  * Uses RESET_TOKEN from .env (sent as the X-Reset-Token header). The server must have ALLOW_RESET=true.
  * Re-seeds the server's app database (MONGODB_DB) only; the policy index (MONGODB_POLICY_DB) is never touched.
  */

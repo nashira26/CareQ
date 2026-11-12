@@ -14,7 +14,8 @@
  *                        "Montessori" in the name). Anything we can't check is excluded from scoring,
  *                        including a language that appears in no centre's data at all.
  * Hard filters: the centre must serve the requested age group (unknown ages are kept), and must be
- * within maxDistanceKm when both the distance and the maximum are known.
+ * within maxDistanceKm when both the distance and the maximum are known. With no maxDistanceKm, the Find
+ * page shows results within a default radius of a recognised place (applyDefaultRadius; scores unchanged).
  * Languages: a requested language becomes a filter when at least LANGUAGE_FILTER_MIN centres (after the
  * other filters) offer it. Otherwise every centre is still ranked and its result says, per language,
  * whether it's offered ("French: offered" / "French: not offered" / not reported).
@@ -41,7 +42,9 @@ export interface Place {
   label: string;
   lat: number;
   lng: number;
-  kind: 'area' | 'postal-code';
+  kind: 'area' | 'district' | 'postal-code';
+  /** Default search radius (districts only; others use DEFAULT_RADIUS_KM). */
+  radiusKm?: number;
 }
 
 export interface Area {
@@ -49,6 +52,8 @@ export interface Area {
   aliases: string[];
   lat: number;
   lng: number;
+  /** Districts only (torontoAreas.json "districts"): their wider default search radius. */
+  radiusKm?: number;
 }
 
 export type FsaCentroids = Record<string, { lat: number; lng: number; centres: number }>;
@@ -89,29 +94,85 @@ const normPlace = (s: string) =>
     .replace(/\s+/g, ' ')
     .trim();
 
+const placeEntries = (areas: Area[]) =>
+  areas.flatMap((a) => [a.name, ...a.aliases].map((n) => ({ area: a, key: normPlace(n) })).filter((e) => e.key));
+const containsKey = (text: string, key: string) => new RegExp(`\\b${key.replace(/ /g, '\\s+')}\\b`).test(text);
+const toPlace = (a: Area): Place =>
+  a.radiusKm
+    ? { label: a.name, lat: a.lat, lng: a.lng, kind: 'district', radiusKm: a.radiusKm }
+    : { label: a.name, lat: a.lat, lng: a.lng, kind: 'area' };
+
 /**
  * areaText -> a known place: exact name/alias match, then a name/alias contained in the text
  * (longest first), then a Toronto postal-code area (FSA, e.g. "M4K"). Otherwise null.
+ * `areas` may include districts (radiusKm set): they resolve to kind 'district'.
  */
 export function resolveArea(areaText: string | null, areas: Area[], fsa: FsaCentroids): Place | null {
   if (!areaText) return null;
   const text = normPlace(areaText);
   if (!text) return null;
-  const entries = areas.flatMap((a) =>
-    [a.name, ...a.aliases].map((n) => ({ area: a, key: normPlace(n) })).filter((e) => e.key)
-  );
+  const entries = placeEntries(areas);
   const exact = entries.find((e) => e.key === text);
-  if (exact) return { label: exact.area.name, lat: exact.area.lat, lng: exact.area.lng, kind: 'area' };
-  const contained = entries
-    .filter((e) => new RegExp(`\\b${e.key.replace(/ /g, '\\s+')}\\b`).test(text))
-    .sort((a, b) => b.key.length - a.key.length)[0];
-  if (contained) return { label: contained.area.name, lat: contained.area.lat, lng: contained.area.lng, kind: 'area' };
+  if (exact) return toPlace(exact.area);
+  const contained = entries.filter((e) => containsKey(text, e.key)).sort((a, b) => b.key.length - a.key.length)[0];
+  if (contained) return toPlace(contained.area);
   const code = areaText.toUpperCase().match(/\b(M\d[A-Z])(?:\s?\d[A-Z]\d)?\b/);
   if (code && fsa[code[1]]) {
     const c = fsa[code[1]];
     return { label: `${code[1]} postal area`, lat: c.lat, lng: c.lng, kind: 'postal-code' };
   }
   return null;
+}
+
+/**
+ * Aliases that are also everyday words or first names ("main", "union", "Leslie"…). They still
+ * resolve after "near"/"in" (resolveArea), but a bare mention anywhere in a sentence doesn't count.
+ */
+const COMMON_WORD_ALIASES = new Set(['main', 'union', 'liberty', 'junction', 'village', 'college', 'leslie', 'kennedy', 'warden']);
+
+/**
+ * The longest known area name or alias mentioned anywhere in the text (word boundaries), as listed
+ * in `areas`; null if none. Used by the keyword parser when the place isn't after "near"/"in".
+ */
+export function knownPlaceIn(text: string, areas: Area[]): string | null {
+  const t = normPlace(text);
+  if (!t) return null;
+  const names = areas.flatMap((a) => [a.name, ...a.aliases]).map((name) => ({ name, key: normPlace(name) }));
+  const hit = names
+    .filter((n) => n.key && !COMMON_WORD_ALIASES.has(n.key) && containsKey(t, n.key))
+    .sort((a, b) => b.key.length - a.key.length)[0];
+  return hit ? hit.name : null;
+}
+
+// ---------- Default radius ----------
+
+/** When a place is recognised and no distance was given: neighbourhoods and postal codes. */
+export const DEFAULT_RADIUS_KM = 5;
+/** Widening stops after this; beyond it every centre is shown. */
+export const MAX_DEFAULT_RADIUS_KM = 40;
+
+export const defaultRadiusKm = (place: Place): number => place.radiusKm ?? DEFAULT_RADIUS_KM;
+
+export interface RadiusView {
+  results: RankedCentre[];
+  /** The radius applied (null: nothing within MAX_DEFAULT_RADIUS_KM, so no radius). */
+  radiusKm: number | null;
+  /** The starting radius, when nothing was inside it and the radius was doubled. */
+  widenedFromKm: number | null;
+}
+
+/**
+ * Keeps ranked results within radiusKm, keeping their order. If none is inside, the radius doubles
+ * (5 -> 10 -> 20 -> 40 km); past MAX_DEFAULT_RADIUS_KM every result is kept. Centres whose location
+ * isn't known aren't shown inside a default radius (the parent didn't choose it, and "within 5 km"
+ * would be unverified); removing the radius shows them.
+ */
+export function applyDefaultRadius(ranked: RankedCentre[], radiusKm: number): RadiusView {
+  for (let r = radiusKm; r <= MAX_DEFAULT_RADIUS_KM; r *= 2) {
+    const inside = ranked.filter((x) => x.distanceKm !== null && x.distanceKm <= r);
+    if (inside.length) return { results: inside, radiusKm: r, widenedFromKm: r === radiusKm ? null : radiusKm };
+  }
+  return { results: ranked, radiusKm: null, widenedFromKm: null };
 }
 
 // ---------- Checkable facts ----------

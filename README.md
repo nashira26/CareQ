@@ -203,3 +203,7 @@ Unit tests cover ranking, search parsing, application preparation, browser stora
 - `src/components/CentreView/`: centre pages
 - `src/data/`: demo centres, applications, messages, help content, and the Ontario open data
 - `scripts/`: `seed.ts`, `reset.ts`, `import-ontario-data.ts`
+
+## Next steps
+
+- **Saved documents for parents:** save each child's documents once (type, file name, upload date), e.g. immunization record, birth certificate, proof of address, subsidy letter. When an application's checklist is built, matching items show "Ready · from your saved documents (uploaded {date})". Before sending, the parent sees which saved documents will be attached and can untick any; documents go only to the centres they're sent to. A newer version updates future drafts, never applications already sent.

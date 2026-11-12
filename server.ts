@@ -35,6 +35,9 @@ import fsaCentroids from './src/data/fsaCentroids.json';
 
 dotenv.config();
 
+// Places the search keyword parser recognises: neighbourhoods and districts (districts are search-only)
+const SEARCH_AREAS: Area[] = [...(torontoAreas as { areas: Area[] }).areas, ...(torontoAreas as { districts: Area[] }).districts];
+
 // Single place to set the Gemini model. Override with the GEMINI_MODEL env var.
 // gemini-3.8-flash is listed but timed out (504) in testing on 2026-11-05; gemini-3.5-flash responds.
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
@@ -71,10 +74,13 @@ const ASK_TURN_TIMEOUT_MS = Number(process.env.GEMINI_ASK_TURN_TIMEOUT_MS) || 50
  *  - Ask CareQ runs 2–3 model turns inside 15 s (flash-lite answered correctly in ~2 s, 2026-11-07 eval);
  *  - Prepare with AI and follow-up drafts: gemini-3.5-flash timed out at 15 s on Prepare in the
  *    2026-11-08 eval (17.2 s with the backup); flash-lite produced the same checks.
+ *  - Find search parsing: gemini-3.5-flash timed out (15 s) or was overloaded on 4 of 5 test searches
+ *    on 2026-11-11; flash-lite parsed the same criteria in 1–7 s.
  * The centre-side policy readers keep the main model first, where quality matters more than speed.
  */
 const FAST_FIRST = { primary: GEMINI_FALLBACK_MODEL, backup: GEMINI_MODEL };
 const ENDPOINT_MODEL_DEFAULTS: Record<string, { primary: string; backup: string }> = {
+  'parse-search': FAST_FIRST,
   'ask-careq': FAST_FIRST,
   'prepare-application': FAST_FIRST,
   'generate-message': FAST_FIRST,
@@ -299,6 +305,7 @@ async function startServer() {
     const { primary, backup } = modelsFor(label);
     let response: GenerateContentResponse;
     let modelUsed = primary;
+    let why = 'first model';
     try {
       response = await callModel(label, primary, params, timeoutFor(label));
     } catch (err) {
@@ -306,9 +313,10 @@ async function startServer() {
       const status = err instanceof ApiError ? `HTTP ${err.status}` : 'timeout';
       console.warn(`[gemini] ${label}: ${primary} failed (${status}); retrying with ${backup}`);
       modelUsed = backup;
+      why = `backup: ${primary} ${status}`;
       response = await callModel(label, backup, params, GEMINI_FALLBACK_TIMEOUT_MS);
     }
-    console.log(`[gemini] ${label}: answered by ${modelUsed} in ${Date.now() - started}ms`);
+    console.log(`[gemini] ${label}: answered by ${modelUsed} (${why}) in ${Date.now() - started}ms`);
 
     if (AI_CACHE_OFF) return { response, modelUsed };
     if (geminiCache.size >= CACHE_MAX_ENTRIES) {
@@ -500,13 +508,13 @@ ${description}
       const criteria = sanitizeCriteria(JSON.parse(response.text || '{}'));
       return res.json({ success: true, aiMode: 'gemini', modelUsed, criteria });
     } catch (err: unknown) {
-      console.warn('Gemini parse-search error; using keyword parser:', err);
+      console.warn(`[gemini] parse-search: no model answered (${fallbackReasonFor(err)}); using keyword parser:`, err);
       return res.json({
         success: true,
         aiMode: 'fallback',
         modelUsed: null,
         fallbackReason: fallbackReasonFor(err),
-        criteria: parseSearchFallback(description),
+        criteria: parseSearchFallback(description, SEARCH_AREAS),
       });
     }
   });

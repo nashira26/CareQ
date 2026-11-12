@@ -36,6 +36,8 @@ import {
   FsaCentroids,
   RankableCentre,
   RankedCentre,
+  applyDefaultRadius,
+  defaultRadiusKm,
   distanceLabel,
   factsSentence,
   knownLanguagesOf,
@@ -48,6 +50,8 @@ import { AskAboutCentre } from '../AskAboutCentre';
 
 // Approximate centre points, used only to sort by distance (see metadata.approximate).
 const AREAS = (torontoAreas as { areas: Area[] }).areas;
+// Search also recognises districts (Scarborough, North York…); the area pickers list neighbourhoods only.
+const SEARCH_AREAS: Area[] = [...AREAS, ...(torontoAreas as { districts: Area[] }).districts];
 const FSA = fsaCentroids as FsaCentroids;
 const PAGE_SIZE = 24;
 const EXPLAIN_TOP_N = 10;
@@ -185,14 +189,26 @@ export const FindTab: React.FC<FindTabProps> = ({
   }, [allEntries, shortlistOnly, shortlist, includeSchoolAgeOnly]);
 
   const searching = hasAnyCriteria(criteria);
-  const origin = useMemo(() => resolveArea(criteria.areaText, AREAS, FSA), [criteria.areaText]);
+  const origin = useMemo(() => resolveArea(criteria.areaText, SEARCH_AREAS, FSA), [criteria.areaText]);
   const areaUnplaced = Boolean(criteria.areaText) && !origin;
 
+  // Default radius (place recognised, no distance given): removable; back on for a new place or search
+  const [radiusOff, setRadiusOff] = useState(false);
+  useEffect(() => setRadiusOff(false), [origin?.label]);
+
   // Ranking is plain code (src/lib/rankCentres.ts) and re-runs instantly when chips change.
-  const ranked: RankedCentre[] | null = useMemo(
+  const allRanked: RankedCentre[] | null = useMemo(
     () => (searching ? rankCentres(criteria, pool.map((e) => e.rankable), origin, knownLanguages) : null),
     [searching, criteria, pool, origin, knownLanguages]
   );
+  const radiusView = useMemo(
+    () =>
+      allRanked && origin && criteria.maxDistanceKm === null && !radiusOff
+        ? applyDefaultRadius(allRanked, defaultRadiusKm(origin))
+        : null,
+    [allRanked, origin, criteria.maxDistanceKm, radiusOff]
+  );
+  const ranked: RankedCentre[] | null = radiusView ? radiusView.results : allRanked;
   const results: { entry: Entry; rank: RankedCentre | null }[] = useMemo(
     () =>
       ranked
@@ -253,13 +269,14 @@ export const FindTab: React.FC<FindTabProps> = ({
     setIsParsing(true);
     setExplainAiMode(null);
     setAiNotice(null);
+    setRadiusOff(false);
     const result = await aiPost<{ criteria?: unknown; aiMode?: AiMode }>('/api/parse-search', { text });
     if (result.ok) {
       setCriteria(sanitizeCriteria(result.data.criteria));
       setParseAiMode(result.data.aiMode ?? null);
     } else {
       // Rate-limited, signed out or unreachable: the same keyword parser, in the browser
-      setCriteria(parseSearchFallback(text));
+      setCriteria(parseSearchFallback(text, SEARCH_AREAS));
       setParseAiMode('fallback');
       if (isUserFacingAiError(result.status)) setAiNotice(result.message);
     }
@@ -533,6 +550,11 @@ export const FindTab: React.FC<FindTabProps> = ({
           areas={AREAS}
           languageOptions={languageOptions}
           knownLanguages={knownLanguages}
+          defaultRadius={
+            radiusView?.radiusKm
+              ? { km: radiusView.radiusKm, widenedFromKm: radiusView.widenedFromKm, count: radiusView.results.length, onRemove: () => setRadiusOff(true) }
+              : null
+          }
         />
         <AiFallbackNote aiMode={parseAiMode} />
         <AiNotice message={aiNotice} />
@@ -586,7 +608,9 @@ export const FindTab: React.FC<FindTabProps> = ({
             </>
           ) : searching ? (
             <>
-              {results.length} centres match your description{origin ? ', closest first' : ''}
+              {results.length} centres match your description
+              {radiusView?.radiusKm ? ` within ${radiusView.radiusKm} km` : ''}
+              {origin ? ', closest first' : ''}
             </>
           ) : (
             <>
