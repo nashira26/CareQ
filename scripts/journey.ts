@@ -191,6 +191,8 @@ async function parentJourney(b: Browser, width: number, errors: string[]) {
     const files = await p.getByText(/^File: /).locator('visible=true').count();
     if (files !== 3) throw new Error(`${files} files (want 3)`);
     await visible(p, 'Anya_Patel_Immunization_Record.pdf').waitFor({ timeout: 5000 });
+    await visible(p, 'Not applicable: Both parents on file (marked by parent)').waitFor({ timeout: 5000 });
+    if (await p.getByText(/\d+ Missing/).locator('visible=true').count()) throw new Error('a Missing count is shown');
     const opens = p.locator('button:visible', { hasText: 'Open & View Document' });
     for (let i = 0; i < files; i++) {
       await opens.nth(i).click();
@@ -198,6 +200,14 @@ async function parentJourney(b: Browser, width: number, errors: string[]) {
       await p.locator('button:visible', { hasText: /Back to/ }).first().click();
       await visible(p, 'Application File: Anya').waitFor({ timeout: 5000 });
     }
+    await p.getByTitle('Close modal').click();
+  });
+  await step('My applications: Leaside (waitlisted) shows its deposit as "Due when a space is confirmed", not Missing', async () => {
+    await p.getByRole('button', { name: /^Documents sent to Leaside/ }).locator('visible=true').first().click();
+    await visible(p, 'Application File: Anya').waitFor({ timeout: 5000 });
+    await visible(p, 'Due when a space is confirmed').waitFor({ timeout: 5000 });
+    await visible(p, 'All Requirements Provided').waitFor({ timeout: 5000 });
+    if (await p.getByText('Not Submitted', { exact: true }).locator('visible=true').count()) throw new Error('an item is Not Submitted');
     await p.getByTitle('Close modal').click();
   });
   // The parent bell previews Updates: same unread items, same number on both badges
@@ -333,10 +343,14 @@ async function centreJourney(b: Browser, width: number, errors: string[]) {
     await p.getByTitle('Close modal').click();
     if (mila !== 3) throw new Error(`Mila: ${mila} files (want 3)`);
   });
-  await step("review: Anya's file shows her 3 documents; custody (not applicable) is the only one not sent", async () => {
+  await step("review: Anya's file shows her 3 documents and nothing missing; custody is N/A with the parent's note", async () => {
     const anya = await openFile('Anya');
     await visible(p, 'Anya_Patel_Child_Admission_Package.pdf').waitFor({ timeout: 5000 });
-    await visible(p, '1 Missing').waitFor({ timeout: 5000 });
+    await visible(p, 'All Requirements Provided').waitFor({ timeout: 5000 });
+    await p.getByText('N/A', { exact: true }).locator('visible=true').first().waitFor({ timeout: 5000 });
+    await visible(p, 'Not applicable: Both parents on file (marked by parent)').waitFor({ timeout: 5000 });
+    if (await p.getByText(/\d+ Missing/).locator('visible=true').count()) throw new Error('a Missing count is shown');
+    if (await p.getByText('Not Submitted', { exact: true }).locator('visible=true').count()) throw new Error('an item is Not Submitted');
     await p.getByTitle('Close modal').click();
     if (anya !== 3) throw new Error(`Anya: ${anya} files (want 3)`);
   });

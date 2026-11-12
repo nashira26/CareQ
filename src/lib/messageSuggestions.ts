@@ -5,19 +5,24 @@
  */
 import type { Application, Centre } from '../data/mockData';
 import { ageGroupFromMonths } from './searchCriteria';
+import { requirementState } from './checklist';
 
 const MAX = 4;
 
 export function parentMessageSuggestions(
-  app: Pick<Application, 'status' | 'childName' | 'childAgeMonths' | 'preferredStartDate' | 'waitlistPosition' | 'completedRequirements'>,
-  centre: Pick<Centre, 'requirements'>
+  app: Pick<Application, 'status' | 'childName' | 'childAgeMonths' | 'preferredStartDate' | 'waitlistPosition' | 'completedRequirements'> &
+    Partial<Pick<Application, 'uploadedDocuments' | 'notApplicable'>>,
+  centre: Pick<Centre, 'requirements'> & Partial<Pick<Centre, 'requirementsDueWhenConfirmed'>>
 ): string[] {
   const child = app.childName || 'my child';
   const room = `${ageGroupFromMonths(app.childAgeMonths).toLowerCase()} room`;
   const start = app.preferredStartDate?.trim();
-  const confirmed = (centre.requirements ?? []).filter(Boolean);
-  const done = new Set(app.completedRequirements ?? []);
-  const missing = confirmed.filter((r) => !done.has(r));
+  // N/A and "due when a space is confirmed" items are neither asked about nor checked
+  const confirmed = (centre.requirements ?? []).filter(Boolean).filter((r) => {
+    const state = requirementState({ ...app, completedRequirements: app.completedRequirements ?? [] }, centre, r);
+    return state === 'ready' || state === 'missing';
+  });
+  const missing = confirmed.filter((r) => requirementState({ ...app, completedRequirements: app.completedRequirements ?? [] }, centre, r) === 'missing');
 
   const byStatus: string[] = (() => {
     switch (app.status) {

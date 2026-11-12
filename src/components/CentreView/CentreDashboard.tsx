@@ -1,3 +1,4 @@
+import { checklistSummary } from "../../lib/checklist";
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { shortRef } from "../../lib/centreQueue";
@@ -662,8 +663,10 @@ A signed Photography & Media Consent Form is required for classroom developmenta
 																	{" · "}
 																	<span>
 																		Docs verified:{" "}
-																		{app.completedRequirements.length} of{" "}
-																		{singleCentre.requirements.length}
+																		{checklistSummary(app, singleCentre).ready} of{" "}
+																		{checklistSummary(app, singleCentre).needed}
+																		{checklistSummary(app, singleCentre).notApplicable > 0 &&
+																			` (${checklistSummary(app, singleCentre).notApplicable} N/A)`}
 																	</span>
 																</div>
 

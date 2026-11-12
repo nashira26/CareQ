@@ -5,6 +5,7 @@
  */
 import type { Application, Centre, ChatMessage, InAppNotification } from '../data/mockData';
 import { conversationKey } from '../data/mockData';
+import { checklistSummary } from './checklist';
 
 export type UpdateKind = 'waitlist' | 'offer' | 'application' | 'message';
 
@@ -193,7 +194,8 @@ export function attentionItems(input: {
 
   for (const a of applications.filter((x) => x.status === 'Draft')) {
     const centre = centres.find((c) => c.id === a.centreId);
-    const missing = (centre?.requirements ?? []).filter((r) => !a.completedRequirements.includes(r) && !a.uploadedDocuments?.[r]).length;
+    // N/A and "due when a space is confirmed" items are never counted as missing
+    const missing = centre ? checklistSummary(a, centre).missing : 0;
     items.push({
       id: `draft-${a.id}`,
       title: missing ? 'Finish your draft' : 'Ready to send',

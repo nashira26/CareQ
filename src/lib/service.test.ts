@@ -333,3 +333,27 @@ test('a message sent from a simulated-data AI draft is tagged for both sides (de
   assert.equal(msgs.at(-1)!.basedOnSimulatedData, undefined); // not AI-assisted: no tag
   void sunny; void sunnyId; void alex;
 });
+
+test('"if applicable" items can be marked Not applicable (with a note) and undone; other items cannot', async () => {
+  const { repo, alex } = await setup();
+  const id = await svc.createDraft(repo, alex, JESSE_KETCHUM_ID);
+  const custody = 'Custody documents (if applicable)';
+  await svc.updateDraft(repo, alex, id, { kind: 'uploadDocument', requirement: custody, fileName: 'order.pdf', fileSize: '1 MB' });
+  await svc.updateDraft(repo, alex, id, { kind: 'markNotApplicable', requirement: custody, notApplicable: true, note: '  Both parents on file  ' });
+  let app = (await repo.getApplication(id))!;
+  // N/A is neither ready nor a file
+  assert.deepEqual(app.notApplicable, { [custody]: { note: 'Both parents on file' } });
+  assert.ok(!app.completedRequirements.includes(custody));
+  assert.equal(app.uploadedDocuments?.[custody], undefined);
+  await svc.updateDraft(repo, alex, id, { kind: 'markNotApplicable', requirement: custody, notApplicable: false });
+  app = (await repo.getApplication(id))!;
+  assert.deepEqual(app.notApplicable, {});
+  // Attaching a file makes it applicable again
+  await svc.updateDraft(repo, alex, id, { kind: 'markNotApplicable', requirement: custody, notApplicable: true });
+  await svc.updateDraft(repo, alex, id, { kind: 'toggleRequirement', requirement: custody });
+  assert.deepEqual((await repo.getApplication(id))!.notApplicable, {});
+  await assert.rejects(
+    svc.updateDraft(repo, alex, id, { kind: 'markNotApplicable', requirement: 'Child Admission Package', notApplicable: true }),
+    InputError
+  );
+});

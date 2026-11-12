@@ -1,3 +1,4 @@
+import { DUE_LATER_LABEL, requirementState } from '../lib/checklist';
 import React, { useState } from 'react';
 import { Application, Centre, UploadedDocument } from '../data/mockData';
 import { StatusBadge } from './StatusBadge';
@@ -33,6 +34,12 @@ export const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = (
 
   const uploadedDocs = application.uploadedDocuments || {};
   const currentViewedDoc = selectedDocReq ? uploadedDocs[selectedDocReq] : null;
+  // N/A and "due when a space is confirmed" items are never counted as Missing (or as provided)
+  const sentCount = centre.requirements.filter((r) => uploadedDocs[r]).length;
+  const missingFiles = centre.requirements.filter((r) => {
+    const state = requirementState(application, centre, r);
+    return !uploadedDocs[r] && state !== 'not-applicable' && state !== 'due-later';
+  }).length;
 
   // Toggle verification checkbox for centre staff
   const handleToggleVerify = (reqName: string) => {
@@ -593,7 +600,7 @@ export const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = (
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-bold text-cq-stone-800">
-                    Submitted Intake Documentation ({Object.keys(uploadedDocs).length} / {centre.requirements.length})
+                    Submitted Intake Documentation ({sentCount} / {sentCount + missingFiles})
                   </h3>
                   <p className="text-xs text-cq-stone-500 mt-0.5">
                     Click "Open & Inspect Document" on any submitted file to view the verified certificate or form.
@@ -601,9 +608,7 @@ export const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = (
                 </div>
 
                 <div className="text-xs font-semibold px-2.5 py-1 rounded-full bg-cq-teal-50 text-cq-teal-800 border border-cq-teal-200">
-                  {Object.keys(uploadedDocs).length === centre.requirements.length
-                    ? 'All Requirements Provided'
-                    : `${centre.requirements.length - Object.keys(uploadedDocs).length} Missing`}
+                  {missingFiles === 0 ? 'All Requirements Provided' : `${missingFiles} Missing`}
                 </div>
               </div>
 
@@ -612,6 +617,8 @@ export const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = (
                 {centre.requirements.map((req) => {
                   const doc = uploadedDocs[req];
                   const isVerified = verifiedDocs[req];
+                  const state = requirementState(application, centre, req);
+                  const naNote = application.notApplicable?.[req]?.note;
 
                   return (
                     <div
@@ -636,6 +643,14 @@ export const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = (
                               <span className="text-xs font-bold text-cq-emerald-800 bg-cq-emerald-100 border border-cq-emerald-300 px-2 py-0.5 rounded-full">
                                 Submitted
                               </span>
+                            ) : state === 'not-applicable' ? (
+                              <span className="text-xs font-bold text-cq-stone-700 bg-cq-stone-100 border border-cq-stone-300 px-2 py-0.5 rounded-full">
+                                N/A
+                              </span>
+                            ) : state === 'due-later' ? (
+                              <span className="text-xs font-bold text-cq-sand-ink bg-cq-sand-50 border border-cq-sand-line px-2 py-0.5 rounded-full">
+                                {DUE_LATER_LABEL}
+                              </span>
                             ) : (
                               <span className="text-xs font-bold text-cq-rose-700 bg-cq-rose-50 border border-cq-rose-200 px-2 py-0.5 rounded-full">
                                 Not Submitted
@@ -652,6 +667,14 @@ export const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = (
                           {doc ? (
                             <p className="text-xs text-cq-stone-500 mt-0.5">
                               File: <span className="font-mono text-cq-stone-700">{doc.fileName}</span> • {doc.fileSize} • Uploaded {doc.uploadedAt}
+                            </p>
+                          ) : state === 'not-applicable' ? (
+                            <p className="text-xs text-cq-stone-500 mt-0.5">
+                              Not applicable{naNote ? `: ${naNote}` : ''} (marked by parent)
+                            </p>
+                          ) : state === 'due-later' ? (
+                            <p className="text-xs text-cq-stone-500 mt-0.5">
+                              Not needed yet: the centre asks for this once a space is confirmed.
                             </p>
                           ) : (
                             <p className="text-xs text-cq-stone-400 mt-0.5">
@@ -675,7 +698,7 @@ export const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = (
                           </button>
                         ) : (
                           <span className="text-xs text-cq-stone-400 italic px-2">
-                            No file available
+                            {state === 'missing' ? 'No file available' : 'No file needed'}
                           </span>
                         )}
                       </div>

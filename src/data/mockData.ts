@@ -32,6 +32,11 @@ export interface Centre {
   requirementSources?: Record<string, string>;
   /** Requirement title -> citation, e.g. "Parent Handbook (March 2026), p.14". Real demo centres only. */
   requirementCitations?: Record<string, string>;
+  /**
+   * Items the centre asks for only once a space is confirmed (e.g. a deposit): shown as
+   * "Due when a space is confirmed" until there is an offer, never as Missing. See src/lib/checklist.ts.
+   */
+  requirementsDueWhenConfirmed?: string[];
   /** Requirement title -> link to the source document (when it has one; uploaded documents don't). */
   requirementSourceUrls?: Record<string, string>;
   /** The published document the requirements were extracted from (real demo centres only). */
@@ -137,6 +142,8 @@ export interface Application {
   submittedAt?: string;
   completedRequirements: string[];
   uploadedDocuments?: Record<string, UploadedDocument>;
+  /** "If applicable" items the parent marked Not applicable, with an optional note (shown as N/A on both sides). */
+  notApplicable?: Record<string, { note?: string }>;
   /**
    * Why and when a Withdrawn application was closed. 'accepted-other': the family accepted another offer
    * (acceptedApplicationId; never sent to centres). 'declined': the family declined this offer.
@@ -220,8 +227,8 @@ const anya = {
  * Anya's documents on her SENT applications: one file per requirement of that centre's own checklist,
  * uploaded a few days before the application was submitted. File details only (no file contents);
  * they open in the sample preview with fictional details. completedRequirements is derived from these,
- * so nothing is "ready" without a matching file. Left out on purpose: Jesse Ketchum's custody documents
- * (not applicable to this family) and Leaside's deposit (only due once a space is confirmed).
+ * so nothing is "ready" without a matching file. Not files: Jesse Ketchum's custody documents are marked
+ * N/A (both parents on file) and Leaside's deposit is due only once a space is confirmed.
  */
 const ANYA_DOCS: Record<string, Record<string, UploadedDocument>> = {
   [JESSE_KETCHUM_ID]: {
@@ -281,6 +288,7 @@ export const INITIAL_APPLICATIONS: Application[] = [
     ],
     submittedAt: 'Sep 22, 2026',
     ...anyaDocs(JESSE_KETCHUM_ID),
+    notApplicable: { 'Custody documents (if applicable)': { note: 'Both parents on file' } },
   },
   {
     ...anya,

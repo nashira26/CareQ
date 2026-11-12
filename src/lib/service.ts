@@ -61,6 +61,7 @@ import { doesntServeLabel } from './searchCriteria';
 import { shortCentreName } from './parentUpdates';
 import { otherOpenApplications } from './offers';
 import { NOT_PROVIDED, PreparedDraft } from './prepareApplication';
+import { canBeNotApplicable } from './checklist';
 
 const shortDate = (now: Date) => now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 const longDate = (now: Date) => now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -321,6 +322,8 @@ export type DraftChange =
   | { kind: 'toggleRequirement'; requirement: string }
   | { kind: 'uploadDocument'; requirement: string; fileName: string; fileSize: string }
   | { kind: 'removeDocument'; requirement: string }
+  /** "If applicable" items only: mark (or, with notApplicable false, unmark) Not applicable, with an optional note. */
+  | { kind: 'markNotApplicable'; requirement: string; notApplicable: boolean; note?: string }
   | { kind: 'noteToCentre'; note: string }
   | { kind: 'preparedDraft'; draft: PreparedDraft };
 
@@ -328,15 +331,31 @@ export async function updateDraft(repo: Repo, actor: Actor, id: string, change: 
   const app = await ownApp(repo, actor, id, canEditDraft);
   const done = new Set(app.completedRequirements);
   const docs = { ...(app.uploadedDocuments ?? {}) };
+  const na = { ...(app.notApplicable ?? {}) };
+  // Marking an item done or attaching a file makes it applicable again
+  const applicable = (requirement: string) => {
+    delete na[requirement];
+    return { notApplicable: na };
+  };
   switch (change.kind) {
     case 'toggleRequirement':
       if (done.has(change.requirement)) done.delete(change.requirement);
       else done.add(change.requirement);
-      return repo.updateApplication(id, { completedRequirements: [...done] });
+      return repo.updateApplication(id, { completedRequirements: [...done], ...applicable(change.requirement) });
     case 'uploadDocument':
       done.add(change.requirement);
       docs[change.requirement] = { fileName: change.fileName, fileSize: change.fileSize, uploadedAt: longDate(new Date()) };
-      return repo.updateApplication(id, { completedRequirements: [...done], uploadedDocuments: docs });
+      return repo.updateApplication(id, { completedRequirements: [...done], uploadedDocuments: docs, ...applicable(change.requirement) });
+    case 'markNotApplicable': {
+      if (!canBeNotApplicable(change.requirement)) throw new InputError('Only "if applicable" items can be marked not applicable.');
+      if (!change.notApplicable) return repo.updateApplication(id, applicable(change.requirement));
+      // N/A is neither ready nor missing: no file, not marked done
+      done.delete(change.requirement);
+      delete docs[change.requirement];
+      const note = change.note?.trim().slice(0, 200);
+      na[change.requirement] = note ? { note } : {};
+      return repo.updateApplication(id, { completedRequirements: [...done], uploadedDocuments: docs, notApplicable: na });
+    }
     case 'removeDocument':
       done.delete(change.requirement);
       delete docs[change.requirement];

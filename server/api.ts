@@ -75,6 +75,7 @@ const draftChangeSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('toggleRequirement'), requirement: str(120) }),
   z.object({ kind: z.literal('uploadDocument'), requirement: str(120), fileName: str(160), fileSize: str(20) }),
   z.object({ kind: z.literal('removeDocument'), requirement: str(120) }),
+  z.object({ kind: z.literal('markNotApplicable'), requirement: str(120), notApplicable: z.boolean(), note: str(200).optional() }),
   z.object({ kind: z.literal('noteToCentre'), note: str(1000) }),
   z.object({ kind: z.literal('preparedDraft'), draft: preparedDraftSchema }),
 ]);

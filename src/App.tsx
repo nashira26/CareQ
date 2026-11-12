@@ -462,6 +462,13 @@ export default function App() {
 		});
 	const handleRemoveDocument = (applicationId: string, requirement: string) =>
 		draftChange(applicationId, { kind: "removeDocument", requirement });
+	const handleMarkNotApplicable = (
+		applicationId: string,
+		requirement: string,
+		notApplicable: boolean,
+		note?: string
+	) =>
+		draftChange(applicationId, { kind: "markNotApplicable", requirement, notApplicable, note });
 
 	// Typing: show at once, save after a short pause
 	const handleUpdateNoteToCentre = (applicationId: string, note: string) => {
@@ -1187,6 +1194,7 @@ export default function App() {
 										applications={myApplications}
 										parentProfile={activeParentProfile}
 										onToggleRequirement={handleToggleRequirement}
+										onMarkNotApplicable={handleMarkNotApplicable}
 										onUploadDocument={handleUploadDocument}
 										onRemoveDocument={handleRemoveDocument}
 										onSubmitApplication={handleSubmitApplication}

@@ -4,6 +4,7 @@ import { StatusBadge } from '../StatusBadge';
 import { ApplicationDetailsModal } from '../ApplicationDetailsModal';
 import { PreparedApplicationPanel } from './PreparedApplicationPanel';
 import { PreparedDraft, centreStatusLabel } from '../../lib/prepareApplication';
+import { DUE_LATER_LABEL, canBeNotApplicable, checklistSummary, requirementState } from '../../lib/checklist';
 import {
   PageHeader,
   Card,
@@ -26,6 +27,8 @@ interface ApplyTabProps {
     file: { fileName: string; fileSize: string }
   ) => void;
   onRemoveDocument: (applicationId: string, requirementName: string) => void;
+  /** "If applicable" items only: mark Not applicable (with an optional note) or undo it. */
+  onMarkNotApplicable: (applicationId: string, requirementName: string, notApplicable: boolean, note?: string) => void;
   onSubmitApplication: (applicationId: string) => void;
   preparedDrafts: Record<string, PreparedDraft>;
   onUpdatePreparedDraft: (applicationId: string, draft: PreparedDraft) => void;
@@ -41,6 +44,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
   onToggleRequirement,
   onUploadDocument,
   onRemoveDocument,
+  onMarkNotApplicable,
   onSubmitApplication,
   preparedDrafts,
   onUpdatePreparedDraft,
@@ -51,6 +55,9 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
   const [reviewingAppId, setReviewingAppId] = useState<string | null>(null);
   const [confirmedReview, setConfirmedReview] = useState(false);
   const [viewingAppForDocs, setViewingAppForDocs] = useState<Application | null>(null);
+  // The "if applicable" item whose Not applicable note is being written (`${appId}::${requirement}`)
+  const [naEditing, setNaEditing] = useState<string | null>(null);
+  const [naNote, setNaNote] = useState('');
 
   // Group applications
   const draftApps = applications.filter((app) => app.status === 'Draft');
@@ -68,7 +75,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
     ? 0
     : reviewingDraft
     ? reviewingDraft.checklist.filter((c) => c.status === 'missing').length
-    : reviewingCentre.requirements.filter((r) => !reviewingApp.completedRequirements.includes(r) && !reviewingApp.uploadedDocuments?.[r]).length;
+    : checklistSummary(reviewingApp, reviewingCentre).missing;
 
   // Handle actual file upload
   const handleFileChange = (
@@ -133,12 +140,12 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
               const centre = centres.find((c) => c.id === app.centreId);
               if (!centre) return null;
 
-              const totalRequirements = centre.requirements.length;
-              const completedCount = centre.requirements.filter((r) =>
-                app.completedRequirements.includes(r)
-              ).length;
-              const isAllReady = totalRequirements > 0 && completedCount === totalRequirements;
-              const noRequirements = totalRequirements === 0;
+              // N/A and "due when a space is confirmed" items count as neither ready nor missing
+              const summary = checklistSummary(app, centre);
+              const totalRequirements = summary.needed;
+              const completedCount = summary.ready;
+              const isAllReady = centre.requirements.length > 0 && summary.missing === 0;
+              const noRequirements = centre.requirements.length === 0;
               const progressPct =
                 totalRequirements > 0
                   ? Math.round((completedCount / totalRequirements) * 100)
@@ -226,6 +233,8 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                     {centre.requirements.map((req) => {
                       const isDone = app.completedRequirements.includes(req);
                       const uploadedDoc = app.uploadedDocuments?.[req];
+                      const state = requirementState(app, centre, req);
+                      const naKey = `${app.id}::${req}`;
 
                       return (
                         <div
@@ -260,12 +269,25 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                                   <span className="text-xs font-bold bg-mint text-leaf-ink px-2 py-0.5 rounded-full">
                                     Ready
                                   </span>
+                                ) : state === 'not-applicable' ? (
+                                  <span className="text-xs font-bold bg-stone text-ink-muted px-2 py-0.5 rounded-full">
+                                    N/A
+                                  </span>
+                                ) : state === 'due-later' ? (
+                                  <span className="text-xs font-bold bg-cq-sand-50 text-cq-sand-ink px-2 py-0.5 rounded-full">
+                                    {DUE_LATER_LABEL}
+                                  </span>
                                 ) : (
                                   <span className="text-xs font-bold bg-warning-bg text-warning px-2 py-0.5 rounded-full">
                                     Missing
                                   </span>
                                 )}
                               </div>
+                              {state === 'not-applicable' && (
+                                <p className="text-xs text-ink-muted mt-0.5">
+                                  Not applicable{app.notApplicable?.[req]?.note ? `: ${app.notApplicable[req].note}` : ''}
+                                </p>
+                              )}
                               <p className="text-xs text-cq-soft mt-0.5">
                                 {centre.requirementCitations?.[req]
                                   ? `From ${centre.requirementCitations[req]}`
@@ -306,8 +328,44 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </div>
+                            ) : state === 'not-applicable' ? (
+                              <GhostButton onClick={() => onMarkNotApplicable(app.id, req, false)} className="h-9 text-xs">
+                                Undo N/A
+                              </GhostButton>
+                            ) : naEditing === naKey ? (
+                              <form
+                                className="flex flex-wrap items-center gap-2"
+                                onSubmit={(e) => {
+                                  e.preventDefault();
+                                  onMarkNotApplicable(app.id, req, true, naNote);
+                                  setNaEditing(null);
+                                }}
+                              >
+                                <input
+                                  autoFocus
+                                  value={naNote}
+                                  maxLength={200}
+                                  onChange={(e) => setNaNote(e.target.value)}
+                                  placeholder="Note (optional), e.g. Both parents on file"
+                                  aria-label={`Why ${req} does not apply (optional)`}
+                                  className="h-9 w-56 rounded-lg border border-cq-line bg-white px-2.5 text-xs text-cq-ink focus:outline-hidden focus:ring-2 focus:ring-cq-sage-line"
+                                />
+                                <GhostButton type="submit" className="h-9 text-xs">Mark N/A</GhostButton>
+                                <GhostButton onClick={() => setNaEditing(null)} className="h-9 text-xs">Cancel</GhostButton>
+                              </form>
                             ) : (
-                              <div className="flex items-center gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                {canBeNotApplicable(req) && (
+                                  <GhostButton
+                                    onClick={() => {
+                                      setNaNote('');
+                                      setNaEditing(naKey);
+                                    }}
+                                    className="h-9 text-xs"
+                                  >
+                                    Not applicable
+                                  </GhostButton>
+                                )}
                                 <label className="cursor-pointer">
                                   <GhostButton className="h-9 text-xs flex items-center gap-1.5 pointer-events-none">
                                     <UploadCloud className="w-3.5 h-3.5 text-cq-muted" />
@@ -458,7 +516,7 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
               <p className="text-xs font-semibold text-cq-muted">
                 {reviewingDraft
                   ? 'Checklist as you reviewed it:'
-                  : `Attached Checklist (${reviewingApp.completedRequirements.length}/${reviewingCentre.requirements.length}):`}
+                  : `Attached Checklist (${checklistSummary(reviewingApp, reviewingCentre).ready}/${checklistSummary(reviewingApp, reviewingCentre).needed}):`}
               </p>
               <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
                 {/* With an AI draft, show exactly the statuses that will be sent */}
@@ -483,8 +541,8 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                   </div>
                 ))}
                 {!reviewingDraft && reviewingCentre.requirements.map((req) => {
-                  const isDone = reviewingApp.completedRequirements.includes(req);
                   const doc = reviewingApp.uploadedDocuments?.[req];
+                  const state = requirementState(reviewingApp, reviewingCentre, req);
 
                   return (
                     <div
@@ -499,10 +557,14 @@ export const ApplyTab: React.FC<ApplyTabProps> = ({
                           </span>
                         )}
                       </div>
-                      {isDone || doc ? (
+                      {state === 'ready' ? (
                         <span className="text-cq-sage-ink font-semibold shrink-0 flex items-center gap-1 text-xs">
                           <Check className="w-3.5 h-3.5" /> Ready
                         </span>
+                      ) : state === 'not-applicable' ? (
+                        <span className="text-ink-muted font-semibold shrink-0 text-xs">N/A</span>
+                      ) : state === 'due-later' ? (
+                        <span className="text-cq-sand-ink font-semibold shrink-0 text-xs">{DUE_LATER_LABEL}</span>
                       ) : (
                         <span className="text-cq-amber-ink font-semibold shrink-0 text-xs">
                           Missing

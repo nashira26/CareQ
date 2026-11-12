@@ -23,7 +23,7 @@ export const JESSE_KETCHUM_ID = 'on-00576';
 export const HARMONY_ID = 'on-03394';
 
 /** Quote + citation for one requirement. Several items can share one sentence. */
-type Req = { title: string; quote: string; page: string };
+type Req = { title: string; quote: string; page: string; dueWhenConfirmed?: boolean };
 
 const fromHandbook = (
   base: Omit<Centre, 'requirements' | 'requirementSources' | 'requirementCitations' | 'requirementsExtractedFrom'>,
@@ -37,6 +37,9 @@ const fromHandbook = (
     requirementSources: Object.fromEntries(reqs.map((r) => [r.title, r.quote])),
     requirementCitations: Object.fromEntries(reqs.map((r) => [r.title, `${citeTitle}, ${r.page}`])),
     requirementsExtractedFrom: doc,
+    ...(reqs.some((r) => r.dueWhenConfirmed) && {
+      requirementsDueWhenConfirmed: reqs.filter((r) => r.dueWhenConfirmed).map((r) => r.title),
+    }),
   };
 };
 
@@ -211,6 +214,8 @@ export const REAL_DEMO_CENTRES: Centre[] = [
         title: 'Deposit to guarantee your spot',
         quote: 'Once a space has been confirmed you will be contacted and a deposit and will be required to guarantee your spot.',
         page: 'section 8 (Admission Policy)',
+        // Asked for only after a space is confirmed: "Due when a space is confirmed" until then, never Missing
+        dueWhenConfirmed: true,
       },
       {
         title: 'Application package forms',
