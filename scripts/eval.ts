@@ -755,7 +755,13 @@ function writeReport(runs: RunFile[], baseline: RunFile | null) {
   if (r.extract) raw('Requirement extraction', r.extract.map((x) => ({ operatorId: x.operatorId, centreId: x.centreId, response: x.raw })));
   if (r.prepare) raw('Prepare with AI', r.prepare.map((x) => ({ centreId: x.centreId, scenario: x.scenario, documents: x.documents, skipped: x.skipped, response: x.raw })));
   if (r.tone) raw('Tone check', r.tone.map((x) => ({ text: x.text, role: x.role, label: x.harsh, response: x.raw })));
-  fs.writeFileSync(path.join(EVAL, 'results.md'), L.join('\n') + '\n');
+  // Keep the red-team block (written by scripts/eval-redteam.ts) right under the title
+  const file = path.join(EVAL, 'results.md');
+  const prev = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+  const a = prev.indexOf('<!-- redteam:start -->');
+  const b = prev.indexOf('<!-- redteam:end -->');
+  if (a >= 0 && b > a) L.splice(1, 0, '', prev.slice(a, b + '<!-- redteam:end -->'.length));
+  fs.writeFileSync(file, L.join('\n') + '\n');
 }
 
 // ---------------- Main ----------------

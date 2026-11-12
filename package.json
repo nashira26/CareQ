@@ -17,6 +17,7 @@
     "build:index": "tsx scripts/build-index.ts",
     "eval:ask": "tsx scripts/eval-ask.ts",
     "eval:docs": "tsx scripts/eval-docs.ts",
+    "eval:redteam": "tsx scripts/eval-redteam.ts",
     "eval": "tsx scripts/eval.ts",
     "journey": "tsx scripts/journey.ts"
   },
