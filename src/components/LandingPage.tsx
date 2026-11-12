@@ -729,8 +729,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 						</p>
 						<p className="max-w-2xl leading-relaxed text-cq-soft">
 							Prototype built by Team 38 – Coalesce for the Women in AI Canada
-							Hackathon 2026. Centre listings come from Ontario open data; all
-							families, waitlists and messages shown are simulated. © 2026 CareQ
+							Hackathon 2026. © 2026 CareQ
 						</p>
 					</div>
 

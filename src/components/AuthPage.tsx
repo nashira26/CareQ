@@ -230,7 +230,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 					</HeroPhoto>
 
 					{/* 5. Stat Row: Ontario and the Toronto centres in CareQ */}
-					<CentreCounts className="mt-8" compact />
+					{/* <CentreCounts className="mt-8" compact /> */}
 				</div>
 
 				{/* RIGHT COLUMN (the existing login card, restyled) */}
