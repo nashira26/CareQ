@@ -256,6 +256,7 @@ export const REAL_DEMO_CENTRES: Centre[] = [
         quote:
           'A spot for your child is secured once this first payment is paid and the amount paid will be applied to your fees once your child begins care with us.',
         page: 'PDF p.14',
+        dueWhenConfirmed: true,
       },
       {
         title: 'Immunization Information Form & copy of Yellow Immunization Card',

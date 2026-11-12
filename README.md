@@ -204,6 +204,10 @@ Unit tests cover ranking, search parsing, application preparation, browser stora
 - `src/data/`: demo centres, applications, messages, help content, and the Ontario open data
 - `scripts/`: `seed.ts`, `reset.ts`, `import-ontario-data.ts`
 
+## Known issues
+
+- **Prepare with AI ignores N/A and due-later items:** on a draft, its checklist can still list an "if applicable" item the parent marked Not applicable, or an item due only once a space is confirmed (Leaside's deposit, Harmony's first payment), as missing. The rest of the app uses the shared rule in `src/lib/checklist.ts`; Prepare with AI (`src/lib/prepareApplication.ts`) doesn't yet.
+
 ## Next steps
 
 - **Saved documents for parents:** save each child's documents once (type, file name, upload date), e.g. immunization record, birth certificate, proof of address, subsidy letter. When an application's checklist is built, matching items show "Ready · from your saved documents (uploaded {date})". Before sending, the parent sees which saved documents will be attached and can untick any; documents go only to the centres they're sent to. A newer version updates future drafts, never applications already sent.
