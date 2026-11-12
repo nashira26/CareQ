@@ -62,10 +62,20 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
 
   const isParent = role === 'parent';
 
-  // Every send goes through here; an AI-assisted message from a simulated-data draft is tagged
+  // Close the draft review (panel, intent chip highlight and its facts)
+  const clearDraft = () => {
+    setAiDraft(null);
+    setDraftContext(null);
+    setSelectedIntent('');
+  };
+
+  // Every send goes through here; an AI-assisted message from a simulated-data draft is tagged.
+  // A sent message always closes the draft / tone-warning review.
   const sendOut = (text: string, aiAssisted: boolean) => {
     onSendMessage(text, aiAssisted, aiAssisted && Boolean(draftContext?.simulated));
-    setDraftContext(null);
+    clearDraft();
+    setToneWarning(null);
+    setManualText('');
   };
 
   // Parent ideas from this application's facts (start date, age group, status, the centre's checklist)
@@ -198,9 +208,6 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
 
     // Normal/polite message: send immediately
     sendOut(textToSend.trim(), aiAssisted);
-    setManualText('');
-    setAiDraft(null);
-    setSelectedIntent('');
   };
 
   // Send approved AI draft
@@ -257,7 +264,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
         </div>
 
         {/* Messages List Area */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 bg-cq-stone-50/50">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-3 bg-cq-stone-50/50">
           {messages.length === 0 ? (
             <div className="text-center py-12 text-cq-stone-500 space-y-2">
               <MessageSquare className="w-8 h-8 mx-auto text-cq-stone-400" />
@@ -303,9 +310,11 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
           )}
         </div>
 
-        {/* AI Smart Draft Assistant Section */}
-        <div className="p-3 sm:p-4 bg-white border-t border-cq-stone-200 shrink-0 space-y-3">
-          {/* AI Suggestions Chips */}
+        {/* AI Smart Draft Assistant Section: scrolls on its own so the draft's Approve & Send
+            buttons can never be pushed out of the (fixed-height) modal */}
+        <div className="p-3 sm:p-4 bg-white border-t border-cq-stone-200 shrink-0 max-h-[70%] overflow-y-auto space-y-3">
+          {/* AI Suggestions Chips: hidden while a draft or tone warning is being reviewed */}
+          {!aiDraft && !toneWarning && (
           <div>
             <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold text-cq-stone-700">
               <PenLine className="w-4 h-4 text-brand" aria-hidden="true" />
@@ -335,6 +344,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
               ))}
             </div>
           </div>
+          )}
 
           {/* AI Loading state */}
           {isGeneratingAiDraft && (
@@ -383,7 +393,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                     onClick={() => {
                       // Use suggestion: load into input for sender to review/edit
                       setManualText(toneWarning.suggestedVersion);
-                      setAiDraft(null);
+                      clearDraft();
                       setToneWarning(null);
                     }}
                     className="px-3 py-1.5 text-xs font-semibold bg-cq-brand hover:bg-cq-brand-hover text-white rounded-lg transition-colors shadow-2xs"
@@ -396,9 +406,6 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                     onClick={() => {
                       // Send suggestion directly
                       sendOut(toneWarning.suggestedVersion, true);
-                      setToneWarning(null);
-                      setManualText('');
-                      setAiDraft(null);
                     }}
                     className="px-3 py-1.5 text-xs font-medium text-cq-teal-800 bg-cq-teal-100/80 hover:bg-cq-teal-200/80 rounded-lg transition-colors"
                   >
@@ -410,8 +417,10 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      // Edit original message
-                      setManualText(toneWarning.originalText);
+                      // Edit original message: an AI draft goes back to its draft box, a typed
+                      // message back to the input (never both at once)
+                      if (toneWarning.isAiAssisted && aiDraft) setAiDraft(toneWarning.originalText);
+                      else setManualText(toneWarning.originalText);
                       setToneWarning(null);
                     }}
                     className="px-2.5 py-1 text-xs font-medium text-cq-stone-700 hover:bg-cq-amber-100 rounded transition-colors"
@@ -424,9 +433,6 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                     onClick={() => {
                       // The sender always makes the final choice: send as is
                       sendOut(toneWarning.originalText, toneWarning.isAiAssisted);
-                      setToneWarning(null);
-                      setManualText('');
-                      setAiDraft(null);
                     }}
                     className="px-2.5 py-1 text-xs font-medium text-cq-stone-500 hover:text-cq-stone-900 underline transition-colors"
                   >
@@ -495,14 +501,10 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-2 pt-1">
+              <div className="sticky bottom-0 -mx-3.5 -mb-3.5 px-3.5 py-2 bg-cq-amber-50/95 border-t border-cq-amber-200 rounded-b-xl flex items-center justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setAiDraft(null);
-                    setDraftContext(null);
-                    setSelectedIntent('');
-                  }}
+                  onClick={clearDraft}
                   className="px-3 py-1.5 text-xs text-cq-stone-600 hover:text-cq-stone-900 rounded-lg transition-colors"
                 >
                   Discard Draft
@@ -530,7 +532,9 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
             </div>
           )}
 
-          {/* Manual Input Form */}
+          {/* Manual Input Form: hidden while an AI draft or tone warning is open, so the only
+              way forward is the draft's own Approve & Send / Discard (or the warning's choices) */}
+          {!aiDraft && !toneWarning && (
           <form onSubmit={handleSendManual} className="flex items-center gap-2 pt-1">
             <input
               type="text"
@@ -561,6 +565,7 @@ export const ConversationModal: React.FC<ConversationModalProps> = ({
               )}
             </button>
           </form>
+          )}
           {!isCheckingTone && <AiFallbackNote aiMode={toneAiMode} />}
           <AiNotice message={aiNotice} />
         </div>
